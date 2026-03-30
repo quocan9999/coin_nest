@@ -47,16 +47,32 @@ class CategoryListScreen extends StatelessWidget {
     if (categories.isEmpty) {
       return Center(child: Text('Chưa có hạng mục nào', style: TextStyle(color: AppTheme.onSurfaceVariant)));
     }
+
+    final parents = categories.where((c) => c.parentId == null).toList();
+    final groupedList = [];
+    for (var p in parents) {
+      groupedList.add(p);
+      groupedList.addAll(categories.where((c) => c.parentId == p.id));
+    }
+    final orphaned = categories.where((c) => c.parentId != null && !parents.any((p) => p.id == c.parentId)).toList();
+    groupedList.addAll(orphaned);
+
     return ListView.builder(
       padding: const EdgeInsets.all(20),
-      itemCount: categories.length,
+      itemCount: groupedList.length,
       itemBuilder: (_, i) {
-        final cat = categories[i];
+        final cat = groupedList[i];
+        final isChild = cat.parentId != null;
         return Container(
-          margin: const EdgeInsets.only(bottom: 8),
+          margin: EdgeInsets.only(bottom: 8, left: isChild ? 32 : 0),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(color: AppTheme.surfaceContainerLowest, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
           child: Row(children: [
+            if (isChild)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(Icons.subdirectory_arrow_right_rounded, color: AppTheme.outlineVariant, size: 20),
+              ),
             Container(
               width: 40, height: 40,
               decoration: BoxDecoration(color: CategoryIcons.getColor(cat.iconName).withAlpha(30), borderRadius: BorderRadius.circular(10)),
@@ -73,8 +89,22 @@ class CategoryListScreen extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.tertiary),
                   onPressed: () async {
-                    final userId = context.read<AuthProvider>().currentUserId;
-                    await context.read<CategoryProvider>().deleteCategory(cat.id, userId);
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Xác nhận xóa'),
+                        content: Text('Bạn có chắc chắn muốn xóa hạng mục "${cat.name}"?'),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+                          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Xóa', style: TextStyle(color: AppTheme.tertiary))),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      if (!context.mounted) return;
+                      final userId = context.read<AuthProvider>().currentUserId;
+                      await context.read<CategoryProvider>().deleteCategory(cat.id, userId);
+                    }
                   },
                 ),
               ]),
