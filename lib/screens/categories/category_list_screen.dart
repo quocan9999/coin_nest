@@ -80,6 +80,11 @@ class CategoryListScreen extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(child: Text(cat.name, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500))),
+            if (cat.isDefault)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(Icons.lock_outline_rounded, size: 16, color: AppTheme.outlineVariant),
+              ),
             if (!cat.isDefault)
               Row(mainAxisSize: MainAxisSize.min, children: [
                 IconButton(
