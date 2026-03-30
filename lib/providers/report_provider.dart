@@ -9,6 +9,8 @@ class ReportProvider extends ChangeNotifier {
   double _totalExpense = 0;
   List<Map<String, dynamic>> _expenseByCategory = [];
   List<Map<String, dynamic>> _expenseByAccount = [];
+  List<Map<String, dynamic>> _incomeByCategory = [];
+  List<Map<String, dynamic>> _incomeByAccount = [];
   List<Map<String, dynamic>> _dailyExpense = [];
   List<Map<String, dynamic>> _dailyIncome = [];
   List<Map<String, dynamic>> _monthlyExpense = [];
@@ -20,6 +22,8 @@ class ReportProvider extends ChangeNotifier {
   double get netBalance => _totalIncome - _totalExpense;
   List<Map<String, dynamic>> get expenseByCategory => _expenseByCategory;
   List<Map<String, dynamic>> get expenseByAccount => _expenseByAccount;
+  List<Map<String, dynamic>> get incomeByCategory => _incomeByCategory;
+  List<Map<String, dynamic>> get incomeByAccount => _incomeByAccount;
   List<Map<String, dynamic>> get dailyExpense => _dailyExpense;
   List<Map<String, dynamic>> get dailyIncome => _dailyIncome;
   List<Map<String, dynamic>> get monthlyExpense => _monthlyExpense;
@@ -42,6 +46,8 @@ class ReportProvider extends ChangeNotifier {
       _totalExpense = await _txnDao.totalExpense(userId, start, end);
       _expenseByCategory = await _txnDao.expenseByCategory(userId, start, end);
       _expenseByAccount = await _txnDao.expenseByAccount(userId, start, end);
+      _incomeByCategory = await _txnDao.incomeByCategory(userId, start, end);
+      _incomeByAccount = await _txnDao.incomeByAccount(userId, start, end);
       _dailyExpense = await _txnDao.dailyTotals(userId, start, end, 'expense');
       _dailyIncome = await _txnDao.dailyTotals(userId, start, end, 'income');
     } catch (_) {}

@@ -228,6 +228,22 @@ class TransactionDao {
     ''', [userId, startDate, endDate]);
   }
 
+  /// Income by category in a date range.
+  Future<List<Map<String, dynamic>>> incomeByCategory(
+      int userId, String startDate, String endDate) async {
+    final db = await _dbHelper.database;
+    return db.rawQuery('''
+      SELECT c.id, c.name, c.icon_name, c.color,
+             COALESCE(SUM(t.amount), 0) as total
+      FROM transactions t
+      JOIN categories c ON t.category_id = c.id
+      WHERE t.user_id = ? AND t.type = 'income'
+        AND t.date >= ? AND t.date <= ?
+      GROUP BY c.id
+      ORDER BY total DESC
+    ''', [userId, startDate, endDate]);
+  }
+
   /// Daily totals in a date range (for line/bar chart).
   Future<List<Map<String, dynamic>>> dailyTotals(
       int userId, String startDate, String endDate, String type) async {
@@ -264,6 +280,22 @@ class TransactionDao {
       FROM transactions t
       JOIN accounts a ON t.account_id = a.id
       WHERE t.user_id = ? AND t.type = 'expense'
+        AND t.date >= ? AND t.date <= ?
+      GROUP BY a.id
+      ORDER BY total DESC
+    ''', [userId, startDate, endDate]);
+  }
+
+  /// Income by account in a date range.
+  Future<List<Map<String, dynamic>>> incomeByAccount(
+      int userId, String startDate, String endDate) async {
+    final db = await _dbHelper.database;
+    return db.rawQuery('''
+      SELECT a.id, a.name, a.icon_name,
+             COALESCE(SUM(t.amount), 0) as total
+      FROM transactions t
+      JOIN accounts a ON t.account_id = a.id
+      WHERE t.user_id = ? AND t.type = 'income'
         AND t.date >= ? AND t.date <= ?
       GROUP BY a.id
       ORDER BY total DESC
