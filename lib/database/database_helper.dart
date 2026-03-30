@@ -193,21 +193,6 @@ class DatabaseHelper {
     const expenseCategories = [
       {'name': 'Cho mượn', 'icon_name': 'lend', 'sort': 1},
       {'name': 'Trả nợ', 'icon_name': 'loan', 'sort': 2},
-      {'name': 'Ăn uống', 'icon_name': 'food', 'sort': 3},
-      {'name': 'Di chuyển', 'icon_name': 'transport', 'sort': 4},
-      {'name': 'Nhà ở', 'icon_name': 'housing', 'sort': 5},
-      {'name': 'Tiện ích', 'icon_name': 'utilities', 'sort': 6},
-      {'name': 'Mua sắm', 'icon_name': 'shopping', 'sort': 7},
-      {'name': 'Sức khỏe', 'icon_name': 'health', 'sort': 8},
-      {'name': 'Giáo dục', 'icon_name': 'education', 'sort': 9},
-      {'name': 'Giải trí', 'icon_name': 'entertainment', 'sort': 10},
-      {'name': 'Quần áo', 'icon_name': 'clothing', 'sort': 11},
-      {'name': 'Cá nhân', 'icon_name': 'personal', 'sort': 12},
-      {'name': 'Quà tặng', 'icon_name': 'gift', 'sort': 13},
-      {'name': 'Viễn thông', 'icon_name': 'telecom', 'sort': 14},
-      {'name': 'Du lịch', 'icon_name': 'travel', 'sort': 15},
-      {'name': 'Sửa chữa', 'icon_name': 'repair', 'sort': 16},
-      {'name': 'Khác', 'icon_name': 'other_expense', 'sort': 17},
     ];
 
     for (final cat in expenseCategories) {
@@ -228,12 +213,6 @@ class DatabaseHelper {
       {'name': 'Vay mượn', 'icon_name': 'loan', 'sort': 1},
       {'name': 'Thu nợ', 'icon_name': 'lend', 'sort': 2},
       {'name': 'Tiết kiệm lãi', 'icon_name': 'interest', 'sort': 3},
-      {'name': 'Lương', 'icon_name': 'salary', 'sort': 4},
-      {'name': 'Đầu tư', 'icon_name': 'investment', 'sort': 5},
-      {'name': 'Thưởng', 'icon_name': 'bonus', 'sort': 6},
-      {'name': 'Thu nhập phụ', 'icon_name': 'side_income', 'sort': 7},
-      {'name': 'Được tặng', 'icon_name': 'received_gift', 'sort': 8},
-      {'name': 'Khác', 'icon_name': 'other_income', 'sort': 9},
     ];
 
     for (final cat in incomeCategories) {
