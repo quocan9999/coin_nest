@@ -37,6 +37,22 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+        applicationVariants.all {
+        val appVariant = this
+        val buildTypeName = appVariant.buildType.name // "release" hoặc "debug"
+        val version = appVariant.versionName // lấy từ pubspec.yaml (thông qua flutter.versionName)
+        
+        appVariant.outputs.all {
+            val apkOutput = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
+            // Lấy tên kiến trúc chip (arm64-v8a, armeabi-v7a, x86_64)
+            val abiName = apkOutput.getFilter(com.android.build.OutputFile.ABI) ?: "universal"
+            
+            // Định dạng: CoinNest_v1.0.0_release_arm64-v8a.apk
+            apkOutput.outputFileName = "CoinNest_v${version}_${buildTypeName}_${abiName}.apk"
+        }
+    }
+
 }
 
 flutter {

@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+analyze.txt
+analyze2.txt
+generated_screens.txt
+parse_screens.py
+screens_out.txt
+download_screens.py
+extract_gen.py
+fix_warnings.py
