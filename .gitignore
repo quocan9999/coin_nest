@@ -52,7 +52,7 @@ app.*.map.json
 
 # macOS related
 /macos/Flutter/ephemeral/
-/macos/Flutter/generated_plugin_registrant.swift
+/macos/Flutter/GeneratedPluginRegistrant.swift
 
 # Linux related
 /linux/flutter/ephemeral/
