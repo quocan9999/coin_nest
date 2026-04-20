@@ -8,7 +8,7 @@ import '../../utils/formatters.dart';
 import '../../utils/constants.dart';
 import '../../utils/category_icons.dart';
 import 'add_edit_account_screen.dart';
-import 'balance_adjustment_screen.dart';
+
 
 class AccountDetailScreen extends StatelessWidget {
   final Account account;
@@ -74,9 +74,9 @@ class AccountDetailScreen extends StatelessWidget {
               width: double.infinity, height: 48,
               child: OutlinedButton.icon(
                 onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => BalanceAdjustmentScreen(account: account))),
-                icon: const Icon(Icons.tune_rounded),
-                label: const Text('Điều chỉnh số dư'),
+                    MaterialPageRoute(builder: (_) => AddEditAccountScreen(account: account))),
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Chỉnh sửa thông tin tài khoản'),
               ),
             ),
           ],
