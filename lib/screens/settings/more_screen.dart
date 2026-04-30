@@ -46,7 +46,7 @@ class MoreScreen extends StatelessWidget {
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(auth.currentUser?.fullName ?? 'Người dùng', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 2),
-                    Text(auth.currentUser?.email ?? '', style: Theme.of(context).textTheme.bodySmall),
+                    Text(auth.currentUser?.phone ?? '', style: Theme.of(context).textTheme.bodySmall),
                   ])),
                   const Icon(Icons.chevron_right_rounded, color: AppTheme.outline),
                 ]),

@@ -2,7 +2,7 @@
 class User {
   final int? id;
   final String fullName;
-  final String email;
+  final String phone;
   final String passwordHash;
   final String passwordSalt;
   final String? avatarPath;
@@ -12,7 +12,7 @@ class User {
   const User({
     this.id,
     required this.fullName,
-    required this.email,
+    required this.phone,
     required this.passwordHash,
     required this.passwordSalt,
     this.avatarPath,
@@ -25,7 +25,7 @@ class User {
     return User(
       id: map['id'] as int?,
       fullName: map['full_name'] as String,
-      email: map['email'] as String,
+      phone: map['phone'] as String,
       passwordHash: map['password_hash'] as String,
       passwordSalt: map['password_salt'] as String,
       avatarPath: map['avatar_path'] as String?,
@@ -39,7 +39,7 @@ class User {
     return {
       if (id != null) 'id': id,
       'full_name': fullName,
-      'email': email,
+      'phone': phone,
       'password_hash': passwordHash,
       'password_salt': passwordSalt,
       'avatar_path': avatarPath,
@@ -51,7 +51,7 @@ class User {
   User copyWith({
     int? id,
     String? fullName,
-    String? email,
+    String? phone,
     String? passwordHash,
     String? passwordSalt,
     String? avatarPath,
@@ -61,7 +61,7 @@ class User {
     return User(
       id: id ?? this.id,
       fullName: fullName ?? this.fullName,
-      email: email ?? this.email,
+      phone: phone ?? this.phone,
       passwordHash: passwordHash ?? this.passwordHash,
       passwordSalt: passwordSalt ?? this.passwordSalt,
       avatarPath: avatarPath ?? this.avatarPath,
@@ -71,5 +71,5 @@ class User {
   }
 
   @override
-  String toString() => 'User(id: $id, fullName: $fullName, email: $email)';
+  String toString() => 'User(id: $id, fullName: $fullName, phone: $phone)';
 }

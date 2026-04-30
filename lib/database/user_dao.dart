@@ -11,13 +11,13 @@ class UserDao {
     return db.insert('users', user.toMap());
   }
 
-  /// Find a user by email. Returns `null` if not found.
-  Future<User?> findByEmail(String email) async {
+  /// Find a user by phone number.
+  Future<User?> findByPhone(String phone) async {
     final db = await _dbHelper.database;
     final result = await db.query(
       'users',
-      where: 'email = ?',
-      whereArgs: [email],
+      where: 'phone = ?',
+      whereArgs: [phone],
       limit: 1,
     );
     if (result.isEmpty) return null;
@@ -70,9 +70,9 @@ class UserDao {
     return db.delete('users', where: 'id = ?', whereArgs: [id]);
   }
 
-  /// Check if an email is already registered.
-  Future<bool> emailExists(String email) async {
-    final user = await findByEmail(email);
+  /// Check if a phone is already registered.
+  Future<bool> phoneExists(String phone) async {
+    final user = await findByPhone(phone);
     return user != null;
   }
 }

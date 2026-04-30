@@ -19,8 +19,7 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final path = join(dir.path, AppConstants.dbName);
+    final path = await _databasePathByName(AppConstants.dbName);
 
     return openDatabase(
       path,
@@ -41,7 +40,7 @@ class DatabaseHelper {
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         full_name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
+        phone TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
         password_salt TEXT NOT NULL,
         avatar_path TEXT,
@@ -163,23 +162,27 @@ class DatabaseHelper {
 
     // ─── Indexes for query performance ───────────────────────────
     await db.execute(
-        'CREATE INDEX idx_transactions_user_date ON transactions(user_id, date DESC)');
+      'CREATE INDEX idx_transactions_user_date ON transactions(user_id, date DESC)',
+    );
     await db.execute(
-        'CREATE INDEX idx_transactions_account ON transactions(account_id)');
+      'CREATE INDEX idx_transactions_account ON transactions(account_id)',
+    );
     await db.execute(
-        'CREATE INDEX idx_transactions_category ON transactions(category_id)');
+      'CREATE INDEX idx_transactions_category ON transactions(category_id)',
+    );
+    await db.execute('CREATE INDEX idx_accounts_user ON accounts(user_id)');
     await db.execute(
-        'CREATE INDEX idx_accounts_user ON accounts(user_id)');
+      'CREATE INDEX idx_categories_user ON categories(user_id, type)',
+    );
+    await db.execute('CREATE INDEX idx_loans_user ON loans(user_id, status)');
     await db.execute(
-        'CREATE INDEX idx_categories_user ON categories(user_id, type)');
-    await db.execute(
-        'CREATE INDEX idx_loans_user ON loans(user_id, status)');
-    await db.execute(
-        'CREATE INDEX idx_budgets_user ON budgets(user_id, is_active)');
+      'CREATE INDEX idx_budgets_user ON budgets(user_id, is_active)',
+    );
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Future migrations go here
+    // No migration path is kept intentionally.
+    // The app now uses a fresh schema with `phone` as the user identity field.
   }
 
   /// Seed default categories for a new user.
@@ -261,7 +264,11 @@ class DatabaseHelper {
 
   /// Export the database file path for backup.
   Future<String> getDatabasePath() async {
+    return _databasePathByName(AppConstants.dbName);
+  }
+
+  Future<String> _databasePathByName(String dbName) async {
     final dir = await getApplicationDocumentsDirectory();
-    return join(dir.path, AppConstants.dbName);
+    return join(dir.path, dbName);
   }
 }

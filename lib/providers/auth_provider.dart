@@ -48,7 +48,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> register({
     required String fullName,
-    required String email,
+    required String phone,
     required String password,
   }) async {
     _setLoading(true);
@@ -57,11 +57,11 @@ class AuthProvider extends ChangeNotifier {
     try {
       // Sanitise inputs
       final cleanName = SecurityUtils.sanitise(fullName);
-      final cleanEmail = SecurityUtils.sanitise(email).toLowerCase();
+      final cleanPhone = _normalisePhone(SecurityUtils.sanitise(phone));
 
       // Check uniqueness
-      if (await _userDao.emailExists(cleanEmail)) {
-        _errorMessage = 'Email đã được đăng ký';
+      if (await _userDao.phoneExists(cleanPhone)) {
+        _errorMessage = 'Số điện thoại đã được đăng ký';
         return false;
       }
 
@@ -72,7 +72,7 @@ class AuthProvider extends ChangeNotifier {
       final now = DateTime.now();
       final user = User(
         fullName: cleanName,
-        email: cleanEmail,
+        phone: cleanPhone,
         passwordHash: hash,
         passwordSalt: salt,
         createdAt: now,
@@ -91,7 +91,10 @@ class AuthProvider extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      _errorMessage = 'Đăng ký thất bại. Vui lòng thử lại.';
+      _errorMessage = _mapAuthError(
+        e,
+        fallback: 'Đăng ký thất bại. Vui lòng thử lại.',
+      );
       return false;
     } finally {
       _setLoading(false);
@@ -100,26 +103,26 @@ class AuthProvider extends ChangeNotifier {
 
   // ─── Login ─────────────────────────────────────────────────────
 
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String phone, required String password}) async {
     _setLoading(true);
     _errorMessage = null;
 
     try {
-      final cleanEmail = SecurityUtils.sanitise(email).toLowerCase();
+      final cleanPhone = _normalisePhone(SecurityUtils.sanitise(phone));
 
-      final user = await _userDao.findByEmail(cleanEmail);
+      final user = await _userDao.findByPhone(cleanPhone);
       if (user == null) {
-        _errorMessage = 'Email hoặc mật khẩu không đúng';
+        _errorMessage = 'Số điện thoại hoặc mật khẩu không đúng';
         return false;
       }
 
-      final valid =
-          SecurityUtils.verifyPassword(password, user.passwordHash, user.passwordSalt);
+      final valid = SecurityUtils.verifyPassword(
+        password,
+        user.passwordHash,
+        user.passwordSalt,
+      );
       if (!valid) {
-        _errorMessage = 'Email hoặc mật khẩu không đúng';
+        _errorMessage = 'Số điện thoại hoặc mật khẩu không đúng';
         return false;
       }
 
@@ -127,7 +130,10 @@ class AuthProvider extends ChangeNotifier {
       await _persistSession(user.id!);
       return true;
     } catch (e) {
-      _errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
+      _errorMessage = _mapAuthError(
+        e,
+        fallback: 'Đăng nhập thất bại. Vui lòng thử lại.',
+      );
       return false;
     } finally {
       _setLoading(false);
@@ -146,18 +152,18 @@ class AuthProvider extends ChangeNotifier {
   // ─── Password Reset (local-only placeholder) ──────────────────
 
   Future<bool> resetPassword({
-    required String email,
+    required String phone,
     required String newPassword,
   }) async {
     _setLoading(true);
     _errorMessage = null;
 
     try {
-      final cleanEmail = SecurityUtils.sanitise(email).toLowerCase();
-      final user = await _userDao.findByEmail(cleanEmail);
+      final cleanPhone = _normalisePhone(SecurityUtils.sanitise(phone));
+      final user = await _userDao.findByPhone(cleanPhone);
 
       if (user == null) {
-        _errorMessage = 'Không tìm thấy tài khoản với email này';
+        _errorMessage = 'Không tìm thấy tài khoản với số điện thoại này';
         return false;
       }
 
@@ -167,7 +173,7 @@ class AuthProvider extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      _errorMessage = 'Đặt lại mật khẩu thất bại';
+      _errorMessage = _mapAuthError(e, fallback: 'Đặt lại mật khẩu thất bại.');
       return false;
     } finally {
       _setLoading(false);
@@ -208,6 +214,32 @@ class AuthProvider extends ChangeNotifier {
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
+  }
+
+  // Chuẩn hóa về một format trước khi validate/so sánh giúp tránh sai lệch đăng nhập và trùng tài khoản.
+  String _normalisePhone(String phone) {
+    final digitsOnly = phone.replaceAll(RegExp(r'\s+'), '');
+    if (digitsOnly.startsWith('+84')) {
+      return '0${digitsOnly.substring(3)}';
+    }
+    return digitsOnly;
+  }
+
+  // Hàm này gom các lỗi thường gặp thành message nghiệp vụ để UX nhất quán giữa các luồng auth.
+  // Nếu không nhận diện được lỗi, giữ fallback để luôn có thông điệp ổn định cho người dùng.
+  String _mapAuthError(Object error, {required String fallback}) {
+    final message = error.toString().toLowerCase();
+
+    if (message.contains('unique constraint failed') &&
+        message.contains('users.phone')) {
+      return 'Số điện thoại đã được đăng ký';
+    }
+
+    if (message.contains('database is locked')) {
+      return 'Thao tác chưa thể hoàn tất lúc này. Vui lòng thử lại sau ít phút.';
+    }
+
+    return fallback;
   }
 
   void clearError() {

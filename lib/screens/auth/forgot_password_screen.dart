@@ -13,7 +13,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscure1 = true;
@@ -21,7 +21,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _phoneController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -32,7 +32,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     final auth = context.read<AuthProvider>();
     final success = await auth.resetPassword(
-      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
       newPassword: _newPasswordController.text,
     );
 
@@ -87,7 +87,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Nhập email đã đăng ký và mật khẩu mới để đặt lại.',
+                  'Nhập số điện thoại đã đăng ký và mật khẩu mới để đặt lại.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.onSurfaceVariant,
                       ),
@@ -95,14 +95,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 const SizedBox(height: 28),
 
-                _label('EMAIL'),
+                _label('SỐ ĐIỆN THOẠI'),
                 const SizedBox(height: 8),
                 TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: Validators.email,
-                  decoration:
-                      const InputDecoration(hintText: 'name@example.com'),
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  validator: Validators.phoneVN,
+                  decoration: const InputDecoration(hintText: '09x xxxx xxx'),
                 ),
 
                 const SizedBox(height: 20),

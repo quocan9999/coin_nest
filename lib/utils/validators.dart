@@ -16,27 +16,28 @@ class Validators {
     return null;
   }
 
-  static String? maxLength(String? value, int max,
-      [String fieldName = 'Trường này']) {
+  static String? maxLength(
+    String? value,
+    int max, [
+    String fieldName = 'Trường này',
+  ]) {
     if (value != null && value.length > max) {
       return '$fieldName không được quá $max ký tự';
     }
     return null;
   }
 
-  // ─── Email ──────────────────────────────────────────────────────
+  // ─── Phone ──────────────────────────────────────────────────────
 
-  static final _emailRegex = RegExp(
-    r'^[a-zA-Z0-9.!#$%&*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}'
-    r'[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$',
-  );
+  static final _phoneRegex = RegExp(r'^(0|\+84)\d{9,10}$');
 
-  static String? email(String? value) {
-    final req = required(value, 'Email');
+  static String? phoneVN(String? value) {
+    final req = required(value, 'Số điện thoại');
     if (req != null) return req;
 
-    if (!_emailRegex.hasMatch(value!.trim())) {
-      return 'Email không hợp lệ';
+    final normalised = value!.replaceAll(RegExp(r'\s+'), '');
+    if (!_phoneRegex.hasMatch(normalised)) {
+      return 'Số điện thoại không hợp lệ';
     }
     return null;
   }

@@ -17,13 +17,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -33,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final auth = context.read<AuthProvider>();
     final success = await auth.login(
-      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
       password: _passwordController.text,
     );
 
@@ -128,9 +128,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 32),
 
-                // Email field
+                // Phone field
                 Text(
-                  'EMAIL',
+                  'SỐ ĐIỆN THOẠI',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.8,
@@ -138,12 +138,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
                   autocorrect: false,
-                  validator: Validators.email,
+                  validator: Validators.phoneVN,
                   decoration: const InputDecoration(
-                    hintText: 'name@example.com',
+                    hintText: '09x xxxx xxx',
                   ),
                 ),
 
