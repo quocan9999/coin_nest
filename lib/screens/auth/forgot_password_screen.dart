@@ -82,15 +82,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 Text(
                   'Quên mật khẩu',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Nhập số điện thoại đã đăng ký và mật khẩu mới để đặt lại.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.onSurfaceVariant,
-                      ),
+                    color: AppTheme.onSurfaceVariant,
+                  ),
                 ),
 
                 const SizedBox(height: 28),
@@ -101,7 +101,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
                   validator: Validators.phoneVN,
-                  decoration: const InputDecoration(hintText: '09x xxxx xxx'),
+                  decoration: const InputDecoration(
+                    hintText: 'Nhập số điện thoại',
+                  ),
                 ),
 
                 const SizedBox(height: 20),
@@ -121,8 +123,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             : Icons.visibility_outlined,
                         color: AppTheme.outline,
                       ),
-                      onPressed: () =>
-                          setState(() => _obscure1 = !_obscure1),
+                      onPressed: () => setState(() => _obscure1 = !_obscure1),
                     ),
                   ),
                 ),
@@ -135,7 +136,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   controller: _confirmPasswordController,
                   obscureText: _obscure2,
                   validator: (v) => Validators.confirmPassword(
-                      v, _newPasswordController.text),
+                    v,
+                    _newPasswordController.text,
+                  ),
                   decoration: InputDecoration(
                     hintText: '••••••••',
                     suffixIcon: IconButton(
@@ -145,8 +148,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             : Icons.visibility_outlined,
                         color: AppTheme.outline,
                       ),
-                      onPressed: () =>
-                          setState(() => _obscure2 = !_obscure2),
+                      onPressed: () => setState(() => _obscure2 = !_obscure2),
                     ),
                   ),
                 ),
@@ -183,9 +185,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Text(
       text,
       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.8,
-          ),
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.8,
+      ),
     );
   }
 }

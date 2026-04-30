@@ -91,17 +91,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         AppConstants.appName,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppTheme.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         AppConstants.appTagline,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppTheme.onSurfaceVariant,
-                              letterSpacing: 2,
-                            ),
+                          color: AppTheme.onSurfaceVariant,
+                          letterSpacing: 2,
+                        ),
                       ),
                     ],
                   ),
@@ -113,16 +113,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   'Chào mừng quay trở lại',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Vui lòng nhập thông tin để tiếp tục quản lý tài chính của bạn.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.onSurfaceVariant,
-                      ),
+                    color: AppTheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
 
@@ -132,9 +132,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   'SỐ ĐIỆN THOẠI',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8,
-                      ),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -143,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   autocorrect: false,
                   validator: Validators.phoneVN,
                   decoration: const InputDecoration(
-                    hintText: '09x xxxx xxx',
+                    hintText: 'Nhập số điện thoại',
                   ),
                 ),
 
@@ -156,19 +156,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'MẬT KHẨU',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.8,
-                          ),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const ForgotPasswordScreen()),
+                          builder: (_) => const ForgotPasswordScreen(),
+                        ),
                       ),
                       child: Text(
                         'Quên mật khẩu?',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
                               color: AppTheme.primary,
                               fontWeight: FontWeight.w500,
                             ),
@@ -222,19 +224,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   children: [
                     Expanded(
-                        child: Divider(color: AppTheme.outlineVariant.withAlpha(77))),
+                      child: Divider(
+                        color: AppTheme.outlineVariant.withAlpha(77),
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'HOẶC ĐĂNG NHẬP VỚI',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppTheme.onSurfaceVariant,
-                              letterSpacing: 1,
-                            ),
+                          color: AppTheme.onSurfaceVariant,
+                          letterSpacing: 1,
+                        ),
                       ),
                     ),
                     Expanded(
-                        child: Divider(color: AppTheme.outlineVariant.withAlpha(77))),
+                      child: Divider(
+                        color: AppTheme.outlineVariant.withAlpha(77),
+                      ),
+                    ),
                   ],
                 ),
 
@@ -270,21 +278,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'Chưa có tài khoản? ',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.onSurfaceVariant,
-                          ),
+                        color: AppTheme.onSurfaceVariant,
+                      ),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const RegisterScreen()),
+                          builder: (_) => const RegisterScreen(),
+                        ),
                       ),
                       child: Text(
                         'Đăng ký ngay',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -300,8 +309,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Tính năng đang phát triển')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Tính năng đang phát triển')));
   }
 }
