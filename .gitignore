@@ -27,10 +27,12 @@ migrate_working_dir/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+**/.dart_tool/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
+**/build/
 /coverage/
 
 # Symbolication related
@@ -43,6 +45,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/build/
+/android/.gradle/
 
 # Windows related
 /windows/flutter/ephemeral/
@@ -77,3 +81,5 @@ screens_out.txt
 download_screens.py
 extract_gen.py
 fix_warnings.py
+.vscode/settings.json
+.vscode/settings.json
