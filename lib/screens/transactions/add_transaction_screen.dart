@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/account_provider.dart';
@@ -110,6 +111,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  CurrencyInputFormatter(),
+                ],
                 validator: Validators.amount,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
                 decoration: const InputDecoration(hintText: '0', suffixText: 'đ'),
@@ -189,7 +194,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
       children: categories.map((cat) {
         final isSelected = _selectedCategoryId == cat.id;
         return GestureDetector(
-          onTap: () => setState(() => _selectedCategoryId = cat.id),
+          // Đã sửa dòng này: Nếu đang chọn (isSelected == true) thì gán null để bỏ chọn, ngược lại thì chọn cat.id
+          onTap: () => setState(() => _selectedCategoryId = isSelected ? null : cat.id),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
@@ -241,5 +247,35 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> with Single
       lastDate: DateTime.now().add(const Duration(days: 1)),
     );
     if (picked != null) setState(() => _selectedDate = picked);
+  }
+}
+
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    String newText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    
+    if (newText.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    String formatted = '';
+    int count = 0;
+    for (int i = newText.length - 1; i >= 0; i--) {
+      if (count != 0 && count % 3 == 0) {
+        formatted = '.$formatted';
+      }
+      formatted = newText[i] + formatted;
+      count++;
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
   }
 }

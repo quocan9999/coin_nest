@@ -151,6 +151,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     final sign = isExpense ? '- ' : (txn.type == 'income' ? '+ ' : '');
     final iconKey = txn.categoryIconName ?? txn.type;
 
+    // Xử lý chuỗi note: Nếu có note thì thêm dấu "•" phía sau, nếu không thì bỏ trống
+    final noteStr = (txn.note != null && txn.note!.toString().trim().isNotEmpty) 
+        ? '${txn.note} • ' 
+        : '';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
@@ -166,7 +171,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(txn.categoryName ?? txn.type, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-              Text('${txn.note ?? ''} • ${Formatters.time(txn.date)}',
+              // Đã thay đổi: Dùng trực tiếp txn.time
+              Text('$noteStr${txn.time ?? Formatters.time(txn.date)}',
                   style: Theme.of(context).textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
             ]),
           ),
