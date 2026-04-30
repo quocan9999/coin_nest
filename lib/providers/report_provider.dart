@@ -16,6 +16,7 @@ class ReportProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _monthlyExpense = [];
   List<Map<String, dynamic>> _monthlyIncome = [];
   bool _isLoading = false;
+  bool _hasError = false;
 
   double get totalIncome => _totalIncome;
   double get totalExpense => _totalExpense;
@@ -29,9 +30,11 @@ class ReportProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get monthlyExpense => _monthlyExpense;
   List<Map<String, dynamic>> get monthlyIncome => _monthlyIncome;
   bool get isLoading => _isLoading;
+  bool get hasError => _hasError;
 
   Future<void> loadReport(int userId, {DateTime? from, DateTime? to}) async {
     _isLoading = true;
+    _hasError = false;
     notifyListeners();
 
     try {
@@ -50,7 +53,10 @@ class ReportProvider extends ChangeNotifier {
       _incomeByAccount = await _txnDao.incomeByAccount(userId, start, end);
       _dailyExpense = await _txnDao.dailyTotals(userId, start, end, 'expense');
       _dailyIncome = await _txnDao.dailyTotals(userId, start, end, 'income');
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('ReportProvider error: $e\n$st');
+      _hasError = true;
+    }
 
     _isLoading = false;
     notifyListeners();
@@ -58,13 +64,33 @@ class ReportProvider extends ChangeNotifier {
 
   Future<void> loadYearlyReport(int userId, {int? year}) async {
     _isLoading = true;
+    _hasError = false;
+    _totalIncome = 0;
+    _totalExpense = 0;
+    // Intentionally clear daily fields during yearly load.
+    // Screens that require monthly/day data should keep local snapshots.
+    _dailyExpense = [];
+    _dailyIncome = [];
+    _expenseByCategory = [];
+    _incomeByCategory = [];
     notifyListeners();
 
     try {
       final y = year ?? DateTime.now().year;
       _monthlyExpense = await _txnDao.monthlyTotals(userId, y, 'expense');
       _monthlyIncome = await _txnDao.monthlyTotals(userId, y, 'income');
-    } catch (_) {}
+      _totalExpense = _monthlyExpense.fold(
+        0,
+        (s, e) => s + (e['total'] as num).toDouble(),
+      );
+      _totalIncome = _monthlyIncome.fold(
+        0,
+        (s, e) => s + (e['total'] as num).toDouble(),
+      );
+    } catch (e, st) {
+      debugPrint('ReportProvider error: $e\n$st');
+      _hasError = true;
+    }
 
     _isLoading = false;
     notifyListeners();
