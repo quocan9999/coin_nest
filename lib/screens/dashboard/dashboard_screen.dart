@@ -19,7 +19,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadRecent();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadRecent();
+    });
   }
 
   Future<void> _loadRecent() async {

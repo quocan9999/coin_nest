@@ -18,8 +18,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   @override
   void initState() {
     super.initState();
-    final userId = context.read<AuthProvider>().currentUserId;
-    context.read<TransactionProvider>().loadTransactions(userId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final userId = context.read<AuthProvider>().currentUserId;
+      context.read<TransactionProvider>().loadTransactions(userId);
+    });
   }
 
   @override

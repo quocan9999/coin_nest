@@ -17,8 +17,11 @@ class _LoanListScreenState extends State<LoanListScreen> {
   @override
   void initState() {
     super.initState();
-    final userId = context.read<AuthProvider>().currentUserId;
-    context.read<LoanProvider>().loadLoans(userId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final userId = context.read<AuthProvider>().currentUserId;
+      context.read<LoanProvider>().loadLoans(userId);
+    });
   }
 
   @override
