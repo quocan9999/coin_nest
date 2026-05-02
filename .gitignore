@@ -82,4 +82,10 @@ download_screens.py
 extract_gen.py
 fix_warnings.py
 .vscode/settings.json
-.vscode/settings.json
+
+.cursor/
+
+# Firebase sensitive configs
+/android/app/google-services.json
+/lib/firebase_options.dart
+/firebase.json

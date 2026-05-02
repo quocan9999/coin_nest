@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // package giúp sqlite hoạt động trên desktop
 import 'dart:io';
 
@@ -16,8 +15,14 @@ import 'providers/budget_provider.dart';
 import 'providers/report_provider.dart';
 import 'providers/settings_provider.dart';
 
+// Firebase
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // khởi tạo sqlite cho desktop
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
