@@ -110,9 +110,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       appBar: AppBar(
         backgroundColor: AppTheme.surface,
         elevation: 0,
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded),
           onPressed: _isBusy ? null : () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Xác thực OTP',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.onSurface,
+          ),
         ),
       ),
       body: SafeArea(
@@ -121,16 +129,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 44),
-              Text(
-                'Xác thực OTP',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 54),
               Text(
                 'Nhập mã gồm 6 chữ số đã được gửi đến số điện thoại của bạn',
                 textAlign: TextAlign.center,
@@ -176,7 +175,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       : const Text('Xác nhận'),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 20),
               Center(
                 child: TextButton(
                   onPressed: _isBusy ? null : _resend,
