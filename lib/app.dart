@@ -1,17 +1,20 @@
-import 'package:flutter/material.dart';
-import 'theme/app_theme.dart';
-import 'screens/splash/splash_screen.dart';
+// lib/app.dart
 
-/// Root widget — sets up theme, routes, and initial screen.
+import 'package:flutter/material.dart';
+import 'screens/splash_screen.dart';
+
 class CoinNestApp extends StatelessWidget {
   const CoinNestApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CoinNest',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      title: 'CoinNest',
+      theme: ThemeData(
+        scaffoldBackgroundColor: Colors.white,
+        fontFamily: 'Arial',
+      ),
       home: const SplashScreen(),
     );
   }
