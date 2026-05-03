@@ -29,8 +29,8 @@ class FirebaseAuthService implements AuthService {
     required String fullName,
     required String phone,
     required String password,
-    String? otpVerificationId,
-    String? otpCode,
+    required String otpVerificationId,
+    required String otpCode,
   }) async {
     try {
       final cleanName = SecurityUtils.sanitise(fullName);
@@ -42,6 +42,31 @@ class FirebaseAuthService implements AuthService {
         return AuthResult.failure('Số điện thoại đã được đăng ký');
       }
 
+      if (otpVerificationId.trim().isEmpty || otpCode.trim().isEmpty) {
+        return AuthResult.failure(
+          'Vui lòng nhập mã OTP để xác thực số điện thoại',
+        );
+      }
+
+      final isOtpValid = await confirmPhoneOtp(otpVerificationId, otpCode);
+      if (!isOtpValid) {
+        return AuthResult.failure('Mã OTP không hợp lệ hoặc đã hết hạn');
+      }
+
+      final syntheticEmail = phoneToSyntheticEmail(normalisedPhone);
+      final firebaseCredential = await _firebaseAuth
+          .createUserWithEmailAndPassword(
+            email: syntheticEmail,
+            password: password,
+          );
+      final firebaseUser = firebaseCredential.user;
+      if (firebaseUser == null) {
+        return AuthResult.failure(
+          'Không thể tạo tài khoản xác thực. Vui lòng thử lại.',
+        );
+      }
+      await firebaseUser.updateDisplayName(cleanName);
+
       final salt = SecurityUtils.generateSalt();
       final hash = SecurityUtils.hashPassword(password, salt);
       final now = DateTime.now();
@@ -51,7 +76,7 @@ class FirebaseAuthService implements AuthService {
         email: null,
         passwordHash: hash,
         passwordSalt: salt,
-        firebaseUid: _buildLocalFirebaseUid(AppAuthProvider.phone),
+        firebaseUid: firebaseUser.uid,
         authProvider: AppAuthProvider.phone.value,
         createdAt: now,
         updatedAt: now,
@@ -64,6 +89,8 @@ class FirebaseAuthService implements AuthService {
       final inserted = user.copyWith(id: userId);
       _userStreamController.add(inserted);
       return AuthResult.success(inserted);
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      return AuthResult.failure(_mapFirebaseAuthError(e));
     } on FormatException {
       return AuthResult.failure('Số điện thoại không hợp lệ');
     } catch (e) {
@@ -162,12 +189,62 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Future<String> requestPhoneOtp(String phone) async {
-    throw UnimplementedError('OTP flow được triển khai ở Phase 3.');
+    final normalisedPhone = PhoneUtils.normaliseVnPhone(
+      SecurityUtils.sanitise(phone),
+    );
+    if (await _userDao.phoneExists(normalisedPhone)) {
+      throw Exception('Số điện thoại đã được đăng ký');
+    }
+
+    final completer = Completer<String>();
+    await _firebaseAuth.verifyPhoneNumber(
+      phoneNumber: normalisedPhone,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (_) {},
+      verificationFailed: (exception) {
+        if (!completer.isCompleted) {
+          completer.completeError(Exception(_mapFirebaseAuthError(exception)));
+        }
+      },
+      codeSent: (verificationId, _) {
+        if (!completer.isCompleted) {
+          completer.complete(verificationId);
+        }
+      },
+      codeAutoRetrievalTimeout: (verificationId) {
+        if (!completer.isCompleted) {
+          completer.complete(verificationId);
+        }
+      },
+    );
+
+    return completer.future;
   }
 
   @override
   Future<bool> confirmPhoneOtp(String verificationId, String code) async {
-    throw UnimplementedError('OTP flow được triển khai ở Phase 3.');
+    try {
+      final credential = firebase_auth.PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: code,
+      );
+      final phoneCredentialResult = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+      final phoneUser = phoneCredentialResult.user;
+      if (phoneUser == null) return false;
+
+      try {
+        await phoneUser.delete();
+      } catch (_) {
+        // Best effort cleanup of temporary phone-auth user used for OTP proof.
+      }
+
+      await _firebaseAuth.signOut();
+      return true;
+    } on firebase_auth.FirebaseAuthException {
+      return false;
+    }
   }
 
   @override
@@ -265,5 +342,28 @@ class FirebaseAuthService implements AuthService {
     }
 
     return fallback;
+  }
+
+  String _mapFirebaseAuthError(firebase_auth.FirebaseAuthException error) {
+    switch (error.code) {
+      case 'invalid-phone-number':
+        return 'Số điện thoại không hợp lệ';
+      case 'too-many-requests':
+        return 'Bạn thao tác quá nhiều lần. Vui lòng thử lại sau.';
+      case 'quota-exceeded':
+        return 'Dịch vụ OTP đang quá tải. Vui lòng thử lại sau.';
+      case 'invalid-verification-code':
+      case 'session-expired':
+      case 'invalid-verification-id':
+        return 'Mã OTP không hợp lệ hoặc đã hết hạn';
+      case 'email-already-in-use':
+        return 'Số điện thoại này đã được đăng ký';
+      case 'weak-password':
+        return 'Mật khẩu chưa đủ mạnh theo yêu cầu Firebase';
+      case 'network-request-failed':
+        return 'Không có kết nối mạng. Vui lòng kiểm tra lại.';
+      default:
+        return error.message ?? 'Xác thực thất bại. Vui lòng thử lại.';
+    }
   }
 }

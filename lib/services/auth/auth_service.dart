@@ -35,8 +35,8 @@ abstract class AuthService {
     required String fullName,
     required String phone,
     required String password,
-    String? otpVerificationId,
-    String? otpCode,
+    required String otpVerificationId,
+    required String otpCode,
   });
 
   Future<AuthResult> registerWithEmail({

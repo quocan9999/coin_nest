@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/phone_utils.dart';
 import '../../utils/validators.dart';
 import '../home/home_screen.dart';
+import 'otp_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -35,27 +37,100 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthProvider>();
-    final success = await auth.register(
-      fullName: _nameController.text.trim(),
-      phone: _phoneController.text.trim(),
-      password: _passwordController.text,
-    );
+    final fullName = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
+
+    final verificationId = await auth.requestPhoneRegistrationOtp(phone: phone);
 
     if (!mounted) return;
 
-    if (success) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-        (route) => false,
-      );
-    } else {
+    if (verificationId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(auth.errorMessage ?? 'Đăng ký thất bại'),
+          content: Text(auth.errorMessage ?? 'Không thể gửi mã OTP'),
           backgroundColor: AppTheme.error,
         ),
       );
+      return;
     }
+
+    await _openOtpVerification(
+      fullName: fullName,
+      phone: phone,
+      password: password,
+      initialVerificationId: verificationId,
+    );
+  }
+
+  Future<void> _openOtpVerification({
+    required String fullName,
+    required String phone,
+    required String password,
+    required String initialVerificationId,
+  }) async {
+    String currentVerificationId = initialVerificationId;
+    final auth = context.read<AuthProvider>();
+    String phoneDisplay = phone;
+    try {
+      phoneDisplay = PhoneUtils.normaliseVnPhone(phone);
+    } catch (_) {}
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OtpVerificationScreen(
+          phoneDisplay: phoneDisplay,
+          onConfirm: (otpCode) async {
+            final success = await auth.confirmPhoneRegistration(
+              fullName: fullName,
+              phone: phone,
+              password: password,
+              otpVerificationId: currentVerificationId,
+              otpCode: otpCode,
+            );
+
+            if (!mounted) return;
+            if (success) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
+                (route) => false,
+              );
+              return;
+            }
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(auth.errorMessage ?? 'Xác thực OTP thất bại'),
+                backgroundColor: AppTheme.error,
+              ),
+            );
+          },
+          onResend: () async {
+            final newVerificationId = await auth.requestPhoneRegistrationOtp(
+              phone: phone,
+            );
+            if (!mounted) return;
+            if (newVerificationId == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    auth.errorMessage ?? 'Không thể gửi lại mã OTP',
+                  ),
+                  backgroundColor: AppTheme.error,
+                ),
+              );
+              return;
+            }
+
+            currentVerificationId = newVerificationId;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Đã gửi lại mã OTP')));
+          },
+        ),
+      ),
+    );
   }
 
   @override

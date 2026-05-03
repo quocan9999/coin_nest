@@ -51,10 +51,27 @@ class AuthProvider extends ChangeNotifier {
 
   // ─── Register ──────────────────────────────────────────────────
 
-  Future<bool> register({
+  Future<String?> requestPhoneRegistrationOtp({required String phone}) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      final verificationId = await _authService.requestPhoneOtp(phone);
+      _setLoading(false);
+      return verificationId;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _setLoading(false);
+      return null;
+    }
+  }
+
+  Future<bool> confirmPhoneRegistration({
     required String fullName,
     required String phone,
     required String password,
+    required String otpVerificationId,
+    required String otpCode,
   }) async {
     _setLoading(true);
     _errorMessage = null;
@@ -63,6 +80,8 @@ class AuthProvider extends ChangeNotifier {
       fullName: fullName,
       phone: phone,
       password: password,
+      otpVerificationId: otpVerificationId,
+      otpCode: otpCode,
     );
 
     if (result.isSuccess && result.user?.id != null) {
