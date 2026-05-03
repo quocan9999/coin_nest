@@ -1,4 +1,5 @@
 import 'constants.dart';
+import 'phone_utils.dart';
 
 /// Input validation helpers.
 ///
@@ -29,14 +30,11 @@ class Validators {
 
   // ─── Phone ──────────────────────────────────────────────────────
 
-  static final _phoneRegex = RegExp(r'^(0|\+84)\d{9,10}$');
-
   static String? phoneVN(String? value) {
     final req = required(value, 'Số điện thoại');
     if (req != null) return req;
 
-    final normalised = value!.replaceAll(RegExp(r'\s+'), '');
-    if (!_phoneRegex.hasMatch(normalised)) {
+    if (!PhoneUtils.isValidVnInputFlexible(value!)) {
       return 'Số điện thoại không hợp lệ';
     }
     return null;

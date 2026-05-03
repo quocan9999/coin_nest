@@ -242,7 +242,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               _googleLogoUrl,
                               width: 20,
                               height: 20,
-                              errorBuilder: (_, __, ___) =>
+                              errorBuilder: (_, _, _) =>
                                   const Icon(Icons.g_mobiledata, size: 20),
                             ),
                             const SizedBox(width: 12),

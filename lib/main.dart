@@ -14,6 +14,7 @@ import 'providers/loan_provider.dart';
 import 'providers/budget_provider.dart';
 import 'providers/report_provider.dart';
 import 'providers/settings_provider.dart';
+import 'services/auth/firebase_auth_service.dart';
 
 // Firebase
 import 'package:firebase_core/firebase_core.dart';
@@ -39,10 +40,14 @@ void main() async {
   // Init Vietnamese locale for dates
   await initializeDateFormatting('vi_VN', null);
 
+  final authService = FirebaseAuthService();
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService: authService),
+        ),
         ChangeNotifierProvider(create: (_) => AccountProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),

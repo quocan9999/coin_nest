@@ -228,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     _googleLogoUrl,
                                     width: 20,
                                     height: 20,
-                                    errorBuilder: (_, __, ___) =>
+                                    errorBuilder: (_, _, _) =>
                                         const Icon(Icons.g_mobiledata, size: 22),
                                   ),
                                   const SizedBox(width: 8),

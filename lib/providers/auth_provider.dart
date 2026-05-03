@@ -1,14 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../database/database_helper.dart';
 import '../database/user_dao.dart';
 import '../models/user.dart';
+import '../services/auth/auth_service.dart';
+import '../services/auth/firebase_auth_service.dart';
 import '../utils/security_utils.dart';
 
 /// Manages authentication state: login, register, logout, session persistence.
 class AuthProvider extends ChangeNotifier {
-  final _userDao = UserDao();
-  final _dbHelper = DatabaseHelper.instance;
+  final UserDao _userDao;
+  final AuthService _authService;
+
+  AuthProvider({UserDao? userDao, AuthService? authService})
+    : _userDao = userDao ?? UserDao(),
+      _authService = authService ?? FirebaseAuthService();
 
   User? _currentUser;
   bool _isLoading = false;
@@ -31,7 +36,7 @@ class AuthProvider extends ChangeNotifier {
 
     final userId = prefs.getInt('logged_in_user_id');
     if (userId != null) {
-      _currentUser = await _userDao.findById(userId);
+      _currentUser = await _authService.findLocalUserById(userId);
     }
     notifyListeners();
   }
@@ -54,51 +59,23 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _errorMessage = null;
 
-    try {
-      // Sanitise inputs
-      final cleanName = SecurityUtils.sanitise(fullName);
-      final cleanPhone = _normalisePhone(SecurityUtils.sanitise(phone));
+    final result = await _authService.registerWithPhone(
+      fullName: fullName,
+      phone: phone,
+      password: password,
+    );
 
-      // Check uniqueness
-      if (await _userDao.phoneExists(cleanPhone)) {
-        _errorMessage = 'Số điện thoại đã được đăng ký';
-        return false;
-      }
-
-      // Hash password
-      final salt = SecurityUtils.generateSalt();
-      final hash = SecurityUtils.hashPassword(password, salt);
-
-      final now = DateTime.now();
-      final user = User(
-        fullName: cleanName,
-        phone: cleanPhone,
-        passwordHash: hash,
-        passwordSalt: salt,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final userId = await _userDao.insert(user);
-
-      // Seed default data
-      await _dbHelper.seedDefaultCategories(userId);
-      await _dbHelper.seedDefaultAccount(userId);
-
-      // Auto-login
-      _currentUser = user.copyWith(id: userId);
-      await _persistSession(userId);
-
-      return true;
-    } catch (e) {
-      _errorMessage = _mapAuthError(
-        e,
-        fallback: 'Đăng ký thất bại. Vui lòng thử lại.',
-      );
-      return false;
-    } finally {
+    if (result.isSuccess && result.user?.id != null) {
+      _currentUser = result.user;
+      await _persistSession(result.user!.id!);
       _setLoading(false);
+      return true;
     }
+
+    _errorMessage =
+        result.errorMessage ?? 'Đăng ký thất bại. Vui lòng thử lại.';
+    _setLoading(false);
+    return false;
   }
 
   // ─── Login ─────────────────────────────────────────────────────
@@ -107,42 +84,28 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _errorMessage = null;
 
-    try {
-      final cleanPhone = _normalisePhone(SecurityUtils.sanitise(phone));
+    final result = await _authService.loginWithIdentifier(
+      identifier: phone,
+      password: password,
+    );
 
-      final user = await _userDao.findByPhone(cleanPhone);
-      if (user == null) {
-        _errorMessage = 'Số điện thoại hoặc mật khẩu không đúng';
-        return false;
-      }
-
-      final valid = SecurityUtils.verifyPassword(
-        password,
-        user.passwordHash,
-        user.passwordSalt,
-      );
-      if (!valid) {
-        _errorMessage = 'Số điện thoại hoặc mật khẩu không đúng';
-        return false;
-      }
-
-      _currentUser = user;
-      await _persistSession(user.id!);
-      return true;
-    } catch (e) {
-      _errorMessage = _mapAuthError(
-        e,
-        fallback: 'Đăng nhập thất bại. Vui lòng thử lại.',
-      );
-      return false;
-    } finally {
+    if (result.isSuccess && result.user?.id != null) {
+      _currentUser = result.user;
+      await _persistSession(result.user!.id!);
       _setLoading(false);
+      return true;
     }
+
+    _errorMessage =
+        result.errorMessage ?? 'Đăng nhập thất bại. Vui lòng thử lại.';
+    _setLoading(false);
+    return false;
   }
 
   // ─── Logout ────────────────────────────────────────────────────
 
   Future<void> logout() async {
+    await _authService.logout();
     _currentUser = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('logged_in_user_id');
@@ -158,26 +121,18 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _errorMessage = null;
 
-    try {
-      final cleanPhone = _normalisePhone(SecurityUtils.sanitise(phone));
-      final user = await _userDao.findByPhone(cleanPhone);
-
-      if (user == null) {
-        _errorMessage = 'Không tìm thấy tài khoản với số điện thoại này';
-        return false;
-      }
-
-      final salt = SecurityUtils.generateSalt();
-      final hash = SecurityUtils.hashPassword(newPassword, salt);
-      await _userDao.updatePassword(user.id!, hash, salt);
-
-      return true;
-    } catch (e) {
-      _errorMessage = _mapAuthError(e, fallback: 'Đặt lại mật khẩu thất bại.');
-      return false;
-    } finally {
+    final result = await _authService.resetPasswordWithPhoneLocal(
+      phone: phone,
+      newPassword: newPassword,
+    );
+    if (result.isSuccess) {
       _setLoading(false);
+      return true;
     }
+
+    _errorMessage = result.errorMessage ?? 'Đặt lại mật khẩu thất bại.';
+    _setLoading(false);
+    return false;
   }
 
   // ─── Update Profile ────────────────────────────────────────────
@@ -214,32 +169,6 @@ class AuthProvider extends ChangeNotifier {
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
-  }
-
-  // Chuẩn hóa về một format trước khi validate/so sánh giúp tránh sai lệch đăng nhập và trùng tài khoản.
-  String _normalisePhone(String phone) {
-    final digitsOnly = phone.replaceAll(RegExp(r'\s+'), '');
-    if (digitsOnly.startsWith('+84')) {
-      return '0${digitsOnly.substring(3)}';
-    }
-    return digitsOnly;
-  }
-
-  // Hàm này gom các lỗi thường gặp thành message nghiệp vụ để UX nhất quán giữa các luồng auth.
-  // Nếu không nhận diện được lỗi, giữ fallback để luôn có thông điệp ổn định cho người dùng.
-  String _mapAuthError(Object error, {required String fallback}) {
-    final message = error.toString().toLowerCase();
-
-    if (message.contains('unique constraint failed') &&
-        message.contains('users.phone')) {
-      return 'Số điện thoại đã được đăng ký';
-    }
-
-    if (message.contains('database is locked')) {
-      return 'Thao tác chưa thể hoàn tất lúc này. Vui lòng thử lại sau ít phút.';
-    }
-
-    return fallback;
   }
 
   void clearError() {

@@ -35,14 +35,17 @@ class DatabaseHelper {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
-  Future<void> _onCreate(Database db, int version) async {
+  Future<void> _onCreate(DatabaseExecutor db, int version) async {
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         full_name TEXT NOT NULL,
-        phone TEXT NOT NULL UNIQUE,
-        password_hash TEXT NOT NULL,
-        password_salt TEXT NOT NULL,
+        phone TEXT UNIQUE,
+        email TEXT UNIQUE,
+        password_hash TEXT,
+        password_salt TEXT,
+        firebase_uid TEXT NOT NULL UNIQUE,
+        auth_provider TEXT NOT NULL CHECK(auth_provider IN ('phone','email','google')),
         avatar_path TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -181,8 +184,19 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // No migration path is kept intentionally.
-    // The app now uses a fresh schema with `phone` as the user identity field.
+    // Project has not been released yet, so schema upgrade can recreate database.
+    await db.execute('PRAGMA foreign_keys = OFF');
+    await db.transaction((txn) async {
+      await txn.execute('DROP TABLE IF EXISTS feedbacks');
+      await txn.execute('DROP TABLE IF EXISTS budgets');
+      await txn.execute('DROP TABLE IF EXISTS transactions');
+      await txn.execute('DROP TABLE IF EXISTS loans');
+      await txn.execute('DROP TABLE IF EXISTS categories');
+      await txn.execute('DROP TABLE IF EXISTS accounts');
+      await txn.execute('DROP TABLE IF EXISTS users');
+      await _onCreate(txn, newVersion);
+    });
+    await db.execute('PRAGMA foreign_keys = ON');
   }
 
   /// Seed default categories for a new user.
