@@ -80,12 +80,15 @@ class AuthProvider extends ChangeNotifier {
 
   // ─── Login ─────────────────────────────────────────────────────
 
-  Future<bool> login({required String phone, required String password}) async {
+  Future<bool> login({
+    required String identifier,
+    required String password,
+  }) async {
     _setLoading(true);
     _errorMessage = null;
 
     final result = await _authService.loginWithIdentifier(
-      identifier: phone,
+      identifier: identifier,
       password: password,
     );
 
