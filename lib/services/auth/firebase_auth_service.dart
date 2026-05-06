@@ -158,8 +158,8 @@ class FirebaseAuthService implements AuthService {
       final normalisedPhone = isEmailIdentifier
           ? null
           : PhoneUtils.normaliseVnPhone(rawIdentifier);
-      final signInEmail = normalisedEmail ??
-          PhoneUtils.phoneToSyntheticEmail(normalisedPhone!);
+      final signInEmail =
+          normalisedEmail ?? PhoneUtils.phoneToSyntheticEmail(normalisedPhone!);
 
       final credential = await _firebaseAuth.signInWithEmailAndPassword(
         email: signInEmail,
@@ -407,7 +407,11 @@ class FirebaseAuthService implements AuthService {
 
   bool _isEmail(String value) => value.contains('@');
 
-  String _pickFirstNonEmpty(String? primary, [String? secondary, String? third]) {
+  String _pickFirstNonEmpty(
+    String? primary, [
+    String? secondary,
+    String? third,
+  ]) {
     if (primary != null && primary.trim().isNotEmpty) return primary;
     if (secondary != null && secondary.trim().isNotEmpty) return secondary;
     if (third != null && third.trim().isNotEmpty) return third;
