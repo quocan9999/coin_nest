@@ -151,32 +151,36 @@ class FirebaseAuthService implements AuthService {
   }) async {
     try {
       final rawIdentifier = SecurityUtils.sanitise(identifier).trim();
-      // Phase 1 vẫn cho login local để tương thích. Phase 2 sẽ rework sang
-      // đăng nhập qua Firebase (email hoặc synthetic email cho phone).
-      final user = _isEmail(rawIdentifier)
-          ? await _userDao.findByEmail(rawIdentifier.toLowerCase())
-          : await _userDao.findByPhone(
-              PhoneUtils.normaliseVnPhone(rawIdentifier),
-            );
+      final isEmailIdentifier = _isEmail(rawIdentifier);
+      final normalisedEmail = isEmailIdentifier
+          ? rawIdentifier.toLowerCase()
+          : null;
+      final normalisedPhone = isEmailIdentifier
+          ? null
+          : PhoneUtils.normaliseVnPhone(rawIdentifier);
+      final signInEmail = normalisedEmail ??
+          PhoneUtils.phoneToSyntheticEmail(normalisedPhone!);
 
-      if (user == null) {
-        return AuthResult.failure('Thông tin đăng nhập không đúng');
-      }
-      if (user.passwordHash == null || user.passwordSalt == null) {
-        return AuthResult.failure('Tài khoản này không dùng mật khẩu');
-      }
-
-      final valid = SecurityUtils.verifyPassword(
-        password,
-        user.passwordHash!,
-        user.passwordSalt!,
+      final credential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: signInEmail,
+        password: password,
       );
-      if (!valid) {
-        return AuthResult.failure('Thông tin đăng nhập không đúng');
+      final firebaseUser = credential.user;
+      if (firebaseUser == null) {
+        return AuthResult.failure(
+          'Không thể xác thực tài khoản. Vui lòng thử lại.',
+        );
       }
 
-      _userStreamController.add(user);
-      return AuthResult.success(user);
+      final localUser = await _syncLocalUserAfterFirebaseLogin(
+        firebaseUser: firebaseUser,
+        normalisedPhone: normalisedPhone,
+        normalisedEmail: normalisedEmail,
+      );
+      _userStreamController.add(localUser);
+      return AuthResult.success(localUser);
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      return AuthResult.failure(_mapFirebaseAuthError(e));
     } on FormatException {
       return AuthResult.failure('Số điện thoại không hợp lệ');
     } catch (e) {
@@ -318,7 +322,97 @@ class FirebaseAuthService implements AuthService {
   @override
   Stream<User?> userChanges() => _userStreamController.stream;
 
+  Future<User> _syncLocalUserAfterFirebaseLogin({
+    required firebase_auth.User firebaseUser,
+    required String? normalisedPhone,
+    required String? normalisedEmail,
+  }) async {
+    final now = DateTime.now();
+    final existingByUid = await _userDao.findByFirebaseUid(firebaseUser.uid);
+    if (existingByUid != null) {
+      final updated = User(
+        id: existingByUid.id,
+        fullName: _pickFirstNonEmpty(
+          existingByUid.fullName,
+          firebaseUser.displayName,
+          'Người dùng CoinNest',
+        ),
+        phone: existingByUid.phone ?? normalisedPhone,
+        email: existingByUid.email ?? normalisedEmail,
+        passwordHash: existingByUid.passwordHash,
+        passwordSalt: existingByUid.passwordSalt,
+        firebaseUid: existingByUid.firebaseUid,
+        authProvider: existingByUid.authProvider,
+        avatarPath: existingByUid.avatarPath,
+        createdAt: existingByUid.createdAt,
+        updatedAt: now,
+      );
+      await _userDao.update(updated);
+      return updated;
+    }
+
+    // Dữ liệu cũ có thể đã tạo local user trước khi đồng bộ firebase_uid.
+    // Fallback theo identifier giúp nâng cấp hồ sơ thay vì tạo user trùng.
+    User? existingByIdentifier;
+    if (normalisedPhone != null) {
+      existingByIdentifier = await _userDao.findByPhone(normalisedPhone);
+    }
+    if (existingByIdentifier == null && normalisedEmail != null) {
+      existingByIdentifier = await _userDao.findByEmail(normalisedEmail);
+    }
+    if (existingByIdentifier != null) {
+      final migrated = User(
+        id: existingByIdentifier.id,
+        fullName: _pickFirstNonEmpty(
+          existingByIdentifier.fullName,
+          firebaseUser.displayName,
+          'Người dùng CoinNest',
+        ),
+        phone: existingByIdentifier.phone ?? normalisedPhone,
+        email: existingByIdentifier.email ?? normalisedEmail,
+        passwordHash: existingByIdentifier.passwordHash,
+        passwordSalt: existingByIdentifier.passwordSalt,
+        firebaseUid: firebaseUser.uid,
+        authProvider: existingByIdentifier.authProvider,
+        avatarPath: existingByIdentifier.avatarPath,
+        createdAt: existingByIdentifier.createdAt,
+        updatedAt: now,
+      );
+      await _userDao.update(migrated);
+      return migrated;
+    }
+
+    final newUser = User(
+      fullName: _pickFirstNonEmpty(
+        firebaseUser.displayName,
+        'Người dùng CoinNest',
+      ),
+      phone: normalisedPhone,
+      email: normalisedEmail,
+      passwordHash: null,
+      passwordSalt: null,
+      firebaseUid: firebaseUser.uid,
+      authProvider: normalisedPhone != null
+          ? AppAuthProvider.phone.value
+          : AppAuthProvider.email.value,
+      avatarPath: null,
+      createdAt: now,
+      updatedAt: now,
+    );
+    final userId = await _userDao.insert(newUser);
+    await _dbHelper.seedDefaultCategories(userId);
+    await _dbHelper.seedDefaultAccount(userId);
+    return newUser.copyWith(id: userId);
+  }
+
   bool _isEmail(String value) => value.contains('@');
+
+  String _pickFirstNonEmpty(String? primary, [String? secondary, String? third]) {
+    if (primary != null && primary.trim().isNotEmpty) return primary;
+    if (secondary != null && secondary.trim().isNotEmpty) return secondary;
+    if (third != null && third.trim().isNotEmpty) return third;
+    return 'Người dùng CoinNest';
+  }
 
   String _buildLocalFirebaseUid(AppAuthProvider provider) {
     final timestamp = DateTime.now().microsecondsSinceEpoch;
@@ -357,6 +451,14 @@ class FirebaseAuthService implements AuthService {
         return 'Mã OTP không hợp lệ hoặc đã hết hạn';
       case 'email-already-in-use':
         return 'Số điện thoại này đã được đăng ký';
+      case 'invalid-email':
+        return 'Email không hợp lệ';
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Thông tin đăng nhập không đúng';
+      case 'user-disabled':
+        return 'Tài khoản đã bị vô hiệu hóa';
       case 'weak-password':
         return 'Mật khẩu chưa đủ mạnh theo yêu cầu Firebase';
       case 'network-request-failed':
