@@ -17,6 +17,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   static const _googleLogoUrl =
       'https://www.figma.com/api/mcp/asset/3ee347b0-a8b2-46d5-9ac3-0f8e4effb5f7';
+  static const _phoneRowFieldHeight = 54.0;
 
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -195,14 +196,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       textCapitalization: TextCapitalization.words,
                     ),
                     const SizedBox(height: 16),
-                    _buildInputField(
-                      label: 'SỐ ĐIỆN THOẠI',
-                      hint: 'Nhập số điện thoại',
-                      controller: _phoneController,
-                      validator: Validators.phoneVN,
-                      keyboardType: TextInputType.phone,
-                      enabled: !isLoading,
-                    ),
+                    _buildPhoneField(enabled: !isLoading),
                     const SizedBox(height: 16),
                     _buildInputField(
                       label: 'MẬT KHẨU',
@@ -365,6 +359,84 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPhoneField({required bool enabled}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            'SỐ ĐIỆN THOẠI',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.55,
+              color: AppTheme.outline,
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: _phoneRowFieldHeight,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '+84',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: SizedBox(
+                height: _phoneRowFieldHeight,
+                child: TextFormField(
+                  controller: _phoneController,
+                  enabled: enabled,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    hintText: '867944050',
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 16,
+                    ),
+                    fillColor: AppTheme.surfaceContainerHigh,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  validator: (value) {
+                    final req = Validators.required(value, 'Số điện thoại');
+                    if (req != null) return req;
+                    if (!PhoneUtils.isValidVnLocalInput(value!.trim())) {
+                      return 'Số điện thoại không hợp lệ';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
