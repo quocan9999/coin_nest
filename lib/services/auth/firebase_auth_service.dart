@@ -53,7 +53,7 @@ class FirebaseAuthService implements AuthService {
         return AuthResult.failure('Mã OTP không hợp lệ hoặc đã hết hạn');
       }
 
-      final syntheticEmail = phoneToSyntheticEmail(normalisedPhone);
+      final syntheticEmail = PhoneUtils.phoneToSyntheticEmail(normalisedPhone);
       final firebaseCredential = await _firebaseAuth
           .createUserWithEmailAndPassword(
             email: syntheticEmail,
@@ -113,6 +113,8 @@ class FirebaseAuthService implements AuthService {
         return AuthResult.failure('Email đã được đăng ký');
       }
 
+      // Giữ flow local ở Phase 1 để không phá dữ liệu cũ; Phase 4 sẽ chuyển
+      // sang createUserWithEmailAndPassword + đồng bộ firebase_uid thật.
       final salt = SecurityUtils.generateSalt();
       final hash = SecurityUtils.hashPassword(password, salt);
       final now = DateTime.now();
@@ -149,6 +151,8 @@ class FirebaseAuthService implements AuthService {
   }) async {
     try {
       final rawIdentifier = SecurityUtils.sanitise(identifier).trim();
+      // Phase 1 vẫn cho login local để tương thích. Phase 2 sẽ rework sang
+      // đăng nhập qua Firebase (email hoặc synthetic email cho phone).
       final user = _isEmail(rawIdentifier)
           ? await _userDao.findByEmail(rawIdentifier.toLowerCase())
           : await _userDao.findByPhone(
@@ -313,11 +317,6 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Stream<User?> userChanges() => _userStreamController.stream;
-
-  /// Shared helper for future "phone + password via synthetic email" flow.
-  String phoneToSyntheticEmail(String phoneE164) {
-    return PhoneUtils.phoneToSyntheticEmail(phoneE164);
-  }
 
   bool _isEmail(String value) => value.contains('@');
 

@@ -50,15 +50,6 @@ class UserDao {
     return User.fromMap(result.first);
   }
 
-  /// Find by either phone or email based on identifier format.
-  Future<User?> findByPhoneOrEmail(String identifier) async {
-    final normalised = identifier.trim().toLowerCase();
-    if (normalised.contains('@')) {
-      return findByEmail(normalised);
-    }
-    return findByPhone(identifier.trim());
-  }
-
   /// Find a user by id.
   Future<User?> findById(int id) async {
     final db = await _dbHelper.database;
