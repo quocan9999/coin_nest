@@ -355,6 +355,56 @@ class FirebaseAuthService implements AuthService {
   }
 
   @override
+  Future<String?> checkAccountProvider(String email) async {
+    final normalisedEmail = email.trim().toLowerCase();
+
+    try {
+      // Thử đăng nhập với mật khẩu giả để kiểm tra tài khoản tồn tại.
+      // Firebase sẽ trả về các error code khác nhau tùy trạng thái tài khoản.
+      await _firebaseAuth.signInWithEmailAndPassword(
+        email: normalisedEmail,
+        password: '__check_existence_only__',
+      );
+      // Nếu thành công (cực kỳ hiếm) → tài khoản tồn tại với provider password
+      await _firebaseAuth.signOut();
+      return 'password';
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      switch (e.code) {
+        // Tài khoản tồn tại nhưng sai mật khẩu → provider password
+        case 'wrong-password':
+          return 'password';
+
+        // Tài khoản không tồn tại trên Firebase
+        case 'user-not-found':
+          return null;
+
+        // Firebase trả lỗi chung — tài khoản tồn tại nhưng cần phân biệt
+        // provider password vs Google. Thử gửi reset email để xác nhận:
+        // nếu thành công → có password, nếu lỗi → Google-only.
+        case 'invalid-credential':
+          try {
+            await _firebaseAuth.sendPasswordResetEmail(email: normalisedEmail);
+            // Nếu gửi được reset email → tài khoản có provider password
+            return 'password';
+          } on firebase_auth.FirebaseAuthException catch (resetError) {
+            if (resetError.code == 'user-not-found') {
+              return null;
+            }
+            // Tài khoản tồn tại nhưng không phải password → Google
+            return 'google';
+          }
+
+        // Tài khoản bị vô hiệu hóa nhưng vẫn tồn tại
+        case 'user-disabled':
+          return 'password';
+
+        default:
+          return null;
+      }
+    }
+  }
+
+  @override
   Future<void> sendPasswordResetEmail(String email) async {
     await _firebaseAuth.sendPasswordResetEmail(
       email: email.trim().toLowerCase(),

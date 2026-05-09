@@ -228,6 +228,16 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Kiểm tra tài khoản tồn tại trên Firebase và xác định provider.
+  /// Trả về 'password', 'google', hoặc null nếu không tìm thấy.
+  Future<String?> checkAccountProvider(String email) async {
+    try {
+      return await _authService.checkAccountProvider(email);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Gửi link đặt lại mật khẩu qua email (nhánh email) — Firebase tự gửi.
   Future<bool> sendPasswordResetEmailForUser({required String email}) async {
     _setLoading(true);

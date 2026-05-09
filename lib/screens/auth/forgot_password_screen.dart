@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../database/user_dao.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/phone_utils.dart';
@@ -100,27 +99,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  /// Nhánh email: tra SQLite trước → phân luồng Google / Email+Password.
-  /// Chỉ gửi link reset khi tài khoản tồn tại và dùng provider email.
+  /// Nhánh email: tra Firebase server trước → phân luồng Google / Email+Password.
+  /// Không phụ thuộc local SQLite — hoạt động đúng trên mọi thiết bị.
   Future<void> _handleEmailBranch(String email) async {
     setState(() => _isSubmitting = true);
 
     try {
       final normalised = email.trim().toLowerCase();
-      final userDao = UserDao();
-      final localUser = await userDao.findByEmail(normalised);
+      final auth = context.read<AuthProvider>();
+
+      // Tra cứu provider trực tiếp trên Firebase server
+      final provider = await auth.checkAccountProvider(normalised);
 
       if (!mounted) return;
 
-      // Trường hợp không tìm thấy user local
-      if (localUser == null) {
+      // Trường hợp email không tồn tại trên Firebase
+      if (provider == null) {
         setState(() => _isSubmitting = false);
         _showErrorSnackBar('Không tìm thấy tài khoản với email này');
         return;
       }
 
-      // Trường hợp user đăng ký bằng Google — không có password
-      if (localUser.authProvider == 'google') {
+      // Trường hợp tài khoản Google — không có password để reset
+      if (provider == 'google') {
         setState(() => _isSubmitting = false);
         await _showInfoDialog(
           icon: Icons.account_circle_outlined,
@@ -135,7 +136,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       }
 
       // Nhánh email+password → gửi link reset qua Firebase
-      final auth = context.read<AuthProvider>();
       final success = await auth.sendPasswordResetEmailForUser(email: normalised);
 
       if (!mounted) return;
@@ -167,42 +167,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  /// Nhánh phone: tra SQLite để phân luồng Google / Phone
+  /// Nhánh phone: tra Firebase bằng synthetic email để xác nhận tài khoản
+  /// tồn tại, rồi gửi OTP. Không phụ thuộc local SQLite.
   Future<void> _handlePhoneBranch(String rawPhone) async {
     setState(() => _isSubmitting = true);
 
     try {
       final normalisedPhone = PhoneUtils.normaliseVnPhone(rawPhone);
-      final userDao = UserDao();
-      final localUser = await userDao.findByPhone(normalisedPhone);
+      final auth = context.read<AuthProvider>();
+
+      // Chuyển phone sang synthetic email rồi tra cứu Firebase server
+      final syntheticEmail = PhoneUtils.phoneToSyntheticEmail(normalisedPhone);
+      final provider = await auth.checkAccountProvider(syntheticEmail);
 
       if (!mounted) return;
 
-      // Trường hợp không tìm thấy user local
-      if (localUser == null) {
+      // Không tìm thấy tài khoản phone trên Firebase
+      if (provider == null) {
         setState(() => _isSubmitting = false);
         _showErrorSnackBar('Không tìm thấy tài khoản với số điện thoại này');
         return;
       }
 
-      // Trường hợp user đăng ký bằng Google — không có password
-      if (localUser.authProvider == 'google') {
-        setState(() => _isSubmitting = false);
-        await _showInfoDialog(
-          icon: Icons.account_circle_outlined,
-          iconColor: AppTheme.primary,
-          title: 'Tài khoản Google',
-          message:
-              'Tài khoản này sử dụng Google Sign-In và không có mật khẩu. '
-              'Vui lòng đăng nhập bằng Google.',
-          buttonText: 'Đã hiểu',
-        );
-        return;
-      }
-
-      // Nhánh phone/email (có password) → gửi OTP
+      // Nhánh phone (có password) → gửi OTP
       _phoneDisplay = normalisedPhone;
-      final auth = context.read<AuthProvider>();
       final verificationId = await auth.requestForgotPasswordOtp(
         phone: normalisedPhone,
       );
