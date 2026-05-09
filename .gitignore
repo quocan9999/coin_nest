@@ -84,6 +84,8 @@ fix_warnings.py
 .vscode/settings.json
 
 .cursor/
+.agents/
+.vscode/
 
 # Firebase sensitive configs
 /android/app/google-services.json

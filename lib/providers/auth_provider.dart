@@ -97,6 +97,35 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  /// Đăng ký bằng email — tạo Firebase user Email/Password + insert SQLite.
+  /// Không cần OTP, tạo user trực tiếp sau khi validate form.
+  Future<bool> registerWithEmail({
+    required String fullName,
+    required String email,
+    required String password,
+  }) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    final result = await _authService.registerWithEmail(
+      fullName: fullName,
+      email: email,
+      password: password,
+    );
+
+    if (result.isSuccess && result.user?.id != null) {
+      _currentUser = result.user;
+      await _persistSession(result.user!.id!);
+      _setLoading(false);
+      return true;
+    }
+
+    _errorMessage =
+        result.errorMessage ?? 'Đăng ký thất bại. Vui lòng thử lại.';
+    _setLoading(false);
+    return false;
+  }
+
   // ─── Login ─────────────────────────────────────────────────────
 
   Future<bool> login({

@@ -113,8 +113,21 @@ class FirebaseAuthService implements AuthService {
         return AuthResult.failure('Email đã được đăng ký');
       }
 
-      // Giữ flow local ở Phase 1 để không phá dữ liệu cũ; Phase 4 sẽ chuyển
-      // sang createUserWithEmailAndPassword + đồng bộ firebase_uid thật.
+      // Tạo Firebase user bằng Email/Password provider với email thực
+      final firebaseCredential = await _firebaseAuth
+          .createUserWithEmailAndPassword(
+            email: cleanEmail,
+            password: password,
+          );
+      final firebaseUser = firebaseCredential.user;
+      if (firebaseUser == null) {
+        return AuthResult.failure(
+          'Không thể tạo tài khoản xác thực. Vui lòng thử lại.',
+        );
+      }
+      await firebaseUser.updateDisplayName(cleanName);
+
+      // Lưu hash password cục bộ để hỗ trợ backward-compat khi cần
       final salt = SecurityUtils.generateSalt();
       final hash = SecurityUtils.hashPassword(password, salt);
       final now = DateTime.now();
@@ -124,7 +137,7 @@ class FirebaseAuthService implements AuthService {
         email: cleanEmail,
         passwordHash: hash,
         passwordSalt: salt,
-        firebaseUid: _buildLocalFirebaseUid(AppAuthProvider.email),
+        firebaseUid: firebaseUser.uid,
         authProvider: AppAuthProvider.email.value,
         createdAt: now,
         updatedAt: now,
@@ -137,6 +150,8 @@ class FirebaseAuthService implements AuthService {
       final inserted = user.copyWith(id: userId);
       _userStreamController.add(inserted);
       return AuthResult.success(inserted);
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      return AuthResult.failure(_mapFirebaseAuthError(e));
     } catch (e) {
       return AuthResult.failure(
         _mapAuthError(e, fallback: 'Đăng ký thất bại. Vui lòng thử lại.'),
@@ -418,10 +433,6 @@ class FirebaseAuthService implements AuthService {
     return 'Người dùng CoinNest';
   }
 
-  String _buildLocalFirebaseUid(AppAuthProvider provider) {
-    final timestamp = DateTime.now().microsecondsSinceEpoch;
-    return 'local_${provider.value}_$timestamp';
-  }
 
   String _mapAuthError(Object error, {required String fallback}) {
     final message = error.toString().toLowerCase();
@@ -454,7 +465,7 @@ class FirebaseAuthService implements AuthService {
       case 'invalid-verification-id':
         return 'Mã OTP không hợp lệ hoặc đã hết hạn';
       case 'email-already-in-use':
-        return 'Số điện thoại này đã được đăng ký';
+        return 'Tài khoản đã được đăng ký';
       case 'invalid-email':
         return 'Email không hợp lệ';
       case 'user-not-found':
