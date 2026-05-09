@@ -225,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           SizedBox(
                             height: 48,
                             child: OutlinedButton(
-                              onPressed: () => _showComingSoon(context),
+                              onPressed: isLoading ? null : _loginWithGoogle,
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(
                                   color: AppTheme.outlineVariant.withAlpha(40),
@@ -362,9 +362,26 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Tính năng đang phát triển')));
+  /// Xử lý đăng nhập bằng Google — gọi AuthProvider,
+  /// chuyển Home nếu thành công hoặc hiện lỗi.
+  Future<void> _loginWithGoogle() async {
+    final auth = context.read<AuthProvider>();
+    final success = await auth.loginWithGoogle();
+
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'Đăng nhập Google thất bại'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    }
   }
 }

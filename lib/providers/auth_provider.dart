@@ -153,6 +153,27 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  /// Đăng nhập bằng Google — mở popup chọn tài khoản Google,
+  /// xác thực qua Firebase, upsert SQLite và persist session.
+  Future<bool> loginWithGoogle() async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    final result = await _authService.loginWithGoogle();
+
+    if (result.isSuccess && result.user?.id != null) {
+      _currentUser = result.user;
+      await _persistSession(result.user!.id!);
+      _setLoading(false);
+      return true;
+    }
+
+    _errorMessage =
+        result.errorMessage ?? 'Đăng nhập Google thất bại. Vui lòng thử lại.';
+    _setLoading(false);
+    return false;
+  }
+
   // ─── Logout ────────────────────────────────────────────────────
 
   Future<void> logout() async {

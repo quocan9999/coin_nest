@@ -285,13 +285,7 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                       child: OutlinedButton(
                         onPressed: isLoading
                             ? null
-                            : () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Tính năng đang phát triển'),
-                                  ),
-                                );
-                              },
+                            : _loginWithGoogle,
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: AppTheme.outlineVariant),
                           shape: RoundedRectangleBorder(
@@ -357,6 +351,28 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
         ),
       ),
     );
+  }
+
+  /// Xử lý đăng nhập bằng Google từ màn đăng ký email — chuyển Home nếu thành công.
+  Future<void> _loginWithGoogle() async {
+    final auth = context.read<AuthProvider>();
+    final success = await auth.loginWithGoogle();
+
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'Đăng nhập Google thất bại'),
+          backgroundColor: AppTheme.error,
+        ),
+      );
+    }
   }
 
   /// Builder helper cho các input field đồng bộ style với RegisterScreen.

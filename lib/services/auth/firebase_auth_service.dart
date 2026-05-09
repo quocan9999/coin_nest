@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../database/database_helper.dart';
 import '../../database/user_dao.dart';
@@ -187,10 +188,15 @@ class FirebaseAuthService implements AuthService {
         );
       }
 
+      // Xác định provider dựa vào loại identifier người dùng nhập
+      final loginProvider = normalisedPhone != null
+          ? AppAuthProvider.phone
+          : AppAuthProvider.email;
       final localUser = await _syncLocalUserAfterFirebaseLogin(
         firebaseUser: firebaseUser,
         normalisedPhone: normalisedPhone,
         normalisedEmail: normalisedEmail,
+        authProvider: loginProvider,
       );
       _userStreamController.add(localUser);
       return AuthResult.success(localUser);
@@ -207,7 +213,52 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Future<AuthResult> loginWithGoogle() async {
-    return AuthResult.failure('Đăng nhập Google sẽ được triển khai ở Phase 5');
+    try {
+      // authenticate() trả non-null hoặc throw exception khi user huỷ
+      final googleUser = await GoogleSignIn.instance.authenticate();
+
+      // v7: authentication là getter sync, chỉ chứa idToken
+      final googleAuth = googleUser.authentication;
+      final credential = firebase_auth.GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      final firebaseCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+      final firebaseUser = firebaseCredential.user;
+      if (firebaseUser == null) {
+        return AuthResult.failure(
+          'Không thể xác thực tài khoản Google. Vui lòng thử lại.',
+        );
+      }
+
+      // Upsert SQLite local profile — dùng email từ Google, provider = google
+      final localUser = await _syncLocalUserAfterFirebaseLogin(
+        firebaseUser: firebaseUser,
+        normalisedPhone: null,
+        normalisedEmail: firebaseUser.email,
+        authProvider: AppAuthProvider.google,
+      );
+      _userStreamController.add(localUser);
+      return AuthResult.success(localUser);
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      return AuthResult.failure(_mapFirebaseAuthError(e));
+    } catch (e) {
+      // Catch cả trường hợp user huỷ popup Google (PlatformException)
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('cancel') ||
+          msg.contains('sign_in_canceled') ||
+          msg.contains('sign_in_cancelled')) {
+        return AuthResult.failure('Đăng nhập Google đã bị huỷ');
+      }
+      return AuthResult.failure(
+        _mapAuthError(
+          e,
+          fallback: 'Đăng nhập Google thất bại. Vui lòng thử lại.',
+        ),
+      );
+    }
   }
 
   @override
@@ -341,6 +392,7 @@ class FirebaseAuthService implements AuthService {
     required firebase_auth.User firebaseUser,
     required String? normalisedPhone,
     required String? normalisedEmail,
+    required AppAuthProvider authProvider,
   }) async {
     final now = DateTime.now();
     final existingByUid = await _userDao.findByFirebaseUid(firebaseUser.uid);
@@ -407,9 +459,7 @@ class FirebaseAuthService implements AuthService {
       passwordHash: null,
       passwordSalt: null,
       firebaseUid: firebaseUser.uid,
-      authProvider: normalisedPhone != null
-          ? AppAuthProvider.phone.value
-          : AppAuthProvider.email.value,
+      authProvider: authProvider.value,
       avatarPath: null,
       createdAt: now,
       updatedAt: now,
