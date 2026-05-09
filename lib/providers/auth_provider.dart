@@ -184,27 +184,64 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Password Reset (local-only placeholder) ──────────────────
+  // ─── Forgot Password (Phase 6) ─────────────────────────────────
 
-  Future<bool> resetPassword({
-    required String phone,
+  /// Gửi OTP cho luồng quên mật khẩu (nhánh phone).
+  /// Trả về verificationId nếu thành công, null nếu thất bại.
+  Future<String?> requestForgotPasswordOtp({required String phone}) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      final verificationId = await _authService.requestForgotPasswordOtp(phone);
+      _setLoading(false);
+      return verificationId;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _setLoading(false);
+      return null;
+    }
+  }
+
+  /// Đặt lại mật khẩu qua Cloud Function (nhánh phone) —
+  /// signIn tạm bằng PhoneAuthCredential, gọi function, rồi signOut.
+  Future<bool> resetPasswordByPhoneFirebase({
+    required String verificationId,
+    required String otpCode,
     required String newPassword,
   }) async {
     _setLoading(true);
     _errorMessage = null;
 
-    final result = await _authService.resetPasswordWithPhoneLocal(
-      phone: phone,
-      newPassword: newPassword,
-    );
-    if (result.isSuccess) {
+    try {
+      await _authService.resetPasswordByPhone(
+        verificationId: verificationId,
+        otpCode: otpCode,
+        newPassword: newPassword,
+      );
       _setLoading(false);
       return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _setLoading(false);
+      return false;
     }
+  }
 
-    _errorMessage = result.errorMessage ?? 'Đặt lại mật khẩu thất bại.';
-    _setLoading(false);
-    return false;
+  /// Gửi link đặt lại mật khẩu qua email (nhánh email) — Firebase tự gửi.
+  Future<bool> sendPasswordResetEmailForUser({required String email}) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      await _authService.sendPasswordResetEmail(email);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _setLoading(false);
+      return false;
+    }
   }
 
   // ─── Update Profile ────────────────────────────────────────────

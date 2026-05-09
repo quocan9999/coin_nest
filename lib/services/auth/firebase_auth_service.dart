@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../database/database_helper.dart';
@@ -296,6 +297,38 @@ class FirebaseAuthService implements AuthService {
   }
 
   @override
+  Future<String> requestForgotPasswordOtp(String phone) async {
+    final normalisedPhone = PhoneUtils.normaliseVnPhone(
+      SecurityUtils.sanitise(phone),
+    );
+    // Không kiểm tra phoneExists — luồng quên mật khẩu cần phone đã tồn tại,
+    // khác với requestPhoneOtp (register) reject phone đã đăng ký.
+    final completer = Completer<String>();
+    await _firebaseAuth.verifyPhoneNumber(
+      phoneNumber: normalisedPhone,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (_) {},
+      verificationFailed: (exception) {
+        if (!completer.isCompleted) {
+          completer.completeError(Exception(_mapFirebaseAuthError(exception)));
+        }
+      },
+      codeSent: (verificationId, _) {
+        if (!completer.isCompleted) {
+          completer.complete(verificationId);
+        }
+      },
+      codeAutoRetrievalTimeout: (verificationId) {
+        if (!completer.isCompleted) {
+          completer.complete(verificationId);
+        }
+      },
+    );
+
+    return completer.future;
+  }
+
+  @override
   Future<bool> confirmPhoneOtp(String verificationId, String code) async {
     try {
       final credential = firebase_auth.PhoneAuthProvider.credential(
@@ -334,44 +367,24 @@ class FirebaseAuthService implements AuthService {
     required String otpCode,
     required String newPassword,
   }) async {
-    throw UnimplementedError(
-      'Cloud Function reset password theo số điện thoại sẽ được triển khai ở Phase 6.',
+    // Bước 1: Sign-in tạm bằng PhoneAuthCredential để Firebase tạo phiên
+    // có phone_number claim trong token — Cloud Function sẽ đọc claim này.
+    final credential = firebase_auth.PhoneAuthProvider.credential(
+      verificationId: verificationId,
+      smsCode: otpCode,
     );
-  }
+    await _firebaseAuth.signInWithCredential(credential);
 
-  @override
-  Future<AuthResult> resetPasswordWithPhoneLocal({
-    required String phone,
-    required String newPassword,
-  }) async {
     try {
-      final normalisedPhone = PhoneUtils.normaliseVnPhone(
-        SecurityUtils.sanitise(phone),
+      // Bước 2: Gọi Cloud Function resetPasswordByPhone — chỉ truyền
+      // newPassword, function tự lấy phone từ ctx.auth.token.phone_number.
+      final callable = FirebaseFunctions.instance.httpsCallable(
+        'resetPasswordByPhone',
       );
-      final user = await _userDao.findByPhone(normalisedPhone);
-      if (user == null) {
-        return AuthResult.failure(
-          'Không tìm thấy tài khoản với số điện thoại này',
-        );
-      }
-
-      final salt = SecurityUtils.generateSalt();
-      final hash = SecurityUtils.hashPassword(newPassword, salt);
-      await _userDao.updatePassword(user.id!, hash, salt);
-
-      return AuthResult.success(
-        user.copyWith(
-          passwordHash: hash,
-          passwordSalt: salt,
-          updatedAt: DateTime.now(),
-        ),
-      );
-    } on FormatException {
-      return AuthResult.failure('Số điện thoại không hợp lệ');
-    } catch (e) {
-      return AuthResult.failure(
-        _mapAuthError(e, fallback: 'Đặt lại mật khẩu thất bại.'),
-      );
+      await callable.call<dynamic>({'newPassword': newPassword});
+    } finally {
+      // Bước 3: Luôn xoá phiên tạm Phone Auth dù function thành công hay không
+      await _firebaseAuth.signOut();
     }
   }
 

@@ -28,8 +28,8 @@ class AuthResult {
 
 /// Abstraction layer to decouple UI/provider from auth implementation.
 ///
-/// Phase 1 keeps backward-compatible local flows while exposing future
-/// Firebase-ready APIs for OTP, Google sign-in, and email auth.
+/// Cung cấp contract chung cho mọi flow Firebase Auth: đăng ký,
+/// đăng nhập, quên mật khẩu (email + phone + Google), và OTP.
 abstract class AuthService {
   Future<AuthResult> registerWithPhone({
     required String fullName,
@@ -54,6 +54,10 @@ abstract class AuthService {
 
   Future<String> requestPhoneOtp(String phone);
 
+  /// Gửi OTP cho luồng quên mật khẩu — KHÔNG check phoneExists
+  /// (khác requestPhoneOtp dùng cho register — reject phone đã tồn tại).
+  Future<String> requestForgotPasswordOtp(String phone);
+
   Future<bool> confirmPhoneOtp(String verificationId, String code);
 
   Future<void> sendPasswordResetEmail(String email);
@@ -64,11 +68,6 @@ abstract class AuthService {
     required String newPassword,
   });
 
-  /// Transitional helper for current local "phone + new password" screen.
-  Future<AuthResult> resetPasswordWithPhoneLocal({
-    required String phone,
-    required String newPassword,
-  });
 
   Future<User?> findLocalUserById(int userId);
 
