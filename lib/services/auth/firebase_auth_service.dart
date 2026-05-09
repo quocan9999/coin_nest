@@ -445,6 +445,12 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Future<void> logout() async {
+    try {
+      await _firebaseAuth.signOut();
+    } catch (_) {}
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {}
     _userStreamController.add(null);
   }
 
