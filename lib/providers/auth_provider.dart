@@ -1,14 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../database/database_helper.dart';
 import '../database/user_dao.dart';
 import '../models/user.dart';
+import '../services/auth/auth_service.dart';
+import '../services/auth/firebase_auth_service.dart';
 import '../utils/security_utils.dart';
 
 /// Manages authentication state: login, register, logout, session persistence.
 class AuthProvider extends ChangeNotifier {
-  final _userDao = UserDao();
-  final _dbHelper = DatabaseHelper.instance;
+  final UserDao _userDao;
+  final AuthService _authService;
+
+  AuthProvider({UserDao? userDao, AuthService? authService})
+    : _userDao = userDao ?? UserDao(),
+      _authService = authService ?? FirebaseAuthService();
 
   User? _currentUser;
   bool _isLoading = false;
@@ -31,7 +36,7 @@ class AuthProvider extends ChangeNotifier {
 
     final userId = prefs.getInt('logged_in_user_id');
     if (userId != null) {
-      _currentUser = await _userDao.findById(userId);
+      _currentUser = await _authService.findLocalUserById(userId);
     }
     notifyListeners();
   }
@@ -46,7 +51,55 @@ class AuthProvider extends ChangeNotifier {
 
   // ─── Register ──────────────────────────────────────────────────
 
-  Future<bool> register({
+  Future<String?> requestPhoneRegistrationOtp({required String phone}) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      final verificationId = await _authService.requestPhoneOtp(phone);
+      _setLoading(false);
+      return verificationId;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _setLoading(false);
+      return null;
+    }
+  }
+
+  Future<bool> confirmPhoneRegistration({
+    required String fullName,
+    required String phone,
+    required String password,
+    required String otpVerificationId,
+    required String otpCode,
+  }) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    final result = await _authService.registerWithPhone(
+      fullName: fullName,
+      phone: phone,
+      password: password,
+      otpVerificationId: otpVerificationId,
+      otpCode: otpCode,
+    );
+
+    if (result.isSuccess && result.user?.id != null) {
+      _currentUser = result.user;
+      await _persistSession(result.user!.id!);
+      _setLoading(false);
+      return true;
+    }
+
+    _errorMessage =
+        result.errorMessage ?? 'Đăng ký thất bại. Vui lòng thử lại.';
+    _setLoading(false);
+    return false;
+  }
+
+  /// Đăng ký bằng email — tạo Firebase user Email/Password + insert SQLite.
+  /// Không cần OTP, tạo user trực tiếp sau khi validate form.
+  Future<bool> registerWithEmail({
     required String fullName,
     required String email,
     required String password,
@@ -54,123 +107,150 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     _errorMessage = null;
 
-    try {
-      // Sanitise inputs
-      final cleanName = SecurityUtils.sanitise(fullName);
-      final cleanEmail = SecurityUtils.sanitise(email).toLowerCase();
+    final result = await _authService.registerWithEmail(
+      fullName: fullName,
+      email: email,
+      password: password,
+    );
 
-      // Check uniqueness
-      if (await _userDao.emailExists(cleanEmail)) {
-        _errorMessage = 'Email đã được đăng ký';
-        return false;
-      }
-
-      // Hash password
-      final salt = SecurityUtils.generateSalt();
-      final hash = SecurityUtils.hashPassword(password, salt);
-
-      final now = DateTime.now();
-      final user = User(
-        fullName: cleanName,
-        email: cleanEmail,
-        passwordHash: hash,
-        passwordSalt: salt,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final userId = await _userDao.insert(user);
-
-      // Seed default data
-      await _dbHelper.seedDefaultCategories(userId);
-      await _dbHelper.seedDefaultAccount(userId);
-
-      // Auto-login
-      _currentUser = user.copyWith(id: userId);
-      await _persistSession(userId);
-
-      return true;
-    } catch (e) {
-      _errorMessage = 'Đăng ký thất bại. Vui lòng thử lại.';
-      return false;
-    } finally {
+    if (result.isSuccess && result.user?.id != null) {
+      _currentUser = result.user;
+      await _persistSession(result.user!.id!);
       _setLoading(false);
+      return true;
     }
+
+    _errorMessage =
+        result.errorMessage ?? 'Đăng ký thất bại. Vui lòng thử lại.';
+    _setLoading(false);
+    return false;
   }
 
   // ─── Login ─────────────────────────────────────────────────────
 
   Future<bool> login({
-    required String email,
+    required String identifier,
     required String password,
   }) async {
     _setLoading(true);
     _errorMessage = null;
 
-    try {
-      final cleanEmail = SecurityUtils.sanitise(email).toLowerCase();
+    final result = await _authService.loginWithIdentifier(
+      identifier: identifier,
+      password: password,
+    );
 
-      final user = await _userDao.findByEmail(cleanEmail);
-      if (user == null) {
-        _errorMessage = 'Email hoặc mật khẩu không đúng';
-        return false;
-      }
-
-      final valid =
-          SecurityUtils.verifyPassword(password, user.passwordHash, user.passwordSalt);
-      if (!valid) {
-        _errorMessage = 'Email hoặc mật khẩu không đúng';
-        return false;
-      }
-
-      _currentUser = user;
-      await _persistSession(user.id!);
-      return true;
-    } catch (e) {
-      _errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại.';
-      return false;
-    } finally {
+    if (result.isSuccess && result.user?.id != null) {
+      _currentUser = result.user;
+      await _persistSession(result.user!.id!);
       _setLoading(false);
+      return true;
     }
+
+    _errorMessage =
+        result.errorMessage ?? 'Đăng nhập thất bại. Vui lòng thử lại.';
+    _setLoading(false);
+    return false;
+  }
+
+  /// Đăng nhập bằng Google — mở popup chọn tài khoản Google,
+  /// xác thực qua Firebase, upsert SQLite và persist session.
+  Future<bool> loginWithGoogle() async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    final result = await _authService.loginWithGoogle();
+
+    if (result.isSuccess && result.user?.id != null) {
+      _currentUser = result.user;
+      await _persistSession(result.user!.id!);
+      _setLoading(false);
+      return true;
+    }
+
+    _errorMessage =
+        result.errorMessage ?? 'Đăng nhập Google thất bại. Vui lòng thử lại.';
+    _setLoading(false);
+    return false;
   }
 
   // ─── Logout ────────────────────────────────────────────────────
 
   Future<void> logout() async {
+    await _authService.logout();
     _currentUser = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('logged_in_user_id');
     notifyListeners();
   }
 
-  // ─── Password Reset (local-only placeholder) ──────────────────
+  // ─── Forgot Password (Phase 6) ─────────────────────────────────
 
-  Future<bool> resetPassword({
-    required String email,
+  /// Gửi OTP cho luồng quên mật khẩu (nhánh phone).
+  /// Trả về verificationId nếu thành công, null nếu thất bại.
+  Future<String?> requestForgotPasswordOtp({required String phone}) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      final verificationId = await _authService.requestForgotPasswordOtp(phone);
+      _setLoading(false);
+      return verificationId;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _setLoading(false);
+      return null;
+    }
+  }
+
+  /// Đặt lại mật khẩu qua Cloud Function (nhánh phone) —
+  /// signIn tạm bằng PhoneAuthCredential, gọi function, rồi signOut.
+  Future<bool> resetPasswordByPhoneFirebase({
+    required String verificationId,
+    required String otpCode,
     required String newPassword,
   }) async {
     _setLoading(true);
     _errorMessage = null;
 
     try {
-      final cleanEmail = SecurityUtils.sanitise(email).toLowerCase();
-      final user = await _userDao.findByEmail(cleanEmail);
-
-      if (user == null) {
-        _errorMessage = 'Không tìm thấy tài khoản với email này';
-        return false;
-      }
-
-      final salt = SecurityUtils.generateSalt();
-      final hash = SecurityUtils.hashPassword(newPassword, salt);
-      await _userDao.updatePassword(user.id!, hash, salt);
-
+      await _authService.resetPasswordByPhone(
+        verificationId: verificationId,
+        otpCode: otpCode,
+        newPassword: newPassword,
+      );
+      _setLoading(false);
       return true;
     } catch (e) {
-      _errorMessage = 'Đặt lại mật khẩu thất bại';
-      return false;
-    } finally {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
       _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Kiểm tra tài khoản tồn tại trên Firebase và xác định provider.
+  /// Trả về 'password', 'google', hoặc null nếu không tìm thấy.
+  Future<String?> checkAccountProvider(String email) async {
+    try {
+      return await _authService.checkAccountProvider(email);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Gửi link đặt lại mật khẩu qua email (nhánh email) — Firebase tự gửi.
+  Future<bool> sendPasswordResetEmailForUser({required String email}) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      await _authService.sendPasswordResetEmail(email);
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _setLoading(false);
+      return false;
     }
   }
 

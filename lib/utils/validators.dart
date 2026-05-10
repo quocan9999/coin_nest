@@ -1,4 +1,5 @@
 import 'constants.dart';
+import 'phone_utils.dart';
 
 /// Input validation helpers.
 ///
@@ -6,6 +7,9 @@ import 'constants.dart';
 /// on failure — ready to plug directly into [TextFormField.validator].
 class Validators {
   Validators._();
+  static final RegExp _emailRegex = RegExp(
+    r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
+  );
 
   // ─── Generic ───────────────────────────────────────────────────
 
@@ -16,29 +20,52 @@ class Validators {
     return null;
   }
 
-  static String? maxLength(String? value, int max,
-      [String fieldName = 'Trường này']) {
+  static String? maxLength(
+    String? value,
+    int max, [
+    String fieldName = 'Trường này',
+  ]) {
     if (value != null && value.length > max) {
       return '$fieldName không được quá $max ký tự';
     }
     return null;
   }
 
-  // ─── Email ──────────────────────────────────────────────────────
+  // ─── Phone ──────────────────────────────────────────────────────
 
-  static final _emailRegex = RegExp(
-    r'^[a-zA-Z0-9.!#$%&*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}'
-    r'[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$',
-  );
+  static String? phoneVN(String? value) {
+    final req = required(value, 'Số điện thoại');
+    if (req != null) return req;
+
+    if (!PhoneUtils.isValidVnInputFlexible(value!)) {
+      return 'Số điện thoại không hợp lệ';
+    }
+    return null;
+  }
+
+  // ─── Email / Identifier ────────────────────────────────────────
 
   static String? email(String? value) {
     final req = required(value, 'Email');
     if (req != null) return req;
 
-    if (!_emailRegex.hasMatch(value!.trim())) {
+    final normalised = value!.trim().toLowerCase();
+    if (!_emailRegex.hasMatch(normalised)) {
       return 'Email không hợp lệ';
     }
     return null;
+  }
+
+  static String? emailOrPhoneVN(String? value) {
+    final req = required(value, 'Email hoặc số điện thoại');
+    if (req != null) return req;
+
+    final input = value!.trim();
+    if (input.contains('@')) {
+      return email(input);
+    }
+
+    return phoneVN(input);
   }
 
   // ─── Password ──────────────────────────────────────────────────
