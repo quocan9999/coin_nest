@@ -19,8 +19,7 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    final dir = await getApplicationDocumentsDirectory();
-    final path = join(dir.path, AppConstants.dbName);
+    final path = await _databasePathByName(AppConstants.dbName);
 
     return openDatabase(
       path,
@@ -36,14 +35,17 @@ class DatabaseHelper {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
-  Future<void> _onCreate(Database db, int version) async {
+  Future<void> _onCreate(DatabaseExecutor db, int version) async {
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         full_name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        password_hash TEXT NOT NULL,
-        password_salt TEXT NOT NULL,
+        phone TEXT UNIQUE,
+        email TEXT UNIQUE,
+        password_hash TEXT,
+        password_salt TEXT,
+        firebase_uid TEXT NOT NULL UNIQUE,
+        auth_provider TEXT NOT NULL CHECK(auth_provider IN ('phone','email','google')),
         avatar_path TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -163,23 +165,38 @@ class DatabaseHelper {
 
     // ─── Indexes for query performance ───────────────────────────
     await db.execute(
-        'CREATE INDEX idx_transactions_user_date ON transactions(user_id, date DESC)');
+      'CREATE INDEX idx_transactions_user_date ON transactions(user_id, date DESC)',
+    );
     await db.execute(
-        'CREATE INDEX idx_transactions_account ON transactions(account_id)');
+      'CREATE INDEX idx_transactions_account ON transactions(account_id)',
+    );
     await db.execute(
-        'CREATE INDEX idx_transactions_category ON transactions(category_id)');
+      'CREATE INDEX idx_transactions_category ON transactions(category_id)',
+    );
+    await db.execute('CREATE INDEX idx_accounts_user ON accounts(user_id)');
     await db.execute(
-        'CREATE INDEX idx_accounts_user ON accounts(user_id)');
+      'CREATE INDEX idx_categories_user ON categories(user_id, type)',
+    );
+    await db.execute('CREATE INDEX idx_loans_user ON loans(user_id, status)');
     await db.execute(
-        'CREATE INDEX idx_categories_user ON categories(user_id, type)');
-    await db.execute(
-        'CREATE INDEX idx_loans_user ON loans(user_id, status)');
-    await db.execute(
-        'CREATE INDEX idx_budgets_user ON budgets(user_id, is_active)');
+      'CREATE INDEX idx_budgets_user ON budgets(user_id, is_active)',
+    );
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Future migrations go here
+    // Project has not been released yet, so schema upgrade can recreate database.
+    await db.execute('PRAGMA foreign_keys = OFF');
+    await db.transaction((txn) async {
+      await txn.execute('DROP TABLE IF EXISTS feedbacks');
+      await txn.execute('DROP TABLE IF EXISTS budgets');
+      await txn.execute('DROP TABLE IF EXISTS transactions');
+      await txn.execute('DROP TABLE IF EXISTS loans');
+      await txn.execute('DROP TABLE IF EXISTS categories');
+      await txn.execute('DROP TABLE IF EXISTS accounts');
+      await txn.execute('DROP TABLE IF EXISTS users');
+      await _onCreate(txn, newVersion);
+    });
+    await db.execute('PRAGMA foreign_keys = ON');
   }
 
   /// Seed default categories for a new user.
@@ -261,7 +278,11 @@ class DatabaseHelper {
 
   /// Export the database file path for backup.
   Future<String> getDatabasePath() async {
+    return _databasePathByName(AppConstants.dbName);
+  }
+
+  Future<String> _databasePathByName(String dbName) async {
     final dir = await getApplicationDocumentsDirectory();
-    return join(dir.path, AppConstants.dbName);
+    return join(dir.path, dbName);
   }
 }

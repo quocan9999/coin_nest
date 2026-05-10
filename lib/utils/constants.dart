@@ -14,7 +14,7 @@ class AppConstants {
 
   // ─── Database ──────────────────────────────────────────────────
   static const String dbName = 'coinnest.db';
-  static const int dbVersion = 1;
+  static const int dbVersion = 2;
 
   // ─── Security ──────────────────────────────────────────────────
   /// Minimum password length enforced at input validation.

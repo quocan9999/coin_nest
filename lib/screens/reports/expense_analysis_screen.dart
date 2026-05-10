@@ -19,7 +19,10 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadData();
+    });
   }
 
   void _loadData() {
