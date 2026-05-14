@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/category_icons.dart';
 import '../transactions/transaction_list_screen.dart';
+import '../transactions/add_transaction_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -27,6 +28,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await context.read<TransactionProvider>().loadTransactions(userId);
     if (mounted) {
       await context.read<AccountProvider>().loadAccounts(userId);
+    }
+  }
+
+  // Hàm chuyển đổi loại giao dịch sang tiếng Việt
+  String _getTypeLabel(String type) {
+    switch (type) {
+      case 'expense':
+        return 'Chi tiêu';
+      case 'income':
+        return 'Thu nhập';
+      case 'transfer':
+        return 'Chuyển khoản';
+      case 'loan':
+        return 'Đi vay';
+      case 'lend':
+        return 'Cho vay';
+      default:
+        return type;
     }
   }
 
@@ -265,69 +284,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final sign = isExpense ? '- ' : '+ ';
     final iconKey = txn.categoryIconName ?? txn.type;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: CategoryIcons.getColor(iconKey).withAlpha(30),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              CategoryIcons.getIcon(iconKey),
-              color: CategoryIcons.getColor(iconKey),
-              size: 22,
-            ),
+    return GestureDetector(
+      // Thêm tính năng bấm vào giao dịch ở trang chủ để sửa luôn (tùy chọn, giống trang list)
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddTransactionScreen(transaction: txn),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: CategoryIcons.getColor(iconKey).withAlpha(30),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                CategoryIcons.getIcon(iconKey),
+                color: CategoryIcons.getColor(iconKey),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ĐÃ SỬA: Sử dụng _getTypeLabel nếu không có categoryName
+                  Text(
+                    txn.categoryName ?? _getTypeLabel(txn.type),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  if (txn.note != null && txn.note!.isNotEmpty)
+                    Text(
+                      txn.note!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  txn.categoryName ?? txn.type,
+                  '$sign${Formatters.currency(txn.amount)}',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        color: amountColor,
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
-                if (txn.note != null && txn.note!.isNotEmpty)
+                if (txn.accountName != null)
                   Text(
-                    txn.note!,
-                    style: Theme.of(context).textTheme.bodySmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    txn.accountName!,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppTheme.onSurfaceVariant,
+                        ),
                   ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$sign${Formatters.currency(txn.amount)}',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: amountColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              if (txn.accountName != null)
-                Text(
-                  txn.accountName!,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppTheme.onSurfaceVariant,
-                      ),
-                ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

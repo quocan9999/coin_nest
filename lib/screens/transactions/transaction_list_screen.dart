@@ -5,6 +5,7 @@ import '../../providers/transaction_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/category_icons.dart';
+import 'add_transaction_screen.dart';
 
 class TransactionListScreen extends StatefulWidget {
   const TransactionListScreen({super.key});
@@ -18,14 +19,33 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   @override
   void initState() {
     super.initState();
-    final userId = context.read<AuthProvider>().currentUserId;
-    context.read<TransactionProvider>().loadTransactions(userId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final userId = context.read<AuthProvider>().currentUserId;
+      context.read<TransactionProvider>().loadTransactions(userId);
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  String _getTypeLabel(String type) {
+    switch (type) {
+      case 'expense':
+        return 'Chi tiêu';
+      case 'income':
+        return 'Thu nhập';
+      case 'transfer':
+        return 'Chuyển khoản';
+      case 'loan':
+        return 'Đi vay';
+      case 'lend':
+        return 'Cho vay';
+      default:
+        return type;
+    }
   }
 
   @override
@@ -45,7 +65,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
       body: Column(
         children: [
-          // Search
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
             child: TextField(
@@ -64,7 +83,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             ),
           ),
 
-          // Filter chips
           SizedBox(
             height: 36,
             child: ListView(
@@ -82,7 +100,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
           const SizedBox(height: 8),
 
-          // Transaction list
           Expanded(
             child: txnProv.isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -151,37 +168,46 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     final sign = isExpense ? '- ' : (txn.type == 'income' ? '+ ' : '');
     final iconKey = txn.categoryIconName ?? txn.type;
 
-    // Xử lý chuỗi note: Nếu có note thì thêm dấu "•" phía sau, nếu không thì bỏ trống
     final noteStr = (txn.note != null && txn.note!.toString().trim().isNotEmpty) 
         ? '${txn.note} • ' 
         : '';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppTheme.surfaceContainerLowest, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-      child: Row(
-        children: [
-          Container(
-            width: 42, height: 42,
-            decoration: BoxDecoration(color: CategoryIcons.getColor(iconKey).withAlpha(30), borderRadius: BorderRadius.circular(12)),
-            child: Icon(CategoryIcons.getIcon(iconKey), color: CategoryIcons.getColor(iconKey), size: 20),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddTransactionScreen(transaction: txn),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(txn.categoryName ?? txn.type, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-              // Đã thay đổi: Dùng trực tiếp txn.time
-              Text('$noteStr${txn.time ?? Formatters.time(txn.date)}',
-                  style: Theme.of(context).textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: AppTheme.surfaceContainerLowest, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+        child: Row(
+          children: [
+            Container(
+              width: 42, height: 42,
+              decoration: BoxDecoration(color: CategoryIcons.getColor(iconKey).withAlpha(30), borderRadius: BorderRadius.circular(12)),
+              child: Icon(CategoryIcons.getIcon(iconKey), color: CategoryIcons.getColor(iconKey), size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // ĐÃ SỬA: Sử dụng _getTypeLabel(txn.type) nếu không có categoryName
+                Text(txn.categoryName ?? _getTypeLabel(txn.type), style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text('$noteStr${txn.time ?? Formatters.time(txn.date)}',
+                    style: Theme.of(context).textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ]),
+            ),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('$sign${Formatters.currency(txn.amount)}', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: color, fontWeight: FontWeight.w700)),
+              if (txn.accountName != null)
+                Text(txn.accountName!, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppTheme.onSurfaceVariant)),
             ]),
-          ),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('$sign${Formatters.currency(txn.amount)}', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: color, fontWeight: FontWeight.w700)),
-            if (txn.accountName != null)
-              Text(txn.accountName!, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppTheme.onSurfaceVariant)),
-          ]),
-        ],
+          ],
+        ),
       ),
     );
   }
