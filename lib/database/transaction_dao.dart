@@ -9,7 +9,9 @@ class TransactionDao {
   final _dbHelper = DatabaseHelper.instance;
 
   /// Insert a transaction and update account balances atomically.
-  Future<int> insertWithBalance(TransactionModel txn) async {
+  // Existing method unchanged
+// Existing method unchanged
+Future<int> insertWithBalance(TransactionModel txn) async {
     final db = await _dbHelper.database;
     late int txnId;
 
@@ -121,6 +123,11 @@ class TransactionDao {
       // 4. Cập nhật record trong database
       await dbTxn.update('transactions', newTxn.toMap(), where: 'id = ?', whereArgs: [newTxn.id]);
     });
+  }
+
+  Future<void> updateLoanId({required int transactionId, required int loanId}) async {
+    final db = await _dbHelper.database;
+    await db.update('transactions', {'loan_id': loanId}, where: 'id = ?', whereArgs: [transactionId]);
   }
 
   /// Delete a transaction and reverse its balance impact.
