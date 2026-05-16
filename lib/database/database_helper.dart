@@ -120,15 +120,18 @@ class DatabaseHelper {
         amount REAL NOT NULL CHECK(amount >= 0),
         remaining_amount REAL NOT NULL CHECK(remaining_amount >= 0),
         interest_rate REAL DEFAULT 0,
+        interest_calculated REAL NOT NULL DEFAULT 0,
         note TEXT,
         start_date TEXT NOT NULL,
         due_date TEXT,
         status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','paid','overdue')),
         account_id INTEGER,
+        transaction_id INTEGER,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL
+        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL,
+        FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
       )
     ''');
 
@@ -163,6 +166,22 @@ class DatabaseHelper {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE loan_payments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        loan_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        transaction_id INTEGER,
+        amount REAL NOT NULL CHECK(amount > 0),
+        payment_date TEXT NOT NULL,
+        note TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (loan_id) REFERENCES loans(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
+      )
+    ''');
+
     // ─── Indexes for query performance ───────────────────────────
     await db.execute(
       'CREATE INDEX idx_transactions_user_date ON transactions(user_id, date DESC)',
@@ -181,6 +200,8 @@ class DatabaseHelper {
     await db.execute(
       'CREATE INDEX idx_budgets_user ON budgets(user_id, is_active)',
     );
+    await db.execute('CREATE INDEX idx_loan_payments_loan ON loan_payments(loan_id)');
+    await db.execute('CREATE INDEX idx_loan_payments_user_date ON loan_payments(user_id, payment_date DESC)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -189,6 +210,7 @@ class DatabaseHelper {
     await db.transaction((txn) async {
       await txn.execute('DROP TABLE IF EXISTS feedbacks');
       await txn.execute('DROP TABLE IF EXISTS budgets');
+      await txn.execute('DROP TABLE IF EXISTS loan_payments');
       await txn.execute('DROP TABLE IF EXISTS transactions');
       await txn.execute('DROP TABLE IF EXISTS loans');
       await txn.execute('DROP TABLE IF EXISTS categories');
