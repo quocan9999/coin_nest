@@ -63,9 +63,23 @@ class LoanProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> recordPayment(int loanId, double amount, int userId) async {
+  Future<bool> recordPayment(
+    int loanId,
+    double amount,
+    int userId, {
+    DateTime? paymentDate,
+    String? note,
+    int? transactionId,
+  }) async {
     try {
-      await _loanDao.recordPayment(loanId, amount);
+      await _loanDao.recordPayment(
+        loanId: loanId,
+        userId: userId,
+        amount: amount,
+        paymentDate: paymentDate ?? DateTime.now(),
+        note: note != null ? SecurityUtils.sanitise(note) : null,
+        transactionId: transactionId,
+      );
       await loadLoans(userId);
       return true;
     } catch (_) {
@@ -75,7 +89,7 @@ class LoanProvider extends ChangeNotifier {
 
   Future<bool> deleteLoan(int id, int userId) async {
     try {
-      await _loanDao.delete(id);
+      await _loanDao.deleteForUser(id, userId);
       await loadLoans(userId);
       return true;
     } catch (_) {

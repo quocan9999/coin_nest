@@ -12,6 +12,8 @@ class Loan {
   final DateTime? dueDate;
   final String status; // 'active', 'paid', 'overdue'
   final int? accountId;
+  final int? transactionId;
+  final double interestCalculated;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -31,6 +33,8 @@ class Loan {
     this.dueDate,
     this.status = 'active',
     this.accountId,
+    this.transactionId,
+    this.interestCalculated = 0,
     required this.createdAt,
     required this.updatedAt,
     this.accountName,
@@ -52,6 +56,8 @@ class Loan {
           : null,
       status: map['status'] as String? ?? 'active',
       accountId: map['account_id'] as int?,
+      transactionId: map['transaction_id'] as int?,
+      interestCalculated: (map['interest_calculated'] as num?)?.toDouble() ?? 0,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
       accountName: map['account_name'] as String?,
@@ -72,6 +78,8 @@ class Loan {
       'due_date': dueDate?.toIso8601String().split('T').first,
       'status': status,
       'account_id': accountId,
+      'transaction_id': transactionId,
+      'interest_calculated': interestCalculated,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -90,6 +98,8 @@ class Loan {
     DateTime? dueDate,
     String? status,
     int? accountId,
+    int? transactionId,
+    double? interestCalculated,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -106,6 +116,8 @@ class Loan {
       dueDate: dueDate ?? this.dueDate,
       status: status ?? this.status,
       accountId: accountId ?? this.accountId,
+      transactionId: transactionId ?? this.transactionId,
+      interestCalculated: interestCalculated ?? this.interestCalculated,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
