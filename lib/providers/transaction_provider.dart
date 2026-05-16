@@ -107,6 +107,47 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
+  /// BỔ SUNG: Hàm cập nhật giao dịch
+  Future<bool> updateTransaction({
+    required int txnId,
+    required int userId,
+    required int accountId,
+    int? toAccountId,
+    int? categoryId,
+    required String type,
+    required double amount,
+    String? note,
+    required DateTime date,
+    String? time,
+    int? loanId,
+    required DateTime createdAt,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final txn = TransactionModel(
+        id: txnId,
+        userId: userId,
+        accountId: accountId,
+        toAccountId: toAccountId,
+        categoryId: categoryId,
+        type: type,
+        amount: amount,
+        note: note != null ? SecurityUtils.sanitise(note) : null,
+        date: date,
+        time: time,
+        loanId: loanId,
+        createdAt: createdAt, // Giữ nguyên ngày tạo gốc
+        updatedAt: now,
+      );
+
+      await _txnDao.updateWithBalance(txn);
+      await loadTransactions(userId);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> deleteTransaction(int txnId, int userId) async {
     try {
       await _txnDao.deleteWithBalance(txnId);
