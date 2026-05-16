@@ -19,7 +19,10 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadData();
+    });
   }
 
   void _loadData() {

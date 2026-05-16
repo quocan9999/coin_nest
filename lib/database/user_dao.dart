@@ -11,13 +11,39 @@ class UserDao {
     return db.insert('users', user.toMap());
   }
 
-  /// Find a user by email. Returns `null` if not found.
+  /// Find a user by phone number.
+  Future<User?> findByPhone(String phone) async {
+    final db = await _dbHelper.database;
+    final result = await db.query(
+      'users',
+      where: 'phone = ?',
+      whereArgs: [phone],
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return User.fromMap(result.first);
+  }
+
+  /// Find a user by email.
   Future<User?> findByEmail(String email) async {
     final db = await _dbHelper.database;
     final result = await db.query(
       'users',
       where: 'email = ?',
       whereArgs: [email],
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return User.fromMap(result.first);
+  }
+
+  /// Find a user by Firebase UID.
+  Future<User?> findByFirebaseUid(String firebaseUid) async {
+    final db = await _dbHelper.database;
+    final result = await db.query(
+      'users',
+      where: 'firebase_uid = ?',
+      whereArgs: [firebaseUid],
       limit: 1,
     );
     if (result.isEmpty) return null;
@@ -49,8 +75,7 @@ class UserDao {
   }
 
   /// Update the password hash and salt for a user.
-  Future<int> updatePassword(
-      int userId, String newHash, String newSalt) async {
+  Future<int> updatePassword(int userId, String newHash, String newSalt) async {
     final db = await _dbHelper.database;
     return db.update(
       'users',
@@ -68,6 +93,12 @@ class UserDao {
   Future<int> delete(int id) async {
     final db = await _dbHelper.database;
     return db.delete('users', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Check if a phone is already registered.
+  Future<bool> phoneExists(String phone) async {
+    final user = await findByPhone(phone);
+    return user != null;
   }
 
   /// Check if an email is already registered.

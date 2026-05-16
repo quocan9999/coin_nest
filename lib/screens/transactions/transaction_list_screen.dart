@@ -20,6 +20,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final userId = context.read<AuthProvider>().currentUserId;
       context.read<TransactionProvider>().loadTransactions(userId);
     });

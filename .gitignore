@@ -27,10 +27,12 @@ migrate_working_dir/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+**/.dart_tool/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
 /build/
+**/build/
 /coverage/
 
 # Symbolication related
@@ -43,6 +45,34 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/build/
+/android/.gradle/
+
+# Windows related
+/windows/flutter/ephemeral/
+/windows/flutter/generated_plugins.cmake
+/windows/flutter/generated_plugin_registrant.cc
+/windows/flutter/generated_plugin_registrant.h
+
+# macOS related
+/macos/Flutter/ephemeral/
+/macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Linux related
+/linux/flutter/ephemeral/
+/linux/flutter/generated_plugins.cmake
+/linux/flutter/generated_plugin_registrant.cc
+/linux/flutter/generated_plugin_registrant.h
+
+# iOS related
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+/ios/Flutter/Flutter.podspec
+/ios/ServiceDefinitions.json
+/ios/Runner/GeneratedPluginRegistrant.h
+/ios/Runner/GeneratedPluginRegistrant.m
+
+# App scripts log
 analyze.txt
 analyze2.txt
 generated_screens.txt
@@ -51,3 +81,13 @@ screens_out.txt
 download_screens.py
 extract_gen.py
 fix_warnings.py
+.vscode/settings.json
+
+.cursor/
+.agents/
+.vscode/
+
+# Firebase sensitive configs
+/android/app/google-services.json
+/lib/firebase_options.dart
+/firebase.json

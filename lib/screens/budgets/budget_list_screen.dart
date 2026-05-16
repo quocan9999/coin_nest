@@ -17,8 +17,11 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
   @override
   void initState() {
     super.initState();
-    final userId = context.read<AuthProvider>().currentUserId;
-    context.read<BudgetProvider>().loadBudgets(userId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final userId = context.read<AuthProvider>().currentUserId;
+      context.read<BudgetProvider>().loadBudgets(userId);
+    });
   }
 
   @override
