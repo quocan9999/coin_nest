@@ -11,6 +11,11 @@ class LoanDao {
     return db.insert('loans', loan.toMap());
   }
 
+  Future<void> updateTransactionId({required int loanId, required int transactionId}) async {
+    final db = await _dbHelper.database;
+    await db.update('loans', {'transaction_id': transactionId}, where: 'id = ?', whereArgs: [loanId]);
+  }
+
   Future<List<Loan>> getAllByUser(int userId, {String? status, String? type}) async {
     final db = await _dbHelper.database;
 

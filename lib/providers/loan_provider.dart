@@ -1,17 +1,25 @@
 import 'package:flutter/foundation.dart';
 import '../database/loan_dao.dart';
+import '../database/transaction_dao.dart';
 import '../models/loan.dart';
+import '../models/loan_payment.dart';
+import '../providers/transaction_provider.dart';
 import '../utils/security_utils.dart';
 
 class LoanProvider extends ChangeNotifier {
   final _loanDao = LoanDao();
+  final _txnDao = TransactionDao();
+  final _txnProvider = TransactionProvider();
+
   List<Loan> _loans = [];
   Map<String, double> _summary = {'borrowed': 0, 'lent': 0};
   bool _isLoading = false;
+  String? _errorMessage;
 
   List<Loan> get loans => _loans;
   Map<String, double> get summary => _summary;
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
   List<Loan> get activeLoans => _loans.where((l) => l.status == 'active').toList();
   List<Loan> get borrowedLoans => _loans.where((l) => l.type == 'borrow').toList();
@@ -23,7 +31,10 @@ class LoanProvider extends ChangeNotifier {
     try {
       _loans = await _loanDao.getAllByUser(userId);
       _summary = await _loanDao.getSummary(userId);
-    } catch (_) {}
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
     _isLoading = false;
     notifyListeners();
   }
@@ -39,7 +50,18 @@ class LoanProvider extends ChangeNotifier {
     DateTime? dueDate,
     int? accountId,
   }) async {
+    int? loanId;
+    int? txnId;
+
     try {
+      if (userId == 0) throw ArgumentError('Invalid userId');
+      if (type != 'borrow' && type != 'lend') throw ArgumentError('Invalid loan type');
+      if (amount <= 0) throw ArgumentError('Amount must be > 0');
+      if (accountId == null || accountId <= 0) throw ArgumentError('accountId required');
+      if (dueDate != null && dueDate.isBefore(startDate)) {
+        throw ArgumentError('dueDate must be >= startDate');
+      }
+
       final now = DateTime.now();
       final loan = Loan(
         userId: userId,
@@ -55,10 +77,42 @@ class LoanProvider extends ChangeNotifier {
         createdAt: now,
         updatedAt: now,
       );
-      await _loanDao.insert(loan);
-      await loadLoans(userId);
+
+      loanId = await _loanDao.insert(loan);
+
+      final txnType = type == 'borrow' ? 'loan' : 'lend';
+      txnId = await _txnProvider.addTransactionAndReturnId(
+        userId: userId,
+        accountId: accountId,
+        type: txnType,
+        amount: amount,
+        date: startDate,
+        loanId: loanId,
+      );
+
+      if (txnId == null) {
+        throw StateError('Failed to create loan transaction');
+      }
+
+      await _loanDao.updateTransactionId(loanId: loanId, transactionId: txnId);
+      await _txnDao.updateLoanId(transactionId: txnId, loanId: loanId);
+
+      await Future.wait([
+        loadLoans(userId),
+        _txnProvider.loadTransactions(userId),
+      ]);
+
+      _errorMessage = null;
       return true;
-    } catch (_) {
+    } catch (e) {
+      if (txnId != null) {
+        await _txnDao.deleteWithBalance(txnId);
+      }
+      if (loanId != null) {
+        await _loanDao.deleteForUser(loanId, userId);
+      }
+      _errorMessage = e.toString();
+      notifyListeners();
       return false;
     }
   }
@@ -69,30 +123,77 @@ class LoanProvider extends ChangeNotifier {
     int userId, {
     DateTime? paymentDate,
     String? note,
-    int? transactionId,
+    int? accountId,
   }) async {
+    int? txnId;
+
     try {
+      final loan = await _loanDao.findByIdForUser(loanId, userId);
+      if (loan == null) {
+        throw StateError('Loan not found');
+      }
+
+      final resolvedAccountId = accountId ?? loan.accountId;
+      if (resolvedAccountId == null || resolvedAccountId <= 0) {
+        throw ArgumentError('Invalid account for payment');
+      }
+
+      final txnType = loan.type == 'borrow' ? 'expense' : 'income';
+      final paidAt = paymentDate ?? DateTime.now();
+
+      txnId = await _txnProvider.addTransactionAndReturnId(
+        userId: userId,
+        accountId: resolvedAccountId,
+        type: txnType,
+        amount: amount,
+        date: paidAt,
+        note: note != null ? SecurityUtils.sanitise(note) : null,
+        loanId: loanId,
+      );
+
+      if (txnId == null) {
+        throw StateError('Failed to create payment transaction');
+      }
+
       await _loanDao.recordPayment(
         loanId: loanId,
         userId: userId,
         amount: amount,
-        paymentDate: paymentDate ?? DateTime.now(),
+        paymentDate: paidAt,
         note: note != null ? SecurityUtils.sanitise(note) : null,
-        transactionId: transactionId,
+        transactionId: txnId,
       );
-      await loadLoans(userId);
+
+      await Future.wait([
+        loadLoans(userId),
+        _txnProvider.loadTransactions(userId),
+      ]);
+
+      _errorMessage = null;
       return true;
-    } catch (_) {
+    } catch (e) {
+      if (txnId != null) {
+        await _txnDao.deleteWithBalance(txnId);
+      }
+      _errorMessage = e.toString();
+      notifyListeners();
       return false;
     }
+  }
+
+  Future<List<LoanPayment>> getPaymentHistory(int loanId, int userId) {
+    return _loanDao.getPaymentHistory(loanId, userId);
   }
 
   Future<bool> deleteLoan(int id, int userId) async {
     try {
       await _loanDao.deleteForUser(id, userId);
       await loadLoans(userId);
+      _errorMessage = null;
       return true;
-    } catch (_) {
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
       return false;
     }
   }

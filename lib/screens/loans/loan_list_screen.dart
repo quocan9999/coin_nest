@@ -35,7 +35,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
         leading: IconButton(icon: const Icon(Icons.arrow_back_ios_rounded), onPressed: () => Navigator.pop(context)),
         actions: [
           IconButton(icon: const Icon(Icons.add_circle_outline_rounded, color: AppTheme.primary),
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditLoanScreen()))),
+              onPressed: _openAddLoan),
         ],
       ),
       body: Column(children: [
@@ -61,7 +61,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
                   itemBuilder: (_, i) {
                     final loan = loanProv.loans[i];
                     return GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LoanDetailScreen(loan: loan))),
+                      onTap: () => _openLoanDetail(loan),
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(16),
@@ -72,11 +72,13 @@ class _LoanListScreenState extends State<LoanListScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
                                 color: loan.type == 'borrow' ? AppTheme.tertiary.withAlpha(20) : AppTheme.loanColor.withAlpha(20),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                               ),
                               child: Text(loan.type == 'borrow' ? 'Vay' : 'Cho vay',
                                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: loan.type == 'borrow' ? AppTheme.tertiary : AppTheme.loanColor)),
                             ),
+                            const SizedBox(width: 8),
+                            _statusBadge(context, loan),
                             const Spacer(),
                             Text(Formatters.currency(loan.remainingAmount), style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
                           ]),
@@ -87,7 +89,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
                             value: (loan.paidPercentage / 100).clamp(0, 1),
                             backgroundColor: AppTheme.outlineVariant.withAlpha(51),
                             valueColor: AlwaysStoppedAnimation(loan.type == 'borrow' ? AppTheme.tertiary : AppTheme.loanColor),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                           ),
                           const SizedBox(height: 4),
                           Text('${Formatters.percent(loan.paidPercentage)} đã trả • ${Formatters.date(loan.startDate)}',
@@ -99,6 +101,31 @@ class _LoanListScreenState extends State<LoanListScreen> {
                 ),
         ),
       ]),
+    );
+  }
+
+  Future<void> _refresh() async {
+    final userId = context.read<AuthProvider>().currentUserId;
+    await context.read<LoanProvider>().loadLoans(userId);
+  }
+
+  Future<void> _openAddLoan() async {
+    final changed = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => const AddEditLoanScreen()));
+    if (changed == true) await _refresh();
+  }
+
+  Future<void> _openLoanDetail(dynamic loan) async {
+    final changed = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => LoanDetailScreen(loan: loan)));
+    if (changed == true) await _refresh();
+  }
+
+  Widget _statusBadge(BuildContext context, dynamic loan) {
+    final label = loan.isPaid ? 'Đã trả' : (loan.isOverdue ? 'Quá hạn' : 'Đang hoạt động');
+    final color = loan.isPaid ? AppTheme.secondary : (loan.isOverdue ? AppTheme.tertiary : AppTheme.primary);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: color.withAlpha(18), borderRadius: BorderRadius.circular(6)),
+      child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
     );
   }
 

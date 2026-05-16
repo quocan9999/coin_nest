@@ -150,7 +150,7 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen> with SingleTick
                       child: CircularProgressIndicator(
                         value: totalAmount > 0 ? (totalPaid / totalAmount) : 0,
                         strokeWidth: 6,
-                        backgroundColor: Colors.white.withValues(alpha: 0.4),
+                        backgroundColor: AppTheme.surfaceContainerLowest.withValues(alpha: 0.4),
                         valueColor: AlwaysStoppedAnimation<Color>(color),
                       ),
                     ),
@@ -184,15 +184,14 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen> with SingleTick
             ),
           ...loans.map((loan) {
             double paid = loan.amount - loan.remainingAmount;
+            final statusLabel = loan.isPaid ? 'Đã trả' : (loan.isOverdue ? 'Quá hạn' : 'Đang hoạt động');
+            final statusColor = loan.isPaid ? AppTheme.secondary : (loan.isOverdue ? AppTheme.tertiary : AppTheme.primary);
             return Container(
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppTheme.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 4)),
-                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,10 +203,18 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen> with SingleTick
                         loan.personName,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                       ),
-                      Text(
-                        Formatters.currency(loan.amount),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: color),
-                      ),
+                      Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                        Text(
+                          Formatters.currency(loan.remainingAmount),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: color),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(color: statusColor.withAlpha(18), borderRadius: BorderRadius.circular(AppTheme.radiusSm)),
+                          child: Text(statusLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: statusColor)),
+                        ),
+                      ]),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -229,16 +236,16 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen> with SingleTick
                     children: [
                       Expanded(
                         child: LinearProgressIndicator(
-                          value: loan.amount > 0 ? paid / loan.amount : 0,
+                          value: (loan.paidPercentage / 100).clamp(0, 1),
                           backgroundColor: AppTheme.surfaceContainerHigh,
                           valueColor: AlwaysStoppedAnimation<Color>(color),
                           minHeight: 6,
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        '${loan.amount > 0 ? ((paid / loan.amount) * 100).toStringAsFixed(0) : 0}%',
+                        Formatters.percent(loan.paidPercentage),
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600, color: color),
                       )
                     ],

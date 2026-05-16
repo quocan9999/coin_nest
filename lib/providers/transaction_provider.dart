@@ -82,6 +82,33 @@ class TransactionProvider extends ChangeNotifier {
     String? time,
     int? loanId,
   }) async {
+    final txnId = await addTransactionAndReturnId(
+      userId: userId,
+      accountId: accountId,
+      toAccountId: toAccountId,
+      categoryId: categoryId,
+      type: type,
+      amount: amount,
+      note: note,
+      date: date,
+      time: time,
+      loanId: loanId,
+    );
+    return txnId != null;
+  }
+
+  Future<int?> addTransactionAndReturnId({
+    required int userId,
+    required int accountId,
+    int? toAccountId,
+    int? categoryId,
+    required String type,
+    required double amount,
+    String? note,
+    required DateTime date,
+    String? time,
+    int? loanId,
+  }) async {
     try {
       final now = DateTime.now();
       final txn = TransactionModel(
@@ -99,11 +126,11 @@ class TransactionProvider extends ChangeNotifier {
         updatedAt: now,
       );
 
-      await _txnDao.insertWithBalance(txn);
+      final txnId = await _txnDao.insertWithBalance(txn);
       await loadTransactions(userId);
-      return true;
+      return txnId;
     } catch (_) {
-      return false;
+      return null;
     }
   }
 

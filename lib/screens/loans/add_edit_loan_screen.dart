@@ -36,6 +36,15 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_accountId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn tài khoản')));
+      return;
+    }
+    if (_dueDate != null && _dueDate!.isBefore(_startDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hạn trả không được trước ngày bắt đầu')));
+      return;
+    }
+
     final userId = context.read<AuthProvider>().currentUserId;
     final success = await context.read<LoanProvider>().addLoan(
       userId: userId, type: _type, personName: _personController.text.trim(),
@@ -45,7 +54,13 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
       startDate: _startDate, dueDate: _dueDate, accountId: _accountId,
     );
     if (!mounted) return;
-    if (success) Navigator.pop(context);
+    if (success) {
+      await context.read<AccountProvider>().loadAccounts(userId);
+      if (mounted) Navigator.pop(context, true);
+    } else {
+      final message = context.read<LoanProvider>().errorMessage ?? 'Không thể lưu khoản vay';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
   @override
@@ -102,7 +117,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
           const SizedBox(height: 20),
           _label('GHI CHÚ'),
           const SizedBox(height: 8),
-          TextFormField(controller: _noteController, maxLines: 2, decoration: const InputDecoration(hintText: 'Tùy chọn')),
+          TextFormField(controller: _noteController, maxLines: 2, validator: Validators.note, decoration: const InputDecoration(hintText: 'Tùy chọn')),
           const SizedBox(height: 28),
           SizedBox(height: 52, child: ElevatedButton(onPressed: _save, child: const Text('Lưu'))),
         ])),
@@ -117,7 +132,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(color: sel ? AppTheme.primary : AppTheme.surfaceContainerLow, borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
-        child: Text(label, style: TextStyle(color: sel ? Colors.white : AppTheme.onSurface, fontWeight: sel ? FontWeight.w600 : FontWeight.w400)),
+        child: Text(label, style: TextStyle(color: sel ? AppTheme.onPrimary : AppTheme.onSurface, fontWeight: sel ? FontWeight.w600 : FontWeight.w400)),
       ),
     );
   }
