@@ -2,137 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../utils/phone_utils.dart';
 import '../../utils/validators.dart';
 import '../home/home_screen.dart';
-import 'otp_verification_screen.dart';
-import 'register_email_screen.dart';
+import 'register_screen.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+class RegisterEmailScreen extends StatefulWidget {
+  const RegisterEmailScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<RegisterEmailScreen> createState() => _RegisterEmailScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
   static const _googleLogoUrl =
       'https://www.figma.com/api/mcp/asset/3ee347b0-a8b2-46d5-9ac3-0f8e4effb5f7';
-  static const _phoneRowFieldHeight = 54.0;
 
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
+  /// Gọi registerWithEmail qua AuthProvider, tạo Firebase user Email/Password
+  /// rồi insert SQLite và seed dữ liệu mặc định.
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthProvider>();
-    final fullName = _nameController.text.trim();
-    final phone = _phoneController.text.trim();
-    final password = _passwordController.text;
-
-    final verificationId = await auth.requestPhoneRegistrationOtp(phone: phone);
+    final success = await auth.registerWithEmail(
+      fullName: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
 
     if (!mounted) return;
 
-    if (verificationId == null) {
+    if (success) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(auth.errorMessage ?? 'Không thể gửi mã OTP'),
+          content: Text(auth.errorMessage ?? 'Đăng ký thất bại'),
           backgroundColor: AppTheme.error,
         ),
       );
-      return;
     }
-
-    await _openOtpVerification(
-      fullName: fullName,
-      phone: phone,
-      password: password,
-      initialVerificationId: verificationId,
-    );
-  }
-
-  Future<void> _openOtpVerification({
-    required String fullName,
-    required String phone,
-    required String password,
-    required String initialVerificationId,
-  }) async {
-    String currentVerificationId = initialVerificationId;
-    final auth = context.read<AuthProvider>();
-    String phoneDisplay = phone;
-    try {
-      phoneDisplay = PhoneUtils.normaliseVnPhone(phone);
-    } catch (_) {}
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OtpVerificationScreen(
-          phoneDisplay: phoneDisplay,
-          onConfirm: (otpCode) async {
-            final success = await auth.confirmPhoneRegistration(
-              fullName: fullName,
-              phone: phone,
-              password: password,
-              otpVerificationId: currentVerificationId,
-              otpCode: otpCode,
-            );
-
-            if (!mounted) return;
-            if (success) {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                (route) => false,
-              );
-              return;
-            }
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(auth.errorMessage ?? 'Xác thực OTP thất bại'),
-                backgroundColor: AppTheme.error,
-              ),
-            );
-          },
-          onResend: () async {
-            final newVerificationId = await auth.requestPhoneRegistrationOtp(
-              phone: phone,
-            );
-            if (!mounted) return;
-            if (newVerificationId == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    auth.errorMessage ?? 'Không thể gửi lại mã OTP',
-                  ),
-                  backgroundColor: AppTheme.error,
-                ),
-              );
-              return;
-            }
-
-            currentVerificationId = newVerificationId;
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Đã gửi lại mã OTP')));
-          },
-        ),
-      ),
-    );
   }
 
   @override
@@ -188,6 +114,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+
+                    // Trường họ tên
                     _buildInputField(
                       label: 'HỌ TÊN',
                       hint: 'Nguyễn Văn A',
@@ -197,8 +125,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       textCapitalization: TextCapitalization.words,
                     ),
                     const SizedBox(height: 16),
-                    _buildPhoneField(enabled: !isLoading),
+
+                    // Trường email — thay thế field SĐT trong màn phone
+                    _buildInputField(
+                      label: 'EMAIL',
+                      hint: 'you@example.com',
+                      controller: _emailController,
+                      validator: Validators.email,
+                      enabled: !isLoading,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
                     const SizedBox(height: 16),
+
+                    // Trường mật khẩu
                     _buildInputField(
                       label: 'MẬT KHẨU',
                       hint: '••••••••',
@@ -208,6 +147,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       obscureText: true,
                     ),
                     const SizedBox(height: 16),
+
+                    // Trường xác nhận mật khẩu
                     _buildInputField(
                       label: 'XÁC NHẬN MẬT KHẨU',
                       hint: '••••••••',
@@ -220,6 +161,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       obscureText: true,
                     ),
                     const SizedBox(height: 16),
+
+                    // Nút đăng ký chính
                     SizedBox(
                       height: 56,
                       child: ElevatedButton(
@@ -252,6 +195,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                       ),
                     ),
+
+                    // Hiển thị lỗi nếu có
                     if (auth.errorMessage != null &&
                         auth.errorMessage!.isNotEmpty)
                       Padding(
@@ -262,6 +207,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ?.copyWith(color: AppTheme.error),
                         ),
                       ),
+
+                    // Divider "Hoặc đăng ký bằng"
                     const SizedBox(height: 24),
                     Row(
                       children: [
@@ -286,7 +233,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    // Nút toggle chuyển sang đăng ký bằng Email
+
+                    // Nút toggle chuyển sang đăng ký bằng SĐT
                     SizedBox(
                       height: 52,
                       child: OutlinedButton(
@@ -297,7 +245,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => const RegisterEmailScreen(),
+                                    builder: (_) => const RegisterScreen(),
                                   ),
                                 );
                               },
@@ -312,13 +260,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.email_outlined,
+                              Icons.phone_android_rounded,
                               size: 20,
                               color: AppTheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 12),
                             Text(
-                              'Email',
+                              'Số điện thoại',
                               style: Theme.of(context).textTheme.labelLarge
                                   ?.copyWith(
                                     color: AppTheme.onSurfaceVariant,
@@ -368,6 +316,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                     ),
+
+                    // Footer "Đã có tài khoản? Đăng nhập"
                     const SizedBox(height: 150),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -403,85 +353,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildPhoneField({required bool enabled}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: Text(
-            'SỐ ĐIỆN THOẠI',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.55,
-              color: AppTheme.outline,
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: _phoneRowFieldHeight,
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '+84',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: SizedBox(
-                height: _phoneRowFieldHeight,
-                child: TextFormField(
-                  controller: _phoneController,
-                  enabled: enabled,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    hintText: '867944050',
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 16,
-                    ),
-                    fillColor: AppTheme.surfaceContainerHigh,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  validator: (value) {
-                    final req = Validators.required(value, 'Số điện thoại');
-                    if (req != null) return req;
-                    if (!PhoneUtils.isValidVnLocalInput(value!.trim())) {
-                      return 'Số điện thoại không hợp lệ';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// Xử lý đăng nhập bằng Google từ màn đăng ký — chuyển Home nếu thành công.
+  /// Xử lý đăng nhập bằng Google từ màn đăng ký email — chuyển Home nếu thành công.
   Future<void> _loginWithGoogle() async {
     final auth = context.read<AuthProvider>();
     final success = await auth.loginWithGoogle();
@@ -503,6 +375,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  /// Builder helper cho các input field đồng bộ style với RegisterScreen.
   Widget _buildInputField({
     required String label,
     required String hint,
