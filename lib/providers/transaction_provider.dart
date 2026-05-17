@@ -38,7 +38,8 @@ class TransactionProvider extends ChangeNotifier {
     return 'THÁNG NÀY';
   }
 
-  Future<void> loadTransactions(int userId, {
+  Future<void> loadTransactions(
+    int userId, {
     String? startDate,
     String? endDate,
   }) async {
@@ -48,10 +49,16 @@ class TransactionProvider extends ChangeNotifier {
     try {
       // Default to current month if no range given
       final now = DateTime.now();
-      final start = startDate ??
+      final start =
+          startDate ??
           DateTime(now.year, now.month, 1).toIso8601String().split('T').first;
-      final end = endDate ??
-          DateTime(now.year, now.month + 1, 0).toIso8601String().split('T').first;
+      final end =
+          endDate ??
+          DateTime(
+            now.year,
+            now.month + 1,
+            0,
+          ).toIso8601String().split('T').first;
 
       _transactions = await _txnDao.getByUser(
         userId,
@@ -82,6 +89,33 @@ class TransactionProvider extends ChangeNotifier {
     String? time,
     int? loanId,
   }) async {
+    final txnId = await addTransactionAndReturnId(
+      userId: userId,
+      accountId: accountId,
+      toAccountId: toAccountId,
+      categoryId: categoryId,
+      type: type,
+      amount: amount,
+      note: note,
+      date: date,
+      time: time,
+      loanId: loanId,
+    );
+    return txnId != null;
+  }
+
+  Future<int?> addTransactionAndReturnId({
+    required int userId,
+    required int accountId,
+    int? toAccountId,
+    int? categoryId,
+    required String type,
+    required double amount,
+    String? note,
+    required DateTime date,
+    String? time,
+    int? loanId,
+  }) async {
     try {
       final now = DateTime.now();
       final txn = TransactionModel(
@@ -99,7 +133,48 @@ class TransactionProvider extends ChangeNotifier {
         updatedAt: now,
       );
 
-      await _txnDao.insertWithBalance(txn);
+      final txnId = await _txnDao.insertWithBalance(txn);
+      await loadTransactions(userId);
+      return txnId;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// BỔ SUNG: Hàm cập nhật giao dịch
+  Future<bool> updateTransaction({
+    required int txnId,
+    required int userId,
+    required int accountId,
+    int? toAccountId,
+    int? categoryId,
+    required String type,
+    required double amount,
+    String? note,
+    required DateTime date,
+    String? time,
+    int? loanId,
+    required DateTime createdAt,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final txn = TransactionModel(
+        id: txnId,
+        userId: userId,
+        accountId: accountId,
+        toAccountId: toAccountId,
+        categoryId: categoryId,
+        type: type,
+        amount: amount,
+        note: note != null ? SecurityUtils.sanitise(note) : null,
+        date: date,
+        time: time,
+        loanId: loanId,
+        createdAt: createdAt, // Giữ nguyên ngày tạo gốc
+        updatedAt: now,
+      );
+
+      await _txnDao.updateWithBalance(txn);
       await loadTransactions(userId);
       return true;
     } catch (_) {
