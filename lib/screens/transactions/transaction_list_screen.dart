@@ -5,6 +5,7 @@ import '../../providers/transaction_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/category_icons.dart';
+import 'add_transaction_screen.dart';
 
 class TransactionListScreen extends StatefulWidget {
   const TransactionListScreen({super.key});
@@ -18,14 +19,34 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   @override
   void initState() {
     super.initState();
-    final userId = context.read<AuthProvider>().currentUserId;
-    context.read<TransactionProvider>().loadTransactions(userId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final userId = context.read<AuthProvider>().currentUserId;
+      context.read<TransactionProvider>().loadTransactions(userId);
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  String _getTypeLabel(String type) {
+    switch (type) {
+      case 'expense':
+        return 'Chi tiêu';
+      case 'income':
+        return 'Thu nhập';
+      case 'transfer':
+        return 'Chuyển khoản';
+      case 'loan':
+        return 'Đi vay';
+      case 'lend':
+        return 'Cho vay';
+      default:
+        return type;
+    }
   }
 
   @override
@@ -36,12 +57,29 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     return Scaffold(
       backgroundColor: AppTheme.surface,
       appBar: AppBar(
-        title: Row(children: [
-          const Icon(Icons.account_balance_wallet_rounded, color: AppTheme.primary, size: 22),
-          const SizedBox(width: 8),
-          Text('CoinNest', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppTheme.primary, fontWeight: FontWeight.w700)),
-        ]),
-        actions: [IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {})],
+        title: Row(
+          children: [
+            const Icon(
+              Icons.account_balance_wallet_rounded,
+              color: AppTheme.primary,
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'CoinNest',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: AppTheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {},
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -52,14 +90,19 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               controller: _searchController,
               onChanged: (q) {
                 txnProv.setSearchQuery(q);
-                txnProv.loadTransactions(context.read<AuthProvider>().currentUserId);
+                txnProv.loadTransactions(
+                  context.read<AuthProvider>().currentUserId,
+                );
               },
               decoration: InputDecoration(
                 hintText: 'Tìm kiếm giao dịch...',
                 prefixIcon: const Icon(Icons.search, size: 20),
                 filled: true,
                 fillColor: AppTheme.surfaceContainerLowest,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radiusFull), borderSide: BorderSide.none),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),
@@ -87,40 +130,65 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             child: txnProv.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : txnProv.transactions.isEmpty
-                    ? Center(
-                        child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.receipt_long_outlined, size: 56, color: AppTheme.outlineVariant),
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.receipt_long_outlined,
+                          size: 56,
+                          color: AppTheme.outlineVariant,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Chưa có giao dịch nào',
+                          style: TextStyle(color: AppTheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    children: grouped.entries.map((entry) {
+                      final total = entry.value.fold<double>(
+                        0,
+                        (sum, t) => sum + t.signedAmount,
+                      );
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           const SizedBox(height: 12),
-                          Text('Chưa có giao dịch nào', style: TextStyle(color: AppTheme.onSurfaceVariant)),
-                        ]),
-                      )
-                    : ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        children: grouped.entries.map((entry) {
-                          final total = entry.value.fold<double>(0, (sum, t) => sum + t.signedAmount);
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(entry.key, style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.8)),
-                                  Text(
-                                    Formatters.signedCurrency(total),
-                                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                          color: total >= 0 ? AppTheme.secondary : AppTheme.tertiary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                ],
+                              Text(
+                                entry.key,
+                                style: Theme.of(context).textTheme.labelMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.8,
+                                    ),
                               ),
-                              const SizedBox(height: 8),
-                              ...entry.value.map((txn) => _buildTxnTile(context, txn)),
+                              Text(
+                                Formatters.signedCurrency(total),
+                                style: Theme.of(context).textTheme.labelMedium
+                                    ?.copyWith(
+                                      color: total >= 0
+                                          ? AppTheme.secondary
+                                          : AppTheme.tertiary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
                             ],
-                          );
-                        }).toList(),
-                      ),
+                          ),
+                          const SizedBox(height: 8),
+                          ...entry.value.map(
+                            (txn) => _buildTxnTile(context, txn),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
           ),
         ],
       ),
@@ -137,9 +205,20 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: selected ? Colors.white : AppTheme.onSurfaceVariant),
+          Icon(
+            icon,
+            size: 14,
+            color: selected ? Colors.white : AppTheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: selected ? Colors.white : AppTheme.onSurface)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: selected ? Colors.white : AppTheme.onSurface,
+            ),
+          ),
         ],
       ),
     );
@@ -147,35 +226,89 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   Widget _buildTxnTile(BuildContext context, dynamic txn) {
     final isExpense = txn.type == 'expense';
-    final color = isExpense ? AppTheme.tertiary : (txn.type == 'income' ? AppTheme.secondary : AppTheme.primary);
+    final color = isExpense
+        ? AppTheme.tertiary
+        : (txn.type == 'income' ? AppTheme.secondary : AppTheme.primary);
     final sign = isExpense ? '- ' : (txn.type == 'income' ? '+ ' : '');
     final iconKey = txn.categoryIconName ?? txn.type;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppTheme.surfaceContainerLowest, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-      child: Row(
-        children: [
-          Container(
-            width: 42, height: 42,
-            decoration: BoxDecoration(color: CategoryIcons.getColor(iconKey).withAlpha(30), borderRadius: BorderRadius.circular(12)),
-            child: Icon(CategoryIcons.getIcon(iconKey), color: CategoryIcons.getColor(iconKey), size: 20),
+    final noteStr = (txn.note != null && txn.note!.toString().trim().isNotEmpty)
+        ? '${txn.note} • '
+        : '';
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddTransactionScreen(transaction: txn),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(txn.categoryName ?? txn.type, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-              Text('${txn.note ?? ''} • ${Formatters.time(txn.date)}',
-                  style: Theme.of(context).textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-            ]),
-          ),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('$sign${Formatters.currency(txn.amount)}', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: color, fontWeight: FontWeight.w700)),
-            if (txn.accountName != null)
-              Text(txn.accountName!, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppTheme.onSurfaceVariant)),
-          ]),
-        ],
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: CategoryIcons.getColor(iconKey).withAlpha(30),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                CategoryIcons.getIcon(iconKey),
+                color: CategoryIcons.getColor(iconKey),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ĐÃ SỬA: Sử dụng _getTypeLabel(txn.type) nếu không có categoryName
+                  Text(
+                    txn.categoryName ?? _getTypeLabel(txn.type),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '$noteStr${txn.time ?? Formatters.time(txn.date)}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '$sign${Formatters.currency(txn.amount)}',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (txn.accountName != null)
+                  Text(
+                    txn.accountName!,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppTheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
