@@ -65,6 +65,131 @@ class TransactionDao {
     return txnId;
   }
 
+  /// BỔ SUNG: Cập nhật giao dịch và tính toán lại số dư tài khoản
+  Future<void> updateWithBalance(TransactionModel newTxn) async {
+    final db = await _dbHelper.database;
+
+    await db.transaction((dbTxn) async {
+      // 1. Lấy thông tin giao dịch cũ để hoàn trả số dư
+      final rows = await dbTxn.query(
+        'transactions',
+        where: 'id = ?',
+        whereArgs: [newTxn.id],
+      );
+      if (rows.isEmpty) return;
+      final oldTxn = TransactionModel.fromMap(rows.first);
+
+      // 2. Hoàn trả (Reverse) số dư của giao dịch cũ
+      switch (oldTxn.type) {
+        case 'income':
+          await dbTxn.rawUpdate(
+            'UPDATE accounts SET balance = balance - ?, updated_at = ? WHERE id = ?',
+            [oldTxn.amount, DateTime.now().toIso8601String(), oldTxn.accountId],
+          );
+          break;
+        case 'expense':
+          await dbTxn.rawUpdate(
+            'UPDATE accounts SET balance = balance + ?, updated_at = ? WHERE id = ?',
+            [oldTxn.amount, DateTime.now().toIso8601String(), oldTxn.accountId],
+          );
+          break;
+        case 'transfer':
+          await dbTxn.rawUpdate(
+            'UPDATE accounts SET balance = balance + ?, updated_at = ? WHERE id = ?',
+            [oldTxn.amount, DateTime.now().toIso8601String(), oldTxn.accountId],
+          );
+          if (oldTxn.toAccountId != null) {
+            await dbTxn.rawUpdate(
+              'UPDATE accounts SET balance = balance - ?, updated_at = ? WHERE id = ?',
+              [
+                oldTxn.amount,
+                DateTime.now().toIso8601String(),
+                oldTxn.toAccountId,
+              ],
+            );
+          }
+          break;
+        case 'loan':
+          await dbTxn.rawUpdate(
+            'UPDATE accounts SET balance = balance - ?, updated_at = ? WHERE id = ?',
+            [oldTxn.amount, DateTime.now().toIso8601String(), oldTxn.accountId],
+          );
+          break;
+        case 'lend':
+          await dbTxn.rawUpdate(
+            'UPDATE accounts SET balance = balance + ?, updated_at = ? WHERE id = ?',
+            [oldTxn.amount, DateTime.now().toIso8601String(), oldTxn.accountId],
+          );
+          break;
+      }
+
+      // 3. Áp dụng số dư của giao dịch MỚI
+      switch (newTxn.type) {
+        case 'income':
+          await dbTxn.rawUpdate(
+            'UPDATE accounts SET balance = balance + ?, updated_at = ? WHERE id = ?',
+            [newTxn.amount, DateTime.now().toIso8601String(), newTxn.accountId],
+          );
+          break;
+        case 'expense':
+          await dbTxn.rawUpdate(
+            'UPDATE accounts SET balance = balance - ?, updated_at = ? WHERE id = ?',
+            [newTxn.amount, DateTime.now().toIso8601String(), newTxn.accountId],
+          );
+          break;
+        case 'transfer':
+          await dbTxn.rawUpdate(
+            'UPDATE accounts SET balance = balance - ?, updated_at = ? WHERE id = ?',
+            [newTxn.amount, DateTime.now().toIso8601String(), newTxn.accountId],
+          );
+          if (newTxn.toAccountId != null) {
+            await dbTxn.rawUpdate(
+              'UPDATE accounts SET balance = balance + ?, updated_at = ? WHERE id = ?',
+              [
+                newTxn.amount,
+                DateTime.now().toIso8601String(),
+                newTxn.toAccountId,
+              ],
+            );
+          }
+          break;
+        case 'loan':
+          await dbTxn.rawUpdate(
+            'UPDATE accounts SET balance = balance + ?, updated_at = ? WHERE id = ?',
+            [newTxn.amount, DateTime.now().toIso8601String(), newTxn.accountId],
+          );
+          break;
+        case 'lend':
+          await dbTxn.rawUpdate(
+            'UPDATE accounts SET balance = balance - ?, updated_at = ? WHERE id = ?',
+            [newTxn.amount, DateTime.now().toIso8601String(), newTxn.accountId],
+          );
+          break;
+      }
+
+      // 4. Cập nhật record trong database
+      await dbTxn.update(
+        'transactions',
+        newTxn.toMap(),
+        where: 'id = ?',
+        whereArgs: [newTxn.id],
+      );
+    });
+  }
+
+  Future<void> updateLoanId({
+    required int transactionId,
+    required int loanId,
+  }) async {
+    final db = await _dbHelper.database;
+    await db.update(
+      'transactions',
+      {'loan_id': loanId},
+      where: 'id = ?',
+      whereArgs: [transactionId],
+    );
+  }
+
   /// Delete a transaction and reverse its balance impact.
   Future<void> deleteWithBalance(int txnId) async {
     final db = await _dbHelper.database;
@@ -225,7 +350,6 @@ class TransactionDao {
     return (result.first['total'] as num).toDouble();
   }
 
-  /// Spending by category in a date range (for pie chart).
   Future<List<Map<String, dynamic>>> expenseByCategory(
     int userId,
     String startDate,
@@ -247,7 +371,6 @@ class TransactionDao {
     );
   }
 
-  /// Income by category in a date range.
   Future<List<Map<String, dynamic>>> incomeByCategory(
     int userId,
     String startDate,
@@ -289,7 +412,6 @@ class TransactionDao {
     );
   }
 
-  /// Monthly totals for a given year.
   Future<List<Map<String, dynamic>>> monthlyTotals(
     int userId,
     int year,
@@ -308,7 +430,6 @@ class TransactionDao {
     );
   }
 
-  /// Spending by account in a date range.
   Future<List<Map<String, dynamic>>> expenseByAccount(
     int userId,
     String startDate,
@@ -330,7 +451,6 @@ class TransactionDao {
     );
   }
 
-  /// Income by account in a date range.
   Future<List<Map<String, dynamic>>> incomeByAccount(
     int userId,
     String startDate,
@@ -352,7 +472,6 @@ class TransactionDao {
     );
   }
 
-  /// Recent N transactions.
   Future<List<TransactionModel>> getRecent(int userId, {int count = 5}) async {
     return getByUser(userId, limit: count);
   }

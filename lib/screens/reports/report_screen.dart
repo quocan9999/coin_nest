@@ -244,7 +244,7 @@ class _ReportScreenState extends State<ReportScreen> {
               iconBgColor: const Color(0xFFFFE0B2),
               iconColor: const Color(0xFFE65100),
               title: 'Theo dõi vay nợ',
-              subtitle: 'Quản lý các khoản vay và cho vay',
+              subtitle: 'Tổng quan khoản vay và cho vay',
               previewKey: 'loan_${totalLentRemaining}_$totalBorrowedRemaining',
               preview: loanProv.isLoading
                   ? _buildSkeletonBar()
