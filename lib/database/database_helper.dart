@@ -299,93 +299,24 @@ class DatabaseHelper {
     );
   }
 
-  /// Seed report categories and debt categories for a user.
+  /// Seed debt-related categories for a user.
   Future<void> seedDefaultCategories(int userId) async {
     final db = await database;
     final now = DateTime.now().toIso8601String();
 
     const expenseCategories = [
-      {
-        'name': 'Ăn uống',
-        'icon_name': 'restaurant',
-        'color': '#FF7043',
-        'sort': 1,
-      },
-      {
-        'name': 'Di chuyển',
-        'icon_name': 'directions_car',
-        'color': '#42A5F5',
-        'sort': 2,
-      },
-      {
-        'name': 'Xăng',
-        'icon_name': 'local_gas_station',
-        'color': '#FFA726',
-        'sort': 3,
-      },
-      {
-        'name': 'Mua sắm',
-        'icon_name': 'shopping_bag',
-        'color': '#AB47BC',
-        'sort': 4,
-      },
-      {'name': 'Giải trí', 'icon_name': 'movie', 'color': '#26A69A', 'sort': 5},
-      {
-        'name': 'Sức khỏe',
-        'icon_name': 'health_and_safety',
-        'color': '#EF5350',
-        'sort': 6,
-      },
-      {
-        'name': 'Giáo dục',
-        'icon_name': 'school',
-        'color': '#5C6BC0',
-        'sort': 7,
-      },
-      {
-        'name': 'Hóa đơn',
-        'icon_name': 'receipt_long',
-        'color': '#8D6E63',
-        'sort': 8,
-      },
-      {'name': 'Khác', 'icon_name': 'category', 'color': '#78909C', 'sort': 9},
-      {'name': 'Cho mượn', 'icon_name': 'lend', 'color': '#FF7043', 'sort': 10},
-      {'name': 'Trả nợ', 'icon_name': 'loan', 'color': '#8A5100', 'sort': 11},
+      {'name': 'Cho mượn', 'icon_name': 'lend', 'color': '#FF7043', 'sort': 1},
+      {'name': 'Trả nợ', 'icon_name': 'loan', 'color': '#8A5100', 'sort': 2},
     ];
 
     const incomeCategories = [
-      {'name': 'Lương', 'icon_name': 'payments', 'color': '#66BB6A', 'sort': 1},
-      {
-        'name': 'Thưởng',
-        'icon_name': 'emoji_events',
-        'color': '#FBC02D',
-        'sort': 2,
-      },
-      {
-        'name': 'Đầu tư',
-        'icon_name': 'trending_up',
-        'color': '#26C6DA',
-        'sort': 3,
-      },
-      {
-        'name': 'Phụ cấp',
-        'icon_name': 'account_balance_wallet',
-        'color': '#7E57C2',
-        'sort': 4,
-      },
-      {
-        'name': 'Thu nhập khác',
-        'icon_name': 'attach_money',
-        'color': '#9CCC65',
-        'sort': 5,
-      },
-      {'name': 'Vay mượn', 'icon_name': 'loan', 'color': '#42A5F5', 'sort': 6},
-      {'name': 'Thu nợ', 'icon_name': 'lend', 'color': '#66BB6A', 'sort': 7},
+      {'name': 'Vay mượn', 'icon_name': 'loan', 'color': '#42A5F5', 'sort': 1},
+      {'name': 'Thu nợ', 'icon_name': 'lend', 'color': '#66BB6A', 'sort': 2},
       {
         'name': 'Tiết kiệm lãi',
         'icon_name': 'interest',
         'color': '#26C6DA',
-        'sort': 8,
+        'sort': 3,
       },
     ];
 
