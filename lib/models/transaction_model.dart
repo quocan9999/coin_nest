@@ -115,8 +115,10 @@ class TransactionModel {
     );
   }
 
+  bool get isLoanLinked => loanId != null || type == 'loan' || type == 'lend';
+
   /// Whether the amount should be shown as negative.
-  bool get isNegative => type == 'expense' || type == 'loan';
+  bool get isNegative => type == 'expense' || type == 'lend';
 
   /// Display amount with correct sign.
   double get signedAmount => isNegative ? -amount : amount;
