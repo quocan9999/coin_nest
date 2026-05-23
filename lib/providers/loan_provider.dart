@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
+import '../database/category_dao.dart';
 import '../database/loan_dao.dart';
-import '../database/transaction_dao.dart';
 import '../models/loan.dart';
 import '../models/loan_payment.dart';
 import '../providers/transaction_provider.dart';
@@ -8,8 +8,8 @@ import '../utils/security_utils.dart';
 
 class LoanProvider extends ChangeNotifier {
   final _loanDao = LoanDao();
-  final _txnDao = TransactionDao();
-  final _txnProvider = TransactionProvider();
+  final _categoryDao = CategoryDao();
+  TransactionProvider? _transactionProvider;
 
   List<Loan> _loans = [];
   Map<String, double> _summary = {'borrowed': 0, 'lent': 0};
@@ -22,10 +22,15 @@ class LoanProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   List<Loan> get activeLoans =>
-      _loans.where((l) => l.status == 'active').toList();
+      _loans.where((loan) => loan.status == 'active').toList();
   List<Loan> get borrowedLoans =>
-      _loans.where((l) => l.type == 'borrow').toList();
-  List<Loan> get lentLoans => _loans.where((l) => l.type == 'lend').toList();
+      _loans.where((loan) => loan.type == 'borrow').toList();
+  List<Loan> get lentLoans =>
+      _loans.where((loan) => loan.type == 'lend').toList();
+
+  void setTransactionProvider(TransactionProvider transactionProvider) {
+    _transactionProvider = transactionProvider;
+  }
 
   Future<void> loadLoans(int userId) async {
     _isLoading = true;
@@ -52,25 +57,15 @@ class LoanProvider extends ChangeNotifier {
     DateTime? dueDate,
     int? accountId,
   }) async {
-    int? loanId;
-    int? txnId;
-
     try {
-      if (userId == 0) {
-        throw ArgumentError('Invalid userId');
-      }
-      if (type != 'borrow' && type != 'lend') {
-        throw ArgumentError('Invalid loan type');
-      }
-      if (amount <= 0) {
-        throw ArgumentError('Amount must be > 0');
-      }
-      if (accountId == null || accountId <= 0) {
-        throw ArgumentError('accountId required');
-      }
-      if (dueDate != null && dueDate.isBefore(startDate)) {
-        throw ArgumentError('dueDate must be >= startDate');
-      }
+      _validateLoanInput(
+        userId: userId,
+        type: type,
+        amount: amount,
+        accountId: accountId,
+        startDate: startDate,
+        dueDate: dueDate,
+      );
 
       final now = DateTime.now();
       final loan = Loan(
@@ -88,39 +83,80 @@ class LoanProvider extends ChangeNotifier {
         updatedAt: now,
       );
 
-      loanId = await _loanDao.insert(loan);
-
-      final txnType = type == 'borrow' ? 'loan' : 'lend';
-      txnId = await _txnProvider.addTransactionAndReturnId(
-        userId: userId,
-        accountId: accountId,
-        type: txnType,
-        amount: amount,
-        date: startDate,
-        loanId: loanId,
+      await _loanDao.insertWithInitialTransaction(
+        loan: loan,
+        categoryId: await _defaultCategoryIdForInitialTransaction(
+          userId: userId,
+          loanType: type,
+        ),
       );
 
-      if (txnId == null) {
-        throw StateError('Failed to create loan transaction');
-      }
-
-      await _loanDao.updateTransactionId(loanId: loanId, transactionId: txnId);
-      await _txnDao.updateLoanId(transactionId: txnId, loanId: loanId);
-
-      await Future.wait([
-        loadLoans(userId),
-        _txnProvider.loadTransactions(userId),
-      ]);
-
+      await _reloadRelatedData(userId);
       _errorMessage = null;
       return true;
     } catch (e) {
-      if (txnId != null) {
-        await _txnDao.deleteWithBalance(txnId);
-      }
-      if (loanId != null) {
-        await _loanDao.deleteForUser(loanId, userId);
-      }
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateLoan({
+    required int loanId,
+    required int userId,
+    required String type,
+    required String personName,
+    required double amount,
+    double interestRate = 0,
+    String? note,
+    required DateTime startDate,
+    DateTime? dueDate,
+    required int accountId,
+  }) async {
+    try {
+      _validateLoanInput(
+        userId: userId,
+        type: type,
+        amount: amount,
+        accountId: accountId,
+        startDate: startDate,
+        dueDate: dueDate,
+      );
+
+      final now = DateTime.now();
+      final loan = Loan(
+        id: loanId,
+        userId: userId,
+        type: type,
+        personName: SecurityUtils.sanitise(personName),
+        amount: amount,
+        remainingAmount: amount,
+        interestRate: interestRate,
+        note: note != null ? SecurityUtils.sanitise(note) : null,
+        startDate: startDate,
+        dueDate: dueDate,
+        accountId: accountId,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      await _loanDao.updateLoanWithTransactions(
+        loan: loan,
+        userId: userId,
+        initialCategoryId: await _defaultCategoryIdForInitialTransaction(
+          userId: userId,
+          loanType: type,
+        ),
+        paymentCategoryId: await _defaultCategoryIdForPaymentTransaction(
+          userId: userId,
+          loanType: type,
+        ),
+      );
+
+      await _reloadRelatedData(userId);
+      _errorMessage = null;
+      return true;
+    } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
       return false;
@@ -135,8 +171,6 @@ class LoanProvider extends ChangeNotifier {
     String? note,
     int? accountId,
   }) async {
-    int? txnId;
-
     try {
       final loan = await _loanDao.findByIdForUser(loanId, userId);
       if (loan == null) {
@@ -148,43 +182,23 @@ class LoanProvider extends ChangeNotifier {
         throw ArgumentError('Invalid account for payment');
       }
 
-      final txnType = loan.type == 'borrow' ? 'expense' : 'income';
-      final paidAt = paymentDate ?? DateTime.now();
-
-      txnId = await _txnProvider.addTransactionAndReturnId(
+      await _loanDao.recordPaymentWithTransaction(
+        loanId: loanId,
         userId: userId,
+        amount: amount,
+        paymentDate: paymentDate ?? DateTime.now(),
+        note: note != null ? SecurityUtils.sanitise(note) : null,
         accountId: resolvedAccountId,
-        type: txnType,
-        amount: amount,
-        date: paidAt,
-        note: note != null ? SecurityUtils.sanitise(note) : null,
-        loanId: loanId,
+        categoryId: await _defaultCategoryIdForPaymentTransaction(
+          userId: userId,
+          loanType: loan.type,
+        ),
       );
 
-      if (txnId == null) {
-        throw StateError('Failed to create payment transaction');
-      }
-
-      await _loanDao.recordPayment(
-        loanId: loanId,
-        userId: userId,
-        amount: amount,
-        paymentDate: paidAt,
-        note: note != null ? SecurityUtils.sanitise(note) : null,
-        transactionId: txnId,
-      );
-
-      await Future.wait([
-        loadLoans(userId),
-        _txnProvider.loadTransactions(userId),
-      ]);
-
+      await _reloadRelatedData(userId);
       _errorMessage = null;
       return true;
     } catch (e) {
-      if (txnId != null) {
-        await _txnDao.deleteWithBalance(txnId);
-      }
       _errorMessage = e.toString();
       notifyListeners();
       return false;
@@ -195,10 +209,24 @@ class LoanProvider extends ChangeNotifier {
     return _loanDao.getPaymentHistory(loanId, userId);
   }
 
+  Future<Loan?> findLoanForTransaction({
+    required int userId,
+    int? loanId,
+    int? transactionId,
+  }) async {
+    if (loanId != null) {
+      return _loanDao.findByIdForUser(loanId, userId);
+    }
+    if (transactionId != null) {
+      return _loanDao.findByTransactionForUser(transactionId, userId);
+    }
+    return null;
+  }
+
   Future<bool> deleteLoan(int id, int userId) async {
     try {
-      await _loanDao.deleteForUser(id, userId);
-      await loadLoans(userId);
+      await _loanDao.deleteForUserWithRollback(id, userId);
+      await _reloadRelatedData(userId);
       _errorMessage = null;
       return true;
     } catch (e) {
@@ -206,5 +234,60 @@ class LoanProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  void _validateLoanInput({
+    required int userId,
+    required String type,
+    required double amount,
+    required int? accountId,
+    required DateTime startDate,
+    DateTime? dueDate,
+  }) {
+    if (userId == 0) {
+      throw ArgumentError('Invalid userId');
+    }
+    if (type != 'borrow' && type != 'lend') {
+      throw ArgumentError('Invalid loan type');
+    }
+    if (amount <= 0) {
+      throw ArgumentError('Amount must be > 0');
+    }
+    if (accountId == null || accountId <= 0) {
+      throw ArgumentError('accountId required');
+    }
+    if (dueDate != null && dueDate.isBefore(startDate)) {
+      throw ArgumentError('dueDate must be >= startDate');
+    }
+  }
+
+  Future<void> _reloadRelatedData(int userId) async {
+    final transactionProvider = _transactionProvider;
+    await Future.wait([
+      loadLoans(userId),
+      if (transactionProvider != null) transactionProvider.loadTransactions(userId),
+    ]);
+  }
+
+  Future<int?> _defaultCategoryIdForInitialTransaction({
+    required int userId,
+    required String loanType,
+  }) {
+    return _categoryDao.findDefaultCategoryId(
+      userId: userId,
+      type: loanType == 'borrow' ? 'income' : 'expense',
+      name: loanType == 'borrow' ? 'Vay mượn' : 'Cho mượn',
+    );
+  }
+
+  Future<int?> _defaultCategoryIdForPaymentTransaction({
+    required int userId,
+    required String loanType,
+  }) {
+    return _categoryDao.findDefaultCategoryId(
+      userId: userId,
+      type: loanType == 'borrow' ? 'expense' : 'income',
+      name: loanType == 'borrow' ? 'Trả nợ' : 'Thu nợ',
+    );
   }
 }

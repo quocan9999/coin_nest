@@ -46,6 +46,23 @@ class CategoryDao {
     return Category.fromMap(result.first);
   }
 
+  Future<int?> findDefaultCategoryId({
+    required int userId,
+    required String type,
+    required String name,
+  }) async {
+    final db = await _dbHelper.database;
+    final result = await db.query(
+      'categories',
+      columns: ['id'],
+      where: 'user_id = ? AND type = ? AND name = ? AND is_active = 1',
+      whereArgs: [userId, type, name],
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return result.first['id'] as int?;
+  }
+
   Future<int> update(Category category) async {
     final db = await _dbHelper.database;
     return db.update(

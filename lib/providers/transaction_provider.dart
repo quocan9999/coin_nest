@@ -157,6 +157,15 @@ class TransactionProvider extends ChangeNotifier {
     required DateTime createdAt,
   }) async {
     try {
+      final oldTxn = await _txnDao.findById(txnId);
+      if (oldTxn == null ||
+          oldTxn.isLoanLinked ||
+          loanId != null ||
+          type == 'loan' ||
+          type == 'lend') {
+        return false;
+      }
+
       final now = DateTime.now();
       final txn = TransactionModel(
         id: txnId,
@@ -184,6 +193,11 @@ class TransactionProvider extends ChangeNotifier {
 
   Future<bool> deleteTransaction(int txnId, int userId) async {
     try {
+      final txn = await _txnDao.findById(txnId);
+      if (txn == null || txn.isLoanLinked) {
+        return false;
+      }
+
       await _txnDao.deleteWithBalance(txnId);
       await loadTransactions(userId);
       return true;
