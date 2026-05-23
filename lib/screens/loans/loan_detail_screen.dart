@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/loan.dart';
 import '../../models/loan_payment.dart';
+import '../../providers/account_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
+import 'add_edit_loan_screen.dart';
 import 'payment_screen.dart';
 
 class LoanDetailScreen extends StatefulWidget {
@@ -62,6 +64,10 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
           onPressed: () => Navigator.pop(context, true),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: AppTheme.primary),
+            onPressed: _openEditLoan,
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: AppTheme.tertiary),
             onPressed: () => _confirmDelete(context),
@@ -338,6 +344,14 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
     if (changed == true) await _refreshLoan();
   }
 
+  Future<void> _openEditLoan() async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => AddEditLoanScreen(loan: _loan)),
+    );
+    if (changed == true) await _refreshLoan();
+  }
+
   void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
@@ -353,6 +367,9 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
             onPressed: () async {
               final userId = context.read<AuthProvider>().currentUserId;
               await context.read<LoanProvider>().deleteLoan(_loan.id!, userId);
+              if (context.mounted) {
+                await context.read<AccountProvider>().loadAccounts(userId);
+              }
               if (ctx.mounted) Navigator.pop(ctx);
               if (context.mounted) Navigator.pop(context, true);
             },
