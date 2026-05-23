@@ -133,7 +133,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppTheme.spacing10),
         child: Form(
           key: _formKey,
           child: Column(
@@ -142,21 +142,21 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
               Row(
                 children: [
                   _typeChip('Vay', 'borrow'),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppTheme.spacing4),
                   _typeChip('Cho vay', 'lend'),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppTheme.spacing10),
               _label('NGƯỜI VAY/CHO VAY'),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppTheme.spacing4),
               TextFormField(
                 controller: _personController,
                 validator: (value) => Validators.entityName(value, 'Tên'),
                 decoration: const InputDecoration(hintText: 'VD: Nguyễn Văn B'),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppTheme.spacing10),
               _label('SỐ TIỀN'),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppTheme.spacing4),
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
@@ -166,9 +166,9 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                   suffixText: 'đ',
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppTheme.spacing10),
               _label('LÃI SUẤT (%/NĂM)'),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppTheme.spacing4),
               TextFormField(
                 controller: _interestController,
                 keyboardType: TextInputType.number,
@@ -178,13 +178,15 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                   suffixText: '%',
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppTheme.spacing4),
               _metadataNote(context),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppTheme.spacing10),
               _label('TÀI KHOẢN LIÊN KẾT'),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppTheme.spacing4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spacing8,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -206,7 +208,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppTheme.spacing10),
               Row(
                 children: [
                   Expanded(
@@ -214,7 +216,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _label('NGÀY BẮT ĐẦU'),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppTheme.spacing4),
                         _datePicker(
                           _startDate,
                           (date) => setState(() => _startDate = date),
@@ -222,13 +224,13 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppTheme.spacing6),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _label('HẠN TRẢ'),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppTheme.spacing4),
                         _datePicker(
                           _dueDate,
                           (date) => setState(() => _dueDate = date),
@@ -239,18 +241,18 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppTheme.spacing10),
               _label('GHI CHÚ'),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppTheme.spacing4),
               TextFormField(
                 controller: _noteController,
                 maxLines: 2,
                 validator: Validators.note,
                 decoration: const InputDecoration(hintText: 'Tùy chọn'),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: AppTheme.spacing12),
               SizedBox(
-                height: 52,
+                height: AppTheme.spacing24 + AppTheme.spacing2,
                 child: ElevatedButton(
                   onPressed: _save,
                   child: Text(_isEditMode ? 'Lưu thay đổi' : 'Lưu'),
@@ -265,7 +267,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
 
   Widget _metadataNote(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppTheme.spacing6),
       decoration: BoxDecoration(
         color: AppTheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -284,7 +286,10 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
     return GestureDetector(
       onTap: () => setState(() => _type = value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacing10,
+          vertical: AppTheme.spacing6,
+        ),
         decoration: BoxDecoration(
           color: selected ? AppTheme.primary : AppTheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(AppTheme.radiusFull),
@@ -324,7 +329,10 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
         if (picked != null) onPicked(picked);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacing8,
+          vertical: AppTheme.spacing6,
+        ),
         decoration: BoxDecoration(
           color: AppTheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -333,10 +341,10 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
           children: [
             const Icon(
               Icons.calendar_today_outlined,
-              size: 16,
+              size: AppTheme.spacing8,
               color: AppTheme.onSurfaceVariant,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppTheme.spacing4),
             Expanded(
               child: Text(
                 date != null ? Formatters.date(date) : 'Chọn ngày',
@@ -351,7 +359,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                 onTap: () => setState(() => _dueDate = null),
                 child: const Icon(
                   Icons.close_rounded,
-                  size: 16,
+                  size: AppTheme.spacing8,
                   color: AppTheme.onSurfaceVariant,
                 ),
               ),

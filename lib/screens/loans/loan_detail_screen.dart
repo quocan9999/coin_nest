@@ -75,13 +75,13 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppTheme.spacing10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppTheme.spacing12),
               decoration: BoxDecoration(
                 color: AppTheme.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -89,29 +89,29 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
               child: Column(
                 children: [
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: AppTheme.spacing4,
+                    runSpacing: AppTheme.spacing4,
                     alignment: WrapAlignment.center,
                     children: [
                       _chip(_loan.type == 'borrow' ? 'Vay' : 'Cho vay', color),
                       _statusBadge(context),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppTheme.spacing6),
                   Text(
                     _loan.personName,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppTheme.spacing8),
                   Text(
                     'Tổng ${Formatters.currency(_loan.amount)}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppTheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppTheme.spacing2),
                   Text(
                     Formatters.currency(_loan.remainingAmount),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -119,17 +119,17 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                       color: color,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.spacing4),
                   Text('còn lại', style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppTheme.spacing8),
                   LinearProgressIndicator(
                     value: (_loan.paidPercentage / 100).clamp(0, 1),
-                    backgroundColor: AppTheme.outlineVariant.withAlpha(51),
+                    backgroundColor: AppTheme.surfaceContainerHigh,
                     valueColor: AlwaysStoppedAnimation(color),
                     borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                    minHeight: 8,
+                    minHeight: AppTheme.spacing4,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.spacing4),
                   Text(
                     '${Formatters.percent(_loan.paidPercentage)} đã trả',
                     style: Theme.of(context).textTheme.labelMedium,
@@ -137,18 +137,18 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.spacing8),
             if (!_loan.isPaid)
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: AppTheme.spacing24 + AppTheme.spacing2,
                 child: ElevatedButton.icon(
                   onPressed: _openPayment,
                   icon: const Icon(Icons.payments_outlined),
                   label: Text(_loan.type == 'borrow' ? 'Thanh toán' : 'Thu nợ'),
                 ),
               ),
-            if (!_loan.isPaid) const SizedBox(height: 16),
+            if (!_loan.isPaid) const SizedBox(height: AppTheme.spacing8),
             _detailRow(
               context,
               'Ngày bắt đầu',
@@ -163,7 +163,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
             if (_loan.note != null && _loan.note!.isNotEmpty)
               _detailRow(context, 'Ghi chú', _loan.note!),
             _detailRow(context, 'Trạng thái', _statusText),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppTheme.spacing12),
             Text(
               'LỊCH SỬ THANH TOÁN',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -172,7 +172,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                 letterSpacing: 1.1,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppTheme.spacing6),
             _paymentHistory(),
           ],
         ),
@@ -188,9 +188,12 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
 
   Widget _chip(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacing6,
+        vertical: AppTheme.spacing2,
+      ),
       decoration: BoxDecoration(
-        color: color.withAlpha(20),
+        color: AppTheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppTheme.radiusSm),
       ),
       child: Text(
@@ -205,9 +208,12 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
         ? AppTheme.secondary
         : (_loan.isOverdue ? AppTheme.tertiary : AppTheme.primary);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacing6,
+        vertical: AppTheme.spacing2,
+      ),
       decoration: BoxDecoration(
-        color: color.withAlpha(20),
+        color: AppTheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppTheme.radiusSm),
       ),
       child: Text(
@@ -224,7 +230,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(AppTheme.spacing8),
               child: CircularProgressIndicator(),
             ),
           );
@@ -233,7 +239,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
         if (payments.isEmpty) {
           return Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppTheme.spacing8),
             decoration: BoxDecoration(
               color: AppTheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -250,8 +256,8 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
           children: payments
               .map(
                 (payment) => Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(14),
+                  margin: const EdgeInsets.only(bottom: AppTheme.spacing4),
+                  padding: const EdgeInsets.all(AppTheme.spacing8),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceContainerLowest,
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -259,21 +265,21 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                   child: Row(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: AppTheme.spacing20,
+                        height: AppTheme.spacing20,
                         decoration: BoxDecoration(
-                          color: AppTheme.primary.withAlpha(18),
+                          color: AppTheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(
                             AppTheme.radiusFull,
                           ),
                         ),
                         child: const Icon(
                           Icons.receipt_long_outlined,
-                          size: 20,
+                          size: AppTheme.spacing10,
                           color: AppTheme.primary,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppTheme.spacing6),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,7 +289,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                               style: Theme.of(context).textTheme.titleSmall
                                   ?.copyWith(fontWeight: FontWeight.w700),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: AppTheme.spacing2 / 2),
                             Text(
                               Formatters.date(payment.paymentDate),
                               style: Theme.of(context).textTheme.bodySmall
@@ -291,7 +297,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                             ),
                             if (payment.note != null &&
                                 payment.note!.isNotEmpty) ...[
-                              const SizedBox(height: 2),
+                              const SizedBox(height: AppTheme.spacing2 / 2),
                               Text(
                                 payment.note!,
                                 style: Theme.of(context).textTheme.bodySmall,
@@ -312,7 +318,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
 
   Widget _detailRow(BuildContext context, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.spacing4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
