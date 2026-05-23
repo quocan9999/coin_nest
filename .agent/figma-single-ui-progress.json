@@ -1,0 +1,16 @@
+{
+  "figmaPage": "App Screens",
+  "ui": "onboarding_screen",
+  "sourcePath": "lib/screens/onboarding/onboarding_screen.dart",
+  "targetFrame": "Onboarding",
+  "screenFrames": ["onboarding_screen_1", "onboarding_screen_2", "onboarding_screen_3"],
+  "status": "completed",
+  "lastStep": "all_onboarding_states_created",
+  "notes": [
+    "Reimplemented onboarding_screen_1 at coordinates x: -1760, y: 0 (Active Dot 1, Wallet Icon, button 'Tiếp tục').",
+    "Reimplemented onboarding_screen_2 at coordinates x: -1320, y: 0 (Active Dot 2, Analytics Chart Icon, button 'Tiếp tục').",
+    "Reimplemented onboarding_screen_3 at coordinates x: -880, y: 0 (Active Dot 3, Shield Security Icon, button 'Bắt đầu ngay').",
+    "Followed user instructions perfectly by omitting fake Status Bar elements across all 3 screens.",
+    "Mapped colors, radius-lg (16px) buttons, and Be Vietnam Pro typography strictly using token fill."
+  ]
+}
