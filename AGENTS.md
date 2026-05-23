@@ -1,8 +1,10 @@
-# CLAUDE.md
+# AGENTS.md
 
 ## Purpose
 
 This file defines coding and project-structure rules for contributors working in this repository. Follow these rules to keep architecture, naming, and code placement consistent.
+
+This file is the repo-level instruction source for Codex and for Antigravity when Antigravity is configured to read `AGENTS.md`.
 
 ## Project overview
 
@@ -27,6 +29,46 @@ Tech stack in app code includes Flutter/Dart, Provider (`ChangeNotifier`), `sqfl
 - `lib/utils/`: stateless utility functions.
 
 Keep screen files focused on rendering and interaction. Move reusable business logic to providers/services/DAOs/utils.
+
+## SQLite schema change rules
+
+Follow these rules for any task that changes SQLite tables, columns, indexes, foreign keys, CHECK constraints, default values, seed data, DAOs, or stored model fields.
+
+Required files to inspect before editing:
+
+- `lib/database/database_helper.dart`
+- `lib/utils/constants.dart`
+- Affected DAO files in `lib/database/`
+- Affected model files in `lib/models/`
+- Affected providers/services/screens/reports that read or write the data
+
+Implementation rules:
+
+- Always increment `AppConstants.dbVersion` for every SQLite schema change.
+- Keep `DatabaseHelper._createAllTables` as the complete latest schema for fresh installs.
+- Keep `DatabaseHelper._createIndexes` as the complete latest index list.
+- Keep seed data in existing seed methods such as `seedDefaultCategories` and `seedDefaultAccount`.
+- Keep SQL column names, DAO map keys, and model `fromMap`/`toMap` keys in sync.
+- Required SQLite columns must be supplied on insert; nullable SQLite columns should map to nullable Dart fields.
+- Update affected model `fromMap`, `toMap`, `copyWith`, DAO insert/update/query methods, providers/services, and report queries.
+- Review foreign-key delete behavior (`CASCADE`, `SET NULL`) and account-balance side effects before changing relationships.
+
+Migration/reset policy:
+
+- Internal development may still use clear app data or uninstall/reinstall to rebuild SQLite through `onCreate`, but this does not replace bumping `dbVersion`.
+- For demo APK or release-candidate work, add a versioned migration in `_migratePreservingData` whenever possible.
+- If a schema version intentionally relies on reset-data instead of preserving migration, state that clearly in the handoff.
+- For released builds, preserve data with additive migrations; do not rely on app-data reset.
+
+Database task handoff must include:
+
+- Tables/columns/indexes changed.
+- Old and new `dbVersion`.
+- Whether a migration was added.
+- Whether developers/testers must clear app data.
+- DAO/model/provider/report files updated.
+
+Detailed tool-specific versions live in `docs/ai/database-schema-change/`.
 
 ## State management rules
 
