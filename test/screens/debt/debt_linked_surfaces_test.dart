@@ -241,8 +241,15 @@ void main() {
     await tester.tap(
       find.widgetWithIcon(IconButton, Icons.arrow_back_ios_rounded),
     );
-    await pumpDebtFrames(tester);
-    await tester.tap(find.text('Còn nợ'));
+    await pumpDebtUntil(
+      tester,
+      () => find.byType(LoanDetailScreen).evaluate().isEmpty,
+    );
+    await pumpDebtUntil(
+      tester,
+      () => find.text('Còn nợ').hitTestable().evaluate().isNotEmpty,
+    );
+    await tester.tap(find.text('Còn nợ').hitTestable());
     await pumpDebtFrames(tester);
     expect(find.text('Alice quá hạn'), findsOneWidget);
     expect(find.text('Quá hạn'), findsOneWidget);
