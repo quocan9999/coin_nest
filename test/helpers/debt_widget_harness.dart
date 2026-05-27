@@ -35,6 +35,7 @@ Future<DebtWidgetHarness> pumpDebtWidgetWithFixture(
   required DebtDatabaseFixture fixture,
   required Widget child,
   ThemeData? theme,
+  LoanProvider? loanProviderOverride,
 }) async {
   debugDebtStep('harness: thiết lập SharedPreferences giả');
   SharedPreferences.setMockInitialValues({});
@@ -62,8 +63,8 @@ Future<DebtWidgetHarness> pumpDebtWidgetWithFixture(
       transactionProvider = TransactionProvider();
       await transactionProvider.loadTransactions(fixture.userId);
 
-      loanProvider = LoanProvider()
-        ..setTransactionProvider(transactionProvider);
+      loanProvider = loanProviderOverride ?? LoanProvider();
+      loanProvider.setTransactionProvider(transactionProvider);
       await loanProvider.loadLoans(fixture.userId);
     },
   );
