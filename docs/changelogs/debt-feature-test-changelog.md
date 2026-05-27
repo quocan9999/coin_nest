@@ -301,3 +301,27 @@
 - Skipped theo yêu cầu:
   - Không chạy lệnh `flutter` hoặc `dart`.
   - Không chạy `dart format` hoặc `flutter analyze`.
+
+## 2026-05-27 08:13:14 +07:00 - Sửa lỗi từ log widget test mở rộng
+
+- Nguyên nhân lỗi:
+  - `LoanTrackingScreen.initState()` gọi `_loadLoans()` ngay khi widget đang mount; `LoanProvider.loadLoans()` gọi `notifyListeners()` trong pha build nên phát sinh assertion `setState() or markNeedsBuild() called during build`.
+  - Test `Màn sửa khoản vay lưu lại thông tin và số tiền mới` submit thành công nhưng sau đó đọc `fixture.accountBalance()` trực tiếp ngoài `tester.runAsync`; SQLite FFI chờ async IO thật trong fake-async zone của widget test nên test đứng sau checkpoint submit.
+- Thay đổi chính:
+  - Dời bước tải loan đầu tiên của `LoanTrackingScreen` sang `addPostFrameCallback`, cùng kiểu an toàn đã dùng ở màn danh sách.
+  - Bọc các assertion đọc balance/payment count mới trong `debt_loan_screens_test.dart` bằng `runDebtValue` để toàn bộ truy vấn FFI chạy trong real async zone.
+- File/module ảnh hưởng:
+  - `lib/screens/reports/loan_tracking_screen.dart`
+  - `test/screens/loans/debt_loan_screens_test.dart`
+  - `docs/changelogs/debt-feature-test-changelog.md`
+- Verification đã chạy:
+  - Đọc log tại `docs/log/test/feature-debt-test` và đối chiếu stack trace/checkpoint.
+  - `git diff --check` không báo whitespace error, chỉ có cảnh báo LF/CRLF.
+  - Rà tĩnh xác nhận các phép đọc FFI trong widget screen tests mới đã đi qua `runDebtValue`.
+- Verification cần user chạy thủ công:
+  - `flutter test test`
+  - Nếu test nhỏ pass: `flutter test integration_test/debt_flow_test.dart -d <genymotion-device-id>`
+  - `flutter test integration_test/debt_flow_test.dart -d <physical-android-device-id>`
+- Skipped theo yêu cầu:
+  - Không chạy lệnh `flutter` hoặc `dart`.
+  - Không chạy `dart format` hoặc `flutter analyze`.
