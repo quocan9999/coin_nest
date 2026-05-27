@@ -23,7 +23,11 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadLoans();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Chờ frame đầu hoàn tất để LoanProvider không notifyListeners trong build.
+      _loadLoans();
+    });
   }
 
   @override
