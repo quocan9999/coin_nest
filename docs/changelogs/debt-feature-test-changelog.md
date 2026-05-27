@@ -374,3 +374,27 @@
 - Skipped theo yêu cầu:
   - Không chạy lệnh `flutter` hoặc `dart`.
   - Không chạy `dart format` hoặc `flutter analyze`.
+
+## 2026-05-27 09:50:17 +07:00 - Đồng bộ thao tác đổi tab sau khi đóng màn chi tiết
+
+- Kết quả log mới:
+  - Test không còn timeout SQLite FFI hoặc không tìm thấy `Bob theo dõi`.
+  - Failure xảy ra khi tap `Còn nợ`: log chỉ ra widget tab nằm trong `RenderOffstage`, nên tap không trúng và `Alice quá hạn` không được render.
+- Phân loại:
+  - Failure của lần chạy này là lỗi đồng bộ điều hướng trong widget test: test chuyển tab trước khi route màn theo dõi nhận lại tương tác.
+  - Phát hiện riêng ở runtime: nút quay lại từ `LoanDetailScreen` luôn trả `true`, làm `LoanTrackingScreen` reload kể cả không thay đổi dữ liệu; chỉ ghi báo cáo, không sửa app trong nhánh test.
+- Thay đổi chính:
+  - Chờ `LoanDetailScreen` đóng trước khi tiếp tục.
+  - Chờ finder `Còn nợ` ở trạng thái `hitTestable()` rồi mới tap và assert tab khoản vay.
+  - Ghi nhận lỗi runtime reload thừa vào báo cáo known failures để xử lý trên `feature/debt`.
+- File/module ảnh hưởng:
+  - `test/screens/debt/debt_linked_surfaces_test.dart`
+  - `docs/test-reports/debt-feature-known-failures.md`
+  - `docs/changelogs/debt-feature-test-changelog.md`
+- Verification cần user chạy thủ công:
+  - `flutter test test`
+  - Nếu test nhỏ pass: `flutter test integration_test/debt_flow_test.dart -d <genymotion-device-id>`
+  - `flutter test integration_test/debt_flow_test.dart -d <physical-android-device-id>`
+- Skipped theo yêu cầu:
+  - Không chạy lệnh `flutter` hoặc `dart`.
+  - Không chạy `dart format` hoặc `flutter analyze`.
