@@ -219,7 +219,14 @@ void main() {
 
     expect(harness.loanProvider.loans.single.personName, 'Alice cập nhật');
     expect(harness.loanProvider.loans.single.amount, 700);
-    expect(await fixture.accountBalance(), 1700);
+    expect(
+      await runDebtValue(
+        tester,
+        'sửa khoản vay: đọc số dư tài khoản',
+        fixture.accountBalance,
+      ),
+      1700,
+    );
   });
 
   testWidgets('Màn chi tiết hiển thị lịch sử và ẩn thanh toán khi đã trả hết', (
@@ -308,7 +315,14 @@ void main() {
     await pumpDebtFrames(tester);
 
     expect(harness.loanProvider.loans, isEmpty);
-    expect(await fixture.accountBalance(), 1000);
+    expect(
+      await runDebtValue(
+        tester,
+        'xóa khoản vay: đọc số dư hoàn tác',
+        fixture.accountBalance,
+      ),
+      1000,
+    );
   });
 
   testWidgets('Màn thu nợ khoản cho vay lưu thanh toán đủ và khôi phục số dư', (
@@ -356,7 +370,14 @@ void main() {
     await pumpDebtFrames(tester);
 
     expect(harness.loanProvider.loans.single.remainingAmount, 0);
-    expect(await fixture.accountBalance(), 1000);
+    expect(
+      await runDebtValue(
+        tester,
+        'thu nợ: đọc số dư tài khoản',
+        fixture.accountBalance,
+      ),
+      1000,
+    );
   });
 
   testWidgets('Màn thanh toán yêu cầu tài khoản trước khi lưu', (tester) async {
@@ -395,7 +416,14 @@ void main() {
     await pumpDebtFrames(tester);
 
     expect(find.text('Vui lòng chọn tài khoản'), findsOneWidget);
-    expect(await fixture.paymentCount(), 0);
+    expect(
+      await runDebtValue(
+        tester,
+        'thanh toán thiếu tài khoản: đọc số lần trả',
+        fixture.paymentCount,
+      ),
+      0,
+    );
   });
 }
 
