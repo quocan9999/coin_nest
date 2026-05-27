@@ -325,3 +325,52 @@
 - Skipped theo yêu cầu:
   - Không chạy lệnh `flutter` hoặc `dart`.
   - Không chạy `dart format` hoặc `flutter analyze`.
+
+## 2026-05-27 09:34:15 +07:00 - Đồng bộ trạng thái tải của màn theo dõi trong widget test
+
+- Kết quả log mới:
+  - `flutter test test` không còn assertion `setState() or markNeedsBuild() called during build`.
+  - Test sửa khoản vay từng bị treo đã đi qua checkpoint đọc số dư; chỉ còn failure tại test màn theo dõi.
+- Nguyên nhân lỗi:
+  - `LoanTrackingScreen` reload `LoanProvider` sau frame đầu và hiển thị loading trong lúc truy vấn SQLite FFI đang chạy.
+  - Widget test chờ cố định `10 ms` rồi assert `Bob theo dõi`, nên có thể kiểm tra đúng lúc nội dung tab đang bị loading thay thế.
+- Thay đổi chính:
+  - Giữ lại `DebtWidgetHarness` để chờ `loanProvider.isLoading == false` bằng predicate có timeout trước khi assert danh sách.
+  - Dùng `pumpDebtUntil` để chỉ kiểm tra sau khi item `Bob theo dõi` đã render.
+  - Bỏ delay và nhãn reload ở bước quay về từ detail vì luồng này không chỉnh sửa khoản vay, nên màn hình không tải lại dữ liệu.
+- File/module ảnh hưởng:
+  - `test/screens/debt/debt_linked_surfaces_test.dart`
+  - `docs/changelogs/debt-feature-test-changelog.md`
+- Verification đã chạy:
+  - Đọc log `docs/log/test/feature-debt-test.txt` và đối chiếu failure duy nhất còn lại với trạng thái loading của màn theo dõi.
+- Verification cần user chạy thủ công:
+  - `flutter test test`
+  - Nếu test nhỏ pass: `flutter test integration_test/debt_flow_test.dart -d <genymotion-device-id>`
+  - `flutter test integration_test/debt_flow_test.dart -d <physical-android-device-id>`
+- Skipped theo yêu cầu:
+  - Không chạy lệnh `flutter` hoặc `dart`.
+  - Không chạy `dart format` hoặc `flutter analyze`.
+
+## 2026-05-27 09:41:23 +07:00 - Ngăn reload SQLite FFI ngoài runAsync trong widget test màn theo dõi
+
+- Kết quả log sau bản đồng bộ trước:
+  - Checkpoint `done theo dõi: chờ tải danh sách ban đầu` xuất hiện, nhưng test vẫn báo timeout của bước chờ và sau đó không tìm thấy item đã seed.
+  - Failure vẫn chỉ nằm tại `Màn theo dõi vay nợ hiển thị hai tab và mở chi tiết`.
+- Nguyên nhân gốc:
+  - Harness đã tải loan bằng SQLite FFI trong `tester.runAsync`, nhưng khi `LoanTrackingScreen` được mount, callback post-frame tiếp tục gọi `loadLoans()` lần hai.
+  - Lần gọi thứ hai bắt đầu từ vòng đời widget ngoài `tester.runAsync`; truy vấn FFI bị giữ trong fake-async zone. Chờ `isLoading` sau đó không thể chuyển truy vấn đã khởi chạy sang real async, nên giải pháp chờ provider là chưa đúng điểm kẹt.
+- Thay đổi chính:
+  - Cho phép `pumpDebtWidgetWithFixture` nhận `loanProviderOverride` để widget test có thể dùng provider theo đúng kịch bản đang kiểm tra.
+  - Test màn theo dõi dùng `_PreloadedLoanTrackingProvider`: giữ lần load fixture ban đầu trong `runAsync`, bỏ qua duy nhất lần load post-frame dư thừa khi kiểm tra render/tab/navigation.
+  - Integration test không dùng override, nên vẫn chạy `LoanTrackingScreen` với reload thật để kiểm tra cập nhật tiến độ trên Genymotion và điện thoại Android thật.
+- File/module ảnh hưởng:
+  - `test/helpers/debt_widget_harness.dart`
+  - `test/screens/debt/debt_linked_surfaces_test.dart`
+  - `docs/changelogs/debt-feature-test-changelog.md`
+- Verification cần user chạy thủ công:
+  - `flutter test test`
+  - Nếu test nhỏ pass: `flutter test integration_test/debt_flow_test.dart -d <genymotion-device-id>`
+  - `flutter test integration_test/debt_flow_test.dart -d <physical-android-device-id>`
+- Skipped theo yêu cầu:
+  - Không chạy lệnh `flutter` hoặc `dart`.
+  - Không chạy `dart format` hoặc `flutter analyze`.
