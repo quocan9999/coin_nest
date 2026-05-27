@@ -10,6 +10,7 @@ void main() {
   late LoanProvider loanProvider;
   late TransactionProvider transactionProvider;
 
+  // Fixture và provider mới cho từng case giúp kiểm tra orchestration không rò state.
   setUp(() async {
     fixture = await openFfiDebtDatabaseFixture(initialBalance: 1000);
     transactionProvider = TransactionProvider();
@@ -21,6 +22,7 @@ void main() {
     await fixture.dispose();
   });
 
+  // Provider phải chặn dữ liệu đầu vào trước khi DAO tạo loan hoặc transaction.
   test('thêm khoản vay từ chối số tiền không hợp lệ và hiển thị lỗi', () async {
     final success = await loanProvider.addLoan(
       userId: fixture.userId,
@@ -36,6 +38,7 @@ void main() {
     expect(loanProvider.loans, isEmpty);
   });
 
+  // Tạo khoản vay hợp lệ phải gán category khởi tạo và reload cả loan/transaction.
   test('thêm khoản vay gán danh mục mặc định và tải lại dữ liệu liên quan', () async {
     final success = await loanProvider.addLoan(
       userId: fixture.userId,
@@ -57,6 +60,7 @@ void main() {
     expect(await fixture.accountBalance(), 1500);
   });
 
+  // Trả nợ qua provider phải dùng category chi tiền và phản ánh dư nợ mới.
   test('ghi nhận trả nợ gán danh mục thanh toán và tải lại dữ liệu', () async {
     await loanProvider.addLoan(
       userId: fixture.userId,
@@ -87,6 +91,7 @@ void main() {
     expect(await fixture.accountBalance(), 1300);
   });
 
+  // Khoản trả vượt remaining không được tạo payment hay làm thay đổi balance.
   test('ghi nhận trả nợ từ chối số tiền vượt dư nợ còn lại', () async {
     await loanProvider.addLoan(
       userId: fixture.userId,
@@ -113,6 +118,7 @@ void main() {
     expect(await fixture.accountBalance(), 1500);
   });
 
+  // Provider chặn khoảng thời gian vô hiệu trước khi chạm tới dữ liệu lưu trữ.
   test('cập nhật khoản vay từ chối hạn trả trước ngày bắt đầu', () async {
     final startDate = DateTime.now();
     final success = await loanProvider.updateLoan(
@@ -131,6 +137,7 @@ void main() {
     expect(await fixture.transactionCount(), 0);
   });
 
+  // Xóa thành công phải reload state quan sát được và khôi phục balance ban đầu.
   test('xóa khoản vay hoàn tác giao dịch và tải lại dữ liệu', () async {
     await loanProvider.addLoan(
       userId: fixture.userId,
@@ -157,6 +164,7 @@ void main() {
     expect(await fixture.accountBalance(), 1000);
   });
 
+  // Thu đủ tiền cho vay phải chọn category tiền vào và tất toán state provider.
   test('thu hết khoản cho vay tải lại trạng thái danh mục và số dư', () async {
     await loanProvider.addLoan(
       userId: fixture.userId,
@@ -188,6 +196,7 @@ void main() {
     expect(await fixture.accountBalance(), 1000);
   });
 
+  // Các điều kiện thanh toán sai tài khoản/thời gian đều không được tạo lịch sử.
   test('thanh toán từ chối tài khoản không hợp lệ và ngày ngoài phạm vi', () async {
     final startDate = DateTime.now().subtract(const Duration(days: 2));
     await loanProvider.addLoan(
@@ -238,6 +247,7 @@ void main() {
     expect(await fixture.paymentCount(), 0);
   });
 
+  // Khoản đã paid không được nhận thêm payment dù số tiền rất nhỏ.
   test('thanh toán từ chối khoản đã được trả hết', () async {
     await loanProvider.addLoan(
       userId: fixture.userId,
@@ -269,6 +279,7 @@ void main() {
     expect(await fixture.paymentCount(), 1);
   });
 
+  // Không cho sửa principal thấp hơn số đã thanh toán để tránh remaining âm.
   test('cập nhật từ chối giảm số tiền thấp hơn tổng tiền đã trả', () async {
     final startDate = DateTime.now().subtract(const Duration(days: 2));
     await loanProvider.addLoan(
@@ -303,6 +314,7 @@ void main() {
     expect(loanProvider.loans.single.amount, 500);
   });
 
+  // Màn giao dịch có thể tra loan bằng khóa trực tiếp hoặc transaction ban đầu.
   test('tìm khoản vay liên kết theo loan id và transaction id', () async {
     await loanProvider.addLoan(
       userId: fixture.userId,
@@ -337,6 +349,7 @@ void main() {
     );
   });
 
+  // Provider phải giữ cách ly dữ liệu: user khác không thao tác được loan đã seed.
   test('user khác không thể thanh toán hoặc cập nhật khoản vay', () async {
     await loanProvider.addLoan(
       userId: fixture.userId,

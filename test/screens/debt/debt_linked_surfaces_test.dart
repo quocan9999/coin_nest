@@ -13,6 +13,7 @@ import '../../helpers/debt_ffi_database.dart';
 import '../../helpers/debt_widget_harness.dart';
 
 void main() {
+  // Danh sách không có dữ liệu phải cung cấp trạng thái rỗng rõ ràng.
   testWidgets('Danh sách khoản vay hiển thị trạng thái rỗng', (tester) async {
     late final DebtDatabaseFixture fixture;
     await runDebtStep(
@@ -35,6 +36,7 @@ void main() {
     expect(find.text('Chưa có khoản vay nào'), findsOneWidget);
   });
 
+  // Danh sách phải phân biệt khoản quá hạn với khoản cho vay đã thu đủ.
   testWidgets('Danh sách khoản vay hiển thị trạng thái quá hạn và đã trả', (
     tester,
   ) async {
@@ -82,6 +84,7 @@ void main() {
     expect(find.text('Đã trả'), findsOneWidget);
   });
 
+  // Transaction debt có loan hợp lệ phải điều hướng tới đúng màn chi tiết.
   testWidgets('Giao dịch liên kết mở chi tiết khoản vay', (tester) async {
     late final DebtDatabaseFixture fixture;
     await runDebtStep(
@@ -123,6 +126,7 @@ void main() {
     expect(find.text('Alice liên kết'), findsOneWidget);
   });
 
+  // Transaction mồ côi phải báo lỗi thay vì mở chi tiết không tồn tại.
   testWidgets('Giao dịch vay thiếu liên kết hiển thị thông báo lỗi', (
     tester,
   ) async {
@@ -176,6 +180,7 @@ void main() {
     );
   });
 
+  // Màn theo dõi phải render hai chiều debt, mở detail và chuyển được tab quá hạn.
   testWidgets('Màn theo dõi vay nợ hiển thị hai tab và mở chi tiết', (
     tester,
   ) async {
@@ -256,6 +261,7 @@ void main() {
   });
 }
 
+/// Giữ dữ liệu đã preload để case render/navigation không gọi FFI từ fake async.
 class _PreloadedLoanTrackingProvider extends LoanProvider {
   var _loadCalls = 0;
 
@@ -271,6 +277,7 @@ class _PreloadedLoanTrackingProvider extends LoanProvider {
   }
 }
 
+/// Tạo dữ liệu loan dùng chung cho các bề mặt danh sách, giao dịch và theo dõi.
 Future<Loan> _insertLoan(
   DebtDatabaseFixture fixture, {
   String type = 'borrow',
