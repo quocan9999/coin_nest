@@ -5,6 +5,7 @@ import 'debt_database_fixture.dart';
 import 'debt_ffi_database.dart';
 import 'debt_widget_harness.dart';
 
+/// Tạo fixture FFI và dựng widget debt trong một lần gọi cho screen test đơn giản.
 Future<DebtWidgetHarness> pumpDebtWidget(
   WidgetTester tester, {
   required Widget child,

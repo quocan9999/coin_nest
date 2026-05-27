@@ -2,6 +2,7 @@ import 'package:coin_nest/database/database_helper.dart';
 import 'package:coin_nest/models/user.dart';
 import 'package:sqflite/sqflite.dart';
 
+/// Cụm dữ liệu debt biệt lập, cung cấp id seed và phép đọc assertion thường dùng.
 class DebtDatabaseFixture {
   DebtDatabaseFixture({
     required this.db,
@@ -23,11 +24,13 @@ class DebtDatabaseFixture {
   final int borrowPaymentCategoryId;
   final int lendPaymentCategoryId;
 
+  /// Đọc số dư tài khoản mặc định; fixture không seed tài khoản trả về 0.
   Future<double> accountBalance() async {
     if (accountId == null) return 0;
     return accountBalanceFor(accountId!);
   }
 
+  /// Đọc số dư theo id để kiểm tra luồng đổi tài khoản liên kết.
   Future<double> accountBalanceFor(int id) async {
     final rows = await db.query(
       'accounts',
@@ -40,6 +43,7 @@ class DebtDatabaseFixture {
     return (rows.first['balance'] as num).toDouble();
   }
 
+  /// Seed tài khoản phụ của cùng user cho các case chuyển dòng tiền.
   Future<int> insertAccount({
     required String name,
     required double balance,
@@ -59,9 +63,9 @@ class DebtDatabaseFixture {
     });
   }
 
+  /// Seed user thứ hai để xác nhận quyền sở hữu loan được cách ly.
   Future<int> insertOtherUser() {
     final now = DateTime(2026, 5, 24, 8).toIso8601String();
-    // User phụ chỉ phục vụ xác nhận truy vấn debt không rò dữ liệu chéo user.
     return db.insert('users', {
       'full_name': 'Debt Other User',
       'phone': '0911111111',
@@ -73,6 +77,7 @@ class DebtDatabaseFixture {
     });
   }
 
+  /// Đọc chuỗi transaction của loan theo thứ tự tạo để kiểm tra rollback/sign.
   Future<List<Map<String, Object?>>> transactionsForLoan(int loanId) {
     return db.query(
       'transactions',
@@ -82,21 +87,27 @@ class DebtDatabaseFixture {
     );
   }
 
+  /// Đếm transaction để khẳng định validation không ghi dữ liệu ngoài ý muốn.
   Future<int> transactionCount() async {
     final rows = await db.rawQuery('SELECT COUNT(*) AS total FROM transactions');
     return rows.first['total'] as int;
   }
 
+  /// Đếm lịch sử trả nợ để khẳng định validation không phát sinh payment.
   Future<int> paymentCount() async {
     final rows = await db.rawQuery('SELECT COUNT(*) AS total FROM loan_payments');
     return rows.first['total'] as int;
   }
 
+  /// Gỡ database test khỏi singleton để case sau không dùng nhầm fixture cũ.
   Future<void> dispose() async {
     await DatabaseHelper.instance.resetForTesting();
   }
 }
 
+/// Tạo schema và dữ liệu tối thiểu cho feature debt trên database được truyền vào.
+///
+/// API này chỉ dành cho test; không seed dữ liệu vào database runtime của ứng dụng.
 Future<DebtDatabaseFixture> seedDebtDatabaseFixture(
   Database db, {
   double initialBalance = 1000000,
@@ -134,6 +145,7 @@ Future<DebtDatabaseFixture> seedDebtDatabaseFixture(
 
   await DatabaseHelper.instance.seedDefaultCategories(userId);
 
+  // Tra id từ category mặc định để assertion không phụ thuộc giá trị tự tăng.
   Future<int> categoryId(String type, int sortOrder) async {
     final rows = await db.query(
       'categories',

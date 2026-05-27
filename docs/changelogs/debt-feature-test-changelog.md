@@ -398,3 +398,24 @@
 - Skipped theo yêu cầu:
   - Không chạy lệnh `flutter` hoặc `dart`.
   - Không chạy `dart format` hoặc `flutter analyze`.
+
+## 2026-05-27 10:10:00 +07:00 - Chuẩn hóa comment tiếng Việt cho bộ kiểm thử debt
+
+- Thay đổi chính:
+  - Bổ sung comment mô tả mục đích, invariant và phạm vi xác minh cho toàn bộ test case trong `test/` và `integration_test/debt_flow_test.dart`.
+  - Bổ sung hợp đồng cho fixture, FFI database, fake auth và widget harness, làm rõ cách ly database thật và ràng buộc `runAsync`.
+  - Giữ nguyên logic chạy test; thay đổi mã Dart chỉ là comment.
+- File/module ảnh hưởng:
+  - `test/database/`, `test/models/`, `test/providers/`, `test/screens/`, `test/utils/`
+  - `test/helpers/`
+  - `integration_test/debt_flow_test.dart`
+  - `docs/changelogs/debt-feature-test-changelog.md`
+- Verification đã chạy:
+  - `git diff --check`
+  - Rà `git diff --unified=0 -- '*.dart'` xác nhận chỉ thêm/chỉnh comment tiếng Việt, không đổi câu lệnh thực thi.
+- Verification cần user chạy thủ công:
+  - Không bắt buộc chạy lại test cho thay đổi chỉ-comment; khi xác minh toàn bộ nhánh, chạy `flutter test test`.
+  - Chạy integration debt trên Android bằng Genymotion và điện thoại thật theo quy trình hiện tại.
+- Skipped theo yêu cầu:
+  - Không chạy lệnh `flutter` hoặc `dart`.
+  - Không chạy `dart format` hoặc `flutter analyze`.

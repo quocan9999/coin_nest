@@ -14,6 +14,7 @@ import 'fake_auth_service.dart';
 
 const _debtHostKey = ValueKey<String>('debt-test-route-host');
 
+/// Gom fixture và các provider đang được widget sử dụng để assertion đọc đúng state.
 class DebtWidgetHarness {
   DebtWidgetHarness({
     required this.fixture,
@@ -30,6 +31,10 @@ class DebtWidgetHarness {
   final LoanProvider loanProvider;
 }
 
+/// Dựng màn debt thật với auth giả và provider đã nạp từ database biệt lập.
+///
+/// `loanProviderOverride` chỉ phục vụ case cần kiểm soát vòng đời tải dữ liệu,
+/// ví dụ tránh gọi SQLite FFI từ fake-async zone của widget test.
 Future<DebtWidgetHarness> pumpDebtWidgetWithFixture(
   WidgetTester tester, {
   required DebtDatabaseFixture fixture,
@@ -105,6 +110,7 @@ Future<DebtWidgetHarness> pumpDebtWidgetWithFixture(
   );
 }
 
+/// Route nền giữ Navigator còn hợp lệ khi màn được kiểm tra tự đóng sau submit.
 class _DebtTestRouteHost extends StatelessWidget {
   const _DebtTestRouteHost();
 
@@ -116,6 +122,7 @@ class _DebtTestRouteHost extends StatelessWidget {
   }
 }
 
+/// Pump số frame hữu hạn để render animation ngắn mà không chờ vô hạn như settle.
 Future<void> pumpDebtFrames(
   WidgetTester tester, {
   int frames = 5,
@@ -126,6 +133,7 @@ Future<void> pumpDebtFrames(
   }
 }
 
+/// Chạy thao tác async có side effect DB/provider trong real async zone có timeout.
 Future<void> runDebtStep(
   WidgetTester tester,
   String label,
@@ -144,6 +152,7 @@ Future<void> runDebtStep(
   debugDebtStep('done $label');
 }
 
+/// Đọc giá trị async từ DB trong real async zone và trả kết quả cho assertion.
 Future<T> runDebtValue<T>(
   WidgetTester tester,
   String label,
@@ -166,6 +175,7 @@ Future<T> runDebtValue<T>(
   return result;
 }
 
+/// Poll state provider trong real async zone cho đến khi side effect hoàn tất.
 Future<void> waitForDebtCondition(
   String label,
   bool Function() condition, {
@@ -186,6 +196,7 @@ void debugDebtStep(String message) {
   print('[debt-widget-test] $message');
 }
 
+/// Pump giao diện theo predicate có giới hạn để phát hiện render không hội tụ.
 Future<void> pumpDebtUntil(
   WidgetTester tester,
   bool Function() condition, {

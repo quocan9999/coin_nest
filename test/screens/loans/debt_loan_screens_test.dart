@@ -13,6 +13,7 @@ import '../../helpers/debt_ffi_widget_harness.dart';
 import '../../helpers/debt_widget_harness.dart';
 
 void main() {
+  // Kiểm tra form thêm khoản vay thực sự gọi submit và ghi tác động tài chính.
   testWidgets('Màn thêm khoản vay hiển thị biểu mẫu và lưu khoản vay hợp lệ', (
     tester,
   ) async {
@@ -67,6 +68,7 @@ void main() {
     );
   });
 
+  // Không có tài khoản nguồn thì UI phải từ chối lưu và không sinh transaction.
   testWidgets('Màn thêm khoản vay yêu cầu chọn tài khoản trước khi lưu', (
     tester,
   ) async {
@@ -107,6 +109,7 @@ void main() {
     );
   });
 
+  // Form trả nợ phải chặn khoản trả vượt remaining để bảo toàn balance/lịch sử.
   testWidgets('Màn thanh toán hiển thị dư nợ và từ chối trả quá số tiền', (
     tester,
   ) async {
@@ -178,6 +181,7 @@ void main() {
     );
   });
 
+  // Sửa khoản vay từ UI phải cập nhật provider và hiệu chỉnh số dư theo số tiền mới.
   testWidgets('Màn sửa khoản vay lưu lại thông tin và số tiền mới', (tester) async {
     late final DebtDatabaseFixture fixture;
     late final Loan loan;
@@ -229,6 +233,7 @@ void main() {
     );
   });
 
+  // Chi tiết khoản đã tất toán phải hiển thị lịch sử nhưng không cho trả thêm.
   testWidgets('Màn chi tiết hiển thị lịch sử và ẩn thanh toán khi đã trả hết', (
     tester,
   ) async {
@@ -268,6 +273,7 @@ void main() {
     expect(find.widgetWithText(ElevatedButton, 'Thanh toán'), findsNothing);
   });
 
+  // Dialog xóa phải hỗ trợ hủy an toàn; xác nhận xóa mới rollback số dư.
   testWidgets('Màn chi tiết hủy rồi xác nhận xóa khoản vay và hoàn tác số dư', (
     tester,
   ) async {
@@ -325,6 +331,7 @@ void main() {
     );
   });
 
+  // Thu đủ khoản cho vay từ UI phải tất toán và đưa tiền về tài khoản đã chọn.
   testWidgets('Màn thu nợ khoản cho vay lưu thanh toán đủ và khôi phục số dư', (
     tester,
   ) async {
@@ -380,6 +387,7 @@ void main() {
     );
   });
 
+  // Form payment không được tạo lịch sử nếu chưa có tài khoản nhận/chi tiền.
   testWidgets('Màn thanh toán yêu cầu tài khoản trước khi lưu', (tester) async {
     late final DebtDatabaseFixture fixture;
     await runDebtStep(
@@ -427,6 +435,7 @@ void main() {
   });
 }
 
+/// Seed một khoản vay/cho vay qua DAO để widget test mở thẳng màn cần kiểm tra.
 Future<Loan> _insertLoan(
   DebtDatabaseFixture fixture, {
   String type = 'borrow',

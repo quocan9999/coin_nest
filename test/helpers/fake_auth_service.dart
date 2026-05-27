@@ -1,6 +1,10 @@
 import 'package:coin_nest/models/user.dart';
 import 'package:coin_nest/services/auth/auth_service.dart';
 
+/// Thay AuthService thật bằng user cố định để screen/provider test không gọi Firebase.
+///
+/// Các phương thức đăng nhập/OTP trả kết quả thành công xác định; test debt chỉ
+/// cần identity hiện hành để kiểm tra dữ liệu được lọc theo user.
 class FakeAuthService implements AuthService {
   FakeAuthService(this.user);
 
@@ -71,11 +75,13 @@ class FakeAuthService implements AuthService {
   }) async {}
 
   @override
+  // Chỉ trả user fixture để các truy vấn khác id không vô tình được xác thực.
   Future<User?> findLocalUserById(int userId) async {
     return user.id == userId ? user : null;
   }
 
   @override
+  // Cờ này cho phép bổ sung assertion logout mà không cần state Firebase thật.
   Future<void> logout() async {
     isLoggedOut = true;
   }
