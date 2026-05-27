@@ -16,6 +16,7 @@ void main() {
     double amount = 500,
     double remainingAmount = 500,
     DateTime? startDate,
+    int? accountId,
   }) {
     final now = DateTime(2026, 5, 24, 8);
     return Loan(
@@ -26,7 +27,7 @@ void main() {
       amount: amount,
       remainingAmount: remainingAmount,
       startDate: startDate ?? DateTime(2026, 5, 20),
-      accountId: fixture.accountId,
+      accountId: accountId ?? fixture.accountId,
       createdAt: now,
       updatedAt: now,
     );
@@ -187,5 +188,221 @@ void main() {
     expect(summary['borrowed'], 500);
     expect(summary['lent'], 300);
     expect(await fixture.accountBalance(), 1200);
+  });
+
+  test('trả hết khoản vay chuyển trạng thái đã trả và loại khỏi tổng dư nợ', () async {
+    final loanId = await loanDao.insertWithInitialTransaction(
+      loan: newLoan(amount: 500, remainingAmount: 500),
+      categoryId: fixture.borrowInitialCategoryId,
+    );
+
+    await loanDao.recordPaymentWithTransaction(
+      loanId: loanId,
+      userId: fixture.userId,
+      amount: 500,
+      paymentDate: DateTime(2026, 5, 21),
+      accountId: fixture.accountId!,
+      categoryId: fixture.borrowPaymentCategoryId,
+    );
+
+    final saved = await loanDao.findByIdForUser(loanId, fixture.userId);
+    final summary = await loanDao.getSummary(fixture.userId);
+
+    expect(saved!.status, 'paid');
+    expect(saved.remainingAmount, 0);
+    expect(summary['borrowed'], 0);
+    expect(await fixture.accountBalance(), 1000);
+  });
+
+  test('thu hết khoản cho vay tạo giao dịch thu nợ và khôi phục số dư', () async {
+    final loanId = await loanDao.insertWithInitialTransaction(
+      loan: newLoan(
+        type: 'lend',
+        personName: 'Bob',
+        amount: 300,
+        remainingAmount: 300,
+      ),
+      categoryId: fixture.lendInitialCategoryId,
+    );
+
+    await loanDao.recordPaymentWithTransaction(
+      loanId: loanId,
+      userId: fixture.userId,
+      amount: 300,
+      paymentDate: DateTime(2026, 5, 21),
+      accountId: fixture.accountId!,
+      categoryId: fixture.lendPaymentCategoryId,
+    );
+
+    final saved = await loanDao.findByIdForUser(loanId, fixture.userId);
+    final txns = await fixture.transactionsForLoan(loanId);
+
+    expect(saved!.status, 'paid');
+    expect((await loanDao.getSummary(fixture.userId))['lent'], 0);
+    expect(txns.last['type'], 'income');
+    expect(txns.last['category_id'], fixture.lendPaymentCategoryId);
+    expect(await fixture.accountBalance(), 1000);
+  });
+
+  test('từ chối thanh toán sai ngày khoản đã trả và user không sở hữu', () async {
+    final loanId = await loanDao.insertWithInitialTransaction(
+      loan: newLoan(amount: 500, remainingAmount: 500),
+      categoryId: fixture.borrowInitialCategoryId,
+    );
+    final otherUserId = await fixture.insertOtherUser();
+
+    Future<void> pay({
+      required int userId,
+      required double amount,
+      required DateTime date,
+    }) {
+      return loanDao.recordPaymentWithTransaction(
+        loanId: loanId,
+        userId: userId,
+        amount: amount,
+        paymentDate: date,
+        accountId: fixture.accountId!,
+        categoryId: fixture.borrowPaymentCategoryId,
+      );
+    }
+
+    await expectLater(
+      pay(userId: fixture.userId, amount: 100, date: DateTime(2026, 5, 19)),
+      throwsArgumentError,
+    );
+    await expectLater(
+      pay(
+        userId: fixture.userId,
+        amount: 100,
+        date: DateTime.now().add(const Duration(days: 1)),
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      pay(userId: otherUserId, amount: 100, date: DateTime(2026, 5, 21)),
+      throwsStateError,
+    );
+
+    await pay(
+      userId: fixture.userId,
+      amount: 500,
+      date: DateTime(2026, 5, 21),
+    );
+    await expectLater(
+      pay(userId: fixture.userId, amount: 1, date: DateTime(2026, 5, 22)),
+      throwsStateError,
+    );
+  });
+
+  test('cập nhật sau thanh toán từ chối số tiền thấp và ngày bắt đầu trễ', () async {
+    final loanId = await loanDao.insertWithInitialTransaction(
+      loan: newLoan(amount: 500, remainingAmount: 500),
+      categoryId: fixture.borrowInitialCategoryId,
+    );
+    await loanDao.recordPaymentWithTransaction(
+      loanId: loanId,
+      userId: fixture.userId,
+      amount: 200,
+      paymentDate: DateTime(2026, 5, 21),
+      accountId: fixture.accountId!,
+      categoryId: fixture.borrowPaymentCategoryId,
+    );
+
+    await expectLater(
+      loanDao.updateLoanWithTransactions(
+        loan: newLoan(id: loanId, amount: 100, remainingAmount: 100),
+        userId: fixture.userId,
+        initialCategoryId: fixture.borrowInitialCategoryId,
+        paymentCategoryId: fixture.borrowPaymentCategoryId,
+      ),
+      throwsArgumentError,
+    );
+    await expectLater(
+      loanDao.updateLoanWithTransactions(
+        loan: newLoan(
+          id: loanId,
+          amount: 500,
+          remainingAmount: 500,
+          startDate: DateTime(2026, 5, 22),
+        ),
+        userId: fixture.userId,
+        initialCategoryId: fixture.borrowInitialCategoryId,
+        paymentCategoryId: fixture.borrowPaymentCategoryId,
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('đổi khoản vay thành cho vay ở tài khoản khác đồng bộ toàn bộ dòng tiền', () async {
+    final secondAccountId = await fixture.insertAccount(
+      name: 'Test Bank',
+      balance: 2000,
+    );
+    final loanId = await loanDao.insertWithInitialTransaction(
+      loan: newLoan(amount: 500, remainingAmount: 500),
+      categoryId: fixture.borrowInitialCategoryId,
+    );
+    await loanDao.recordPaymentWithTransaction(
+      loanId: loanId,
+      userId: fixture.userId,
+      amount: 100,
+      paymentDate: DateTime(2026, 5, 21),
+      accountId: fixture.accountId!,
+      categoryId: fixture.borrowPaymentCategoryId,
+    );
+
+    await loanDao.updateLoanWithTransactions(
+      loan: newLoan(
+        id: loanId,
+        type: 'lend',
+        personName: 'Bob',
+        amount: 700,
+        remainingAmount: 700,
+        accountId: secondAccountId,
+      ),
+      userId: fixture.userId,
+      initialCategoryId: fixture.lendInitialCategoryId,
+      paymentCategoryId: fixture.lendPaymentCategoryId,
+    );
+
+    final saved = await loanDao.findByIdForUser(loanId, fixture.userId);
+    final txns = await fixture.transactionsForLoan(loanId);
+
+    expect(saved!.type, 'lend');
+    expect(saved.accountId, secondAccountId);
+    expect(saved.remainingAmount, 600);
+    expect(txns.map((txn) => txn['type']), ['lend', 'income']);
+    expect(await fixture.accountBalance(), 1000);
+    expect(await fixture.accountBalanceFor(secondAccountId), 1400);
+  });
+
+  test('xóa khoản cho vay đã thu nợ hoàn tác số dư ban đầu', () async {
+    final loanId = await loanDao.insertWithInitialTransaction(
+      loan: newLoan(
+        type: 'lend',
+        personName: 'Bob',
+        amount: 300,
+        remainingAmount: 300,
+      ),
+      categoryId: fixture.lendInitialCategoryId,
+    );
+    await loanDao.recordPaymentWithTransaction(
+      loanId: loanId,
+      userId: fixture.userId,
+      amount: 100,
+      paymentDate: DateTime(2026, 5, 21),
+      accountId: fixture.accountId!,
+      categoryId: fixture.lendPaymentCategoryId,
+    );
+
+    final deleted = await loanDao.deleteForUserWithRollback(
+      loanId,
+      fixture.userId,
+    );
+
+    expect(deleted, 1);
+    expect(await fixture.accountBalance(), 1000);
+    expect(await fixture.transactionCount(), 0);
+    expect(await fixture.paymentCount(), 0);
   });
 }

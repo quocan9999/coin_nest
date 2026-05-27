@@ -24,15 +24,53 @@ class DebtDatabaseFixture {
   final int lendPaymentCategoryId;
 
   Future<double> accountBalance() async {
+    if (accountId == null) return 0;
+    return accountBalanceFor(accountId!);
+  }
+
+  Future<double> accountBalanceFor(int id) async {
     final rows = await db.query(
       'accounts',
       columns: ['balance'],
       where: 'id = ?',
-      whereArgs: [accountId],
+      whereArgs: [id],
       limit: 1,
     );
     if (rows.isEmpty) return 0;
     return (rows.first['balance'] as num).toDouble();
+  }
+
+  Future<int> insertAccount({
+    required String name,
+    required double balance,
+  }) {
+    final now = DateTime(2026, 5, 24, 8).toIso8601String();
+    return db.insert('accounts', {
+      'user_id': userId,
+      'name': name,
+      'type': 'bank',
+      'balance': balance,
+      'currency': 'VND',
+      'icon_name': 'bank',
+      'is_included_in_total': 1,
+      'is_active': 1,
+      'created_at': now,
+      'updated_at': now,
+    });
+  }
+
+  Future<int> insertOtherUser() {
+    final now = DateTime(2026, 5, 24, 8).toIso8601String();
+    // User phụ chỉ phục vụ xác nhận truy vấn debt không rò dữ liệu chéo user.
+    return db.insert('users', {
+      'full_name': 'Debt Other User',
+      'phone': '0911111111',
+      'email': 'debt-other@example.com',
+      'firebase_uid': 'debt-other-firebase-uid',
+      'auth_provider': 'email',
+      'created_at': now,
+      'updated_at': now,
+    });
   }
 
   Future<List<Map<String, Object?>>> transactionsForLoan(int loanId) {
