@@ -261,3 +261,43 @@
 - Skipped theo yêu cầu:
   - Không chạy lệnh `flutter` hoặc `dart`.
   - Không chạy `dart format` hoặc `flutter analyze`.
+
+## 2026-05-27 07:56:35 +07:00 - Mở rộng coverage nghiệp vụ debt
+
+- Thay đổi chính:
+  - Mở rộng fixture với helper tạo tài khoản phụ, user phụ và đọc balance theo tài khoản để kiểm tra đổi dòng tiền/cách ly user.
+  - Bổ sung DAO tests cho full payment, thu hết khoản cho vay, lỗi payment theo ngày/user/status, invariant update sau payment, đổi loại/tài khoản và rollback khi xóa khoản cho vay đã thu nợ.
+  - Bổ sung provider tests cho thu nợ, lỗi thanh toán, invariant update, lookup loan-linked transaction và chặn payment/update từ user khác.
+  - Bổ sung widget tests cho edit, detail paid/payment history, dialog delete, thu nợ, list status, transaction-linked navigation và màn theo dõi vay nợ.
+- File/module ảnh hưởng:
+  - `test/helpers/debt_database_fixture.dart`
+  - `test/database/debt_loan_dao_test.dart`
+  - `test/providers/debt_loan_provider_test.dart`
+  - `test/screens/loans/debt_loan_screens_test.dart`
+  - `test/screens/debt/debt_linked_surfaces_test.dart`
+- Verification:
+  - Rà title `test`/`testWidgets` xác nhận các test mới dùng tiếng Việt có dấu.
+  - Rà diff xác nhận DB fixture tiếp tục dùng database in-memory và không đổi schema runtime.
+
+## 2026-05-27 07:56:35 +07:00 - Mở rộng integration UI và ghi nhận defect
+
+- Thay đổi chính:
+  - Bổ sung flow integration độc lập cho sửa/trả hết khoản vay, thu nợ/xóa khoản cho vay, đổi loại/tài khoản, transaction-linked navigation, loan tracking refresh và validation UI.
+  - Giữ `AppTheme.lightTheme`, checkpoint async, timeout/predicate đồng bộ và delay quan sát chỉ trong `integration_test`.
+  - Ghi nhận defect hiện hữu: `LoanProvider.deleteLoan` báo thành công khi user không sở hữu loan; không thêm test đỏ vì task này không sửa runtime.
+- File/module ảnh hưởng:
+  - `integration_test/debt_flow_test.dart`
+  - `docs/test-reports/debt-feature-known-failures.md`
+  - `docs/changelogs/debt-feature-test-changelog.md`
+- Verification đã chạy:
+  - `git diff --check`
+  - `rg -n "\b(group|test|testWidgets)\(" test integration_test`
+  - `rg -n "Platform\.isAndroid|Genymotion|_dungDeQuanSat|waitForDebtCondition|pumpDebtUntil" integration_test docs`
+- Verification cần user chạy thủ công:
+  - `flutter test test`
+  - `flutter devices`
+  - `flutter test integration_test/debt_flow_test.dart -d <genymotion-device-id>`
+  - `flutter test integration_test/debt_flow_test.dart -d <physical-android-device-id>`
+- Skipped theo yêu cầu:
+  - Không chạy lệnh `flutter` hoặc `dart`.
+  - Không chạy `dart format` hoặc `flutter analyze`.
