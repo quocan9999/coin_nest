@@ -9,6 +9,7 @@ void main() {
   late DebtDatabaseFixture fixture;
   late LoanDao loanDao;
 
+  // Dựng loan nhất quán để mỗi test tập trung vào side effect của DAO.
   Loan newLoan({
     int? id,
     String type = 'borrow',
@@ -33,6 +34,7 @@ void main() {
     );
   }
 
+  // Mỗi case chạy trên database in-memory riêng để không chia sẻ số dư/giao dịch.
   setUp(() async {
     fixture = await openFfiDebtDatabaseFixture(initialBalance: 1000);
     loanDao = LoanDao();
@@ -42,6 +44,7 @@ void main() {
     await fixture.dispose();
   });
 
+  // Vay tiền phải sinh giao dịch tiền vào, tăng số dư và góp vào tổng đang vay.
   test('tạo khoản vay kèm giao dịch thu ban đầu', () async {
     final loanId = await loanDao.insertWithInitialTransaction(
       loan: newLoan(type: 'borrow', amount: 500, remainingAmount: 500),
@@ -62,6 +65,7 @@ void main() {
     expect((await loanDao.getSummary(fixture.userId))['borrowed'], 500);
   });
 
+  // Cho vay phải sinh giao dịch tiền ra, giảm số dư và góp vào tổng đang cho vay.
   test('tạo khoản cho vay kèm giao dịch chi ban đầu', () async {
     final loanId = await loanDao.insertWithInitialTransaction(
       loan: newLoan(
@@ -81,6 +85,7 @@ void main() {
     expect((await loanDao.getSummary(fixture.userId))['lent'], 300);
   });
 
+  // Trả một phần khoản vay phải đồng bộ dư nợ, lịch sử, transaction và balance.
   test('ghi nhận trả nợ cập nhật dư nợ lịch sử và số dư tài khoản', () async {
     final loanId = await loanDao.insertWithInitialTransaction(
       loan: newLoan(amount: 500, remainingAmount: 500),
@@ -111,6 +116,7 @@ void main() {
     expect(await fixture.accountBalance(), 1300);
   });
 
+  // Sửa số tiền gốc sau khi đã trả phải giữ payment và tính lại remaining/balance.
   test('cập nhật khoản vay đồng bộ giao dịch ban đầu và thanh toán', () async {
     final loanId = await loanDao.insertWithInitialTransaction(
       loan: newLoan(amount: 500, remainingAmount: 500),
@@ -142,6 +148,7 @@ void main() {
     expect(await fixture.accountBalance(), 1600);
   });
 
+  // Xóa loan phải rollback toàn bộ ảnh hưởng của cả lần tạo và các lần thanh toán.
   test('xóa khoản vay hoàn tác lịch sử và khôi phục số dư tài khoản', () async {
     final loanId = await loanDao.insertWithInitialTransaction(
       loan: newLoan(amount: 500, remainingAmount: 500),
@@ -168,6 +175,7 @@ void main() {
     expect(await fixture.accountBalance(), 1000);
   });
 
+  // Summary phải tách riêng số còn vay và còn cho vay đang hoạt động.
   test('tổng hợp dư nợ đang hoạt động của khoản vay và cho vay', () async {
     await loanDao.insertWithInitialTransaction(
       loan: newLoan(amount: 500, remainingAmount: 500),
@@ -190,6 +198,7 @@ void main() {
     expect(await fixture.accountBalance(), 1200);
   });
 
+  // Thanh toán đúng toàn bộ remaining phải tất toán khoản vay và loại khỏi summary.
   test('trả hết khoản vay chuyển trạng thái đã trả và loại khỏi tổng dư nợ', () async {
     final loanId = await loanDao.insertWithInitialTransaction(
       loan: newLoan(amount: 500, remainingAmount: 500),
@@ -214,6 +223,7 @@ void main() {
     expect(await fixture.accountBalance(), 1000);
   });
 
+  // Thu đủ khoản cho vay phải tạo tiền vào và đưa balance về mức trước khi cho vay.
   test('thu hết khoản cho vay tạo giao dịch thu nợ và khôi phục số dư', () async {
     final loanId = await loanDao.insertWithInitialTransaction(
       loan: newLoan(
@@ -244,6 +254,7 @@ void main() {
     expect(await fixture.accountBalance(), 1000);
   });
 
+  // DAO bảo vệ invariant thanh toán: đúng chủ sở hữu, đúng thời gian và chưa tất toán.
   test('từ chối thanh toán sai ngày khoản đã trả và user không sở hữu', () async {
     final loanId = await loanDao.insertWithInitialTransaction(
       loan: newLoan(amount: 500, remainingAmount: 500),
@@ -251,6 +262,7 @@ void main() {
     );
     final otherUserId = await fixture.insertOtherUser();
 
+    // Gom thao tác thanh toán để các case lỗi chỉ khác điều kiện bị vi phạm.
     Future<void> pay({
       required int userId,
       required double amount,
@@ -294,6 +306,7 @@ void main() {
     );
   });
 
+  // Lịch sử thanh toán đã có không được bị vô hiệu bởi việc sửa loan gốc.
   test('cập nhật sau thanh toán từ chối số tiền thấp và ngày bắt đầu trễ', () async {
     final loanId = await loanDao.insertWithInitialTransaction(
       loan: newLoan(amount: 500, remainingAmount: 500),
@@ -333,6 +346,7 @@ void main() {
     );
   });
 
+  // Đổi loại và tài khoản phải đảo/ghi lại dòng tiền trên đúng tài khoản đích.
   test('đổi khoản vay thành cho vay ở tài khoản khác đồng bộ toàn bộ dòng tiền', () async {
     final secondAccountId = await fixture.insertAccount(
       name: 'Test Bank',
@@ -376,6 +390,7 @@ void main() {
     expect(await fixture.accountBalanceFor(secondAccountId), 1400);
   });
 
+  // Xóa khoản cho vay đã thu một phần vẫn phải triệt tiêu mọi biến động số dư.
   test('xóa khoản cho vay đã thu nợ hoàn tác số dư ban đầu', () async {
     final loanId = await loanDao.insertWithInitialTransaction(
       loan: newLoan(

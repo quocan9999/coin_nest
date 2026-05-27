@@ -24,12 +24,16 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   if (!Platform.isAndroid) {
+    // Khóa phạm vi chạy integration debt vào Android để tránh xác nhận sai
+    // trên các nền tảng không thuộc kịch bản nghiệm thu của feature.
     testWidgets('Luồng tích hợp vay và cho vay chỉ chạy trên Android', (tester) async {
       markTestSkipped('Chỉ chạy trên Android: Genymotion hoặc điện thoại thật.');
     });
     return;
   }
 
+  // Kiểm tra hành trình lõi: tạo khoản vay, trả một phần rồi tạo khoản cho vay.
+  // Xác minh đồng thời list/detail, tổng dư nợ, số dư tài khoản và giao dịch sinh ra.
   testWidgets('Luồng vay qua danh sách và chi tiết, trả nợ và cho vay dùng dữ liệu biệt lập', (
     tester,
   ) async {
@@ -204,6 +208,8 @@ void main() {
     expect(txns.last['category_id'], fixture.lendInitialCategoryId);
   });
 
+  // Kiểm tra việc sửa thông tin khoản vay và thanh toán hết dư nợ.
+  // Khoản đã tất toán phải đổi trạng thái, ẩn thao tác thanh toán và rời tổng đang vay.
   testWidgets('Luồng sửa và trả hết khoản vay cập nhật chi tiết và trạng thái', (
     tester,
   ) async {
@@ -281,6 +287,8 @@ void main() {
     await _dungDeQuanSat(tester, 'chi tiết khoản vay đã trả hết');
   });
 
+  // Kiểm tra phía cho vay: thu hồi một phần tiền trước khi xóa khoản cho vay.
+  // Việc hủy/xác nhận xóa phải đúng UI và thao tác xóa phải hoàn tác số dư đã tác động.
   testWidgets('Luồng cho vay thu nợ và xóa hoàn tác dữ liệu qua giao diện', (
     tester,
   ) async {
@@ -357,6 +365,8 @@ void main() {
     await _dungDeQuanSat(tester, 'danh sách sau khi xóa khoản cho vay');
   });
 
+  // Kiểm tra invariant dòng tiền khi chuyển một khoản từ vay sang cho vay
+  // và đồng thời đổi tài khoản liên kết: số dư phải được hiệu chỉnh đúng tài khoản mới.
   testWidgets('Luồng đổi loại vay cho vay và tài khoản liên kết cập nhật dòng tiền', (
     tester,
   ) async {
@@ -426,6 +436,8 @@ void main() {
     await _dungDeQuanSat(tester, 'chi tiết sau khi đổi thành khoản cho vay');
   });
 
+  // Kiểm tra điều hướng từ giao dịch có liên kết sang chi tiết khoản vay,
+  // đồng thời xác nhận UI báo lỗi rõ ràng khi giao dịch không còn loan tương ứng.
   testWidgets('Luồng giao dịch vay mở chi tiết và báo lỗi khi liên kết thiếu', (
     tester,
   ) async {
@@ -484,6 +496,8 @@ void main() {
     await _dungDeQuanSat(tester, 'thông báo giao dịch thiếu liên kết');
   });
 
+  // Kiểm tra màn theo dõi phản ánh tiến độ thu nợ sau thao tác thực tế ở chi tiết,
+  // và tab còn nợ vẫn nhận diện đúng khoản vay đã quá hạn.
   testWidgets('Luồng theo dõi vay nợ làm mới tiến độ sau khi thu nợ', (
     tester,
   ) async {
@@ -551,6 +565,8 @@ void main() {
     await _dungDeQuanSat(tester, 'theo dõi khoản vay quá hạn');
   });
 
+  // Kiểm tra validation tạo khoản vay không cho lưu khi thiếu tài khoản nguồn,
+  // nhằm bảo đảm thao tác lỗi không ghi giao dịch vào cơ sở dữ liệu.
   testWidgets('Luồng validation giao diện từ chối tạo khoản vay khi thiếu tài khoản', (
     tester,
   ) async {
@@ -576,6 +592,8 @@ void main() {
     await _dungDeQuanSat(tester, 'thông báo thiếu tài khoản');
   });
 
+  // Kiểm tra validation thanh toán chặn số tiền lớn hơn dư nợ còn lại,
+  // nhằm bảo đảm không phát sinh lịch sử trả nợ sai từ giao diện.
   testWidgets('Luồng validation giao diện từ chối thanh toán vượt dư nợ', (
     tester,
   ) async {
@@ -606,6 +624,7 @@ void main() {
   });
 }
 
+/// Tạm dừng có chủ đích để người kiểm thử quan sát từng trạng thái trên Android.
 Future<void> _dungDeQuanSat(WidgetTester tester, String trangThai) async {
   // Delay chỉ dành cho integration test để quan sát UI trên thiết bị Android.
   debugDebtStep('quan sát UI: $trangThai');
@@ -614,6 +633,7 @@ Future<void> _dungDeQuanSat(WidgetTester tester, String trangThai) async {
   );
 }
 
+/// Khởi tạo dữ liệu biệt lập cho mỗi flow integration mà không dùng DB thật của app.
 Future<DebtDatabaseFixture> _taoFixtureTichHop(
   WidgetTester tester, {
   bool seedAccount = true,
@@ -632,6 +652,7 @@ Future<DebtDatabaseFixture> _taoFixtureTichHop(
   );
 }
 
+/// Seed loan qua DAO cho các flow không cần kiểm tra riêng thao tác nhập form tạo mới.
 Future<Loan> _themKhoanDebt(
   DebtDatabaseFixture fixture, {
   String type = 'borrow',
