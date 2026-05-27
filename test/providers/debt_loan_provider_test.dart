@@ -156,4 +156,227 @@ void main() {
     expect(transactionProvider.transactions, isEmpty);
     expect(await fixture.accountBalance(), 1000);
   });
+
+  test('thu hết khoản cho vay tải lại trạng thái danh mục và số dư', () async {
+    await loanProvider.addLoan(
+      userId: fixture.userId,
+      type: 'lend',
+      personName: 'Bob',
+      amount: 300,
+      startDate: DateTime.now().subtract(const Duration(days: 1)),
+      accountId: fixture.accountId,
+    );
+    final loanId = loanProvider.loans.single.id!;
+
+    final success = await loanProvider.recordPayment(
+      loanId,
+      300,
+      fixture.userId,
+      paymentDate: DateTime.now(),
+      accountId: fixture.accountId,
+    );
+
+    expect(success, isTrue);
+    expect(loanProvider.loans.single.status, 'paid');
+    expect(loanProvider.loans.single.remainingAmount, 0);
+    expect(loanProvider.summary['lent'], 0);
+    expect(transactionProvider.transactions.first.type, 'income');
+    expect(
+      transactionProvider.transactions.first.categoryId,
+      fixture.lendPaymentCategoryId,
+    );
+    expect(await fixture.accountBalance(), 1000);
+  });
+
+  test('thanh toán từ chối tài khoản không hợp lệ và ngày ngoài phạm vi', () async {
+    final startDate = DateTime.now().subtract(const Duration(days: 2));
+    await loanProvider.addLoan(
+      userId: fixture.userId,
+      type: 'borrow',
+      personName: 'Alice',
+      amount: 500,
+      startDate: startDate,
+      accountId: fixture.accountId,
+    );
+    final loanId = loanProvider.loans.single.id!;
+
+    expect(
+      await loanProvider.recordPayment(
+        loanId,
+        100,
+        fixture.userId,
+        paymentDate: DateTime.now(),
+        accountId: -1,
+      ),
+      isFalse,
+    );
+    expect(loanProvider.errorMessage, contains('Invalid account'));
+
+    expect(
+      await loanProvider.recordPayment(
+        loanId,
+        100,
+        fixture.userId,
+        paymentDate: startDate.subtract(const Duration(days: 1)),
+        accountId: fixture.accountId,
+      ),
+      isFalse,
+    );
+    expect(loanProvider.errorMessage, contains('before loan start'));
+
+    expect(
+      await loanProvider.recordPayment(
+        loanId,
+        100,
+        fixture.userId,
+        paymentDate: DateTime.now().add(const Duration(days: 1)),
+        accountId: fixture.accountId,
+      ),
+      isFalse,
+    );
+    expect(loanProvider.errorMessage, contains('future'));
+    expect(await fixture.paymentCount(), 0);
+  });
+
+  test('thanh toán từ chối khoản đã được trả hết', () async {
+    await loanProvider.addLoan(
+      userId: fixture.userId,
+      type: 'borrow',
+      personName: 'Alice',
+      amount: 500,
+      startDate: DateTime.now().subtract(const Duration(days: 1)),
+      accountId: fixture.accountId,
+    );
+    final loanId = loanProvider.loans.single.id!;
+    await loanProvider.recordPayment(
+      loanId,
+      500,
+      fixture.userId,
+      paymentDate: DateTime.now(),
+      accountId: fixture.accountId,
+    );
+
+    final success = await loanProvider.recordPayment(
+      loanId,
+      1,
+      fixture.userId,
+      paymentDate: DateTime.now(),
+      accountId: fixture.accountId,
+    );
+
+    expect(success, isFalse);
+    expect(loanProvider.errorMessage, contains('already been paid'));
+    expect(await fixture.paymentCount(), 1);
+  });
+
+  test('cập nhật từ chối giảm số tiền thấp hơn tổng tiền đã trả', () async {
+    final startDate = DateTime.now().subtract(const Duration(days: 2));
+    await loanProvider.addLoan(
+      userId: fixture.userId,
+      type: 'borrow',
+      personName: 'Alice',
+      amount: 500,
+      startDate: startDate,
+      accountId: fixture.accountId,
+    );
+    final loanId = loanProvider.loans.single.id!;
+    await loanProvider.recordPayment(
+      loanId,
+      200,
+      fixture.userId,
+      paymentDate: DateTime.now().subtract(const Duration(days: 1)),
+      accountId: fixture.accountId,
+    );
+
+    final success = await loanProvider.updateLoan(
+      loanId: loanId,
+      userId: fixture.userId,
+      type: 'borrow',
+      personName: 'Alice',
+      amount: 100,
+      startDate: startDate,
+      accountId: fixture.accountId!,
+    );
+
+    expect(success, isFalse);
+    expect(loanProvider.errorMessage, contains('thấp hơn tổng số tiền'));
+    expect(loanProvider.loans.single.amount, 500);
+  });
+
+  test('tìm khoản vay liên kết theo loan id và transaction id', () async {
+    await loanProvider.addLoan(
+      userId: fixture.userId,
+      type: 'borrow',
+      personName: 'Alice',
+      amount: 500,
+      startDate: DateTime.now(),
+      accountId: fixture.accountId,
+    );
+    final loan = loanProvider.loans.single;
+    final transactionId = loan.transactionId!;
+
+    expect(
+      (await loanProvider.findLoanForTransaction(
+        userId: fixture.userId,
+        loanId: loan.id,
+      ))
+          ?.id,
+      loan.id,
+    );
+    expect(
+      (await loanProvider.findLoanForTransaction(
+        userId: fixture.userId,
+        transactionId: transactionId,
+      ))
+          ?.id,
+      loan.id,
+    );
+    expect(
+      await loanProvider.findLoanForTransaction(userId: fixture.userId),
+      isNull,
+    );
+  });
+
+  test('user khác không thể thanh toán hoặc cập nhật khoản vay', () async {
+    await loanProvider.addLoan(
+      userId: fixture.userId,
+      type: 'borrow',
+      personName: 'Alice',
+      amount: 500,
+      startDate: DateTime.now().subtract(const Duration(days: 1)),
+      accountId: fixture.accountId,
+    );
+    final loanId = loanProvider.loans.single.id!;
+    final otherUserId = await fixture.insertOtherUser();
+
+    expect(
+      await loanProvider.recordPayment(
+        loanId,
+        100,
+        otherUserId,
+        paymentDate: DateTime.now(),
+        accountId: fixture.accountId,
+      ),
+      isFalse,
+    );
+    expect(loanProvider.errorMessage, contains('Loan not found'));
+
+    expect(
+      await loanProvider.updateLoan(
+        loanId: loanId,
+        userId: otherUserId,
+        type: 'borrow',
+        personName: 'Alice',
+        amount: 700,
+        startDate: DateTime.now().subtract(const Duration(days: 1)),
+        accountId: fixture.accountId!,
+      ),
+      isFalse,
+    );
+    expect(loanProvider.errorMessage, contains('Loan not found'));
+
+    await loanProvider.loadLoans(fixture.userId);
+    expect(loanProvider.loans.single.amount, 500);
+    expect(await fixture.paymentCount(), 0);
+  });
 }
