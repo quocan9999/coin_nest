@@ -1,5 +1,6 @@
 import 'package:coin_nest/database/loan_dao.dart';
 import 'package:coin_nest/models/loan.dart';
+import 'package:coin_nest/providers/loan_provider.dart';
 import 'package:coin_nest/screens/loans/loan_detail_screen.dart';
 import 'package:coin_nest/screens/loans/loan_list_screen.dart';
 import 'package:coin_nest/screens/reports/loan_tracking_screen.dart';
@@ -218,9 +219,13 @@ void main() {
       tester,
       fixture: fixture,
       child: const LoanTrackingScreen(),
+      loanProviderOverride: _PreloadedLoanTrackingProvider(),
     );
-    await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 10)));
     await pumpDebtFrames(tester);
+    await pumpDebtUntil(
+      tester,
+      () => find.text('Bob theo dõi').evaluate().isNotEmpty,
+    );
 
     expect(find.text('Theo dõi vay nợ'), findsOneWidget);
     expect(find.text('Cho vay'), findsOneWidget);
@@ -233,16 +238,8 @@ void main() {
     await pumpDebtFrames(tester);
     expect(find.byType(LoanDetailScreen), findsOneWidget);
 
-    final backButton = tester.widget<IconButton>(
+    await tester.tap(
       find.widgetWithIcon(IconButton, Icons.arrow_back_ios_rounded),
-    );
-    await runDebtStep(
-      tester,
-      'theo dõi: quay lại danh sách và tải lại dữ liệu',
-      () async {
-        backButton.onPressed!();
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-      },
     );
     await pumpDebtFrames(tester);
     await tester.tap(find.text('Còn nợ'));
@@ -250,6 +247,21 @@ void main() {
     expect(find.text('Alice quá hạn'), findsOneWidget);
     expect(find.text('Quá hạn'), findsOneWidget);
   });
+}
+
+class _PreloadedLoanTrackingProvider extends LoanProvider {
+  var _loadCalls = 0;
+
+  @override
+  Future<void> loadLoans(int userId) async {
+    _loadCalls++;
+    if (_loadCalls > 1) {
+      // Harness đã preload trong runAsync; lần reload post-frame chạy ngoài
+      // runAsync sẽ làm truy vấn SQLite FFI bị treo trong widget test.
+      return;
+    }
+    await super.loadLoans(userId);
+  }
 }
 
 Future<Loan> _insertLoan(
