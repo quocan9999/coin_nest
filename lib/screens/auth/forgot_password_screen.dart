@@ -293,9 +293,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  /// Khi OTP đủ 6 chữ số → chuyển sang bước nhập mật khẩu mới
-  void _handleOtpConfirm() {
+  /// Khi OTP đủ 6 số và đúng --> chuyển sang màn hình đặt lại mật khẩu
+  Future<void> _handleOtpConfirm() async {
     if (!_canSubmitOtp) return;
+
+    final verificationId = _verificationId;
+    if (verificationId == null) return;
+
+    setState(() => _isSubmitting = true);
+    final auth = context.read<AuthProvider>();
+    final isValid = await auth.confirmForgotPasswordOtp(
+      verificationId: verificationId,
+      otpCode: _otpCode,
+    );
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (!isValid) {
+      _showErrorSnackBar(
+        auth.errorMessage ?? 'Mã OTP không hợp lệ hoặc đã hết hạn',
+      );
+      return;
+    }
+
     setState(() => _currentStep = _ForgotStep.newPassword);
   }
 
