@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../theme/app_theme.dart';
 
@@ -81,6 +82,26 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   void _onOtpChanged(int index, String value) {
     final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleaned.length > 1) {
+      final currentDigit = cleaned.characters.first;
+      final nextDigit = cleaned.characters.last;
+      _controllers[index].text = currentDigit;
+      _controllers[index].selection = TextSelection.collapsed(
+        offset: currentDigit.length,
+      );
+
+      if (index < _otpLength - 1) {
+        _controllers[index + 1].text = nextDigit;
+        _controllers[index + 1].selection = TextSelection.collapsed(
+          offset: nextDigit.length,
+        );
+        _focusNodes[index + 1].requestFocus();
+      }
+
+      setState(() {});
+      return;
+    }
+
     if (cleaned != value) {
       _controllers[index].text = cleaned;
       _controllers[index].selection = TextSelection.fromPosition(
@@ -88,11 +109,33 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       );
     }
 
+    if (cleaned.isEmpty && index > 0) {
+      _focusNodes[index - 1].requestFocus();
+    }
+
     if (cleaned.isNotEmpty && index < _otpLength - 1) {
       _focusNodes[index + 1].requestFocus();
     }
 
     setState(() {});
+  }
+
+  KeyEventResult _onOtpKeyEvent(int index, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey != LogicalKeyboardKey.backspace) {
+      return KeyEventResult.ignored;
+    }
+    if (_controllers[index].text.isNotEmpty || index == 0) {
+      return KeyEventResult.ignored;
+    }
+
+    _focusNodes[index - 1].requestFocus();
+    _controllers[index - 1].selection = TextSelection.collapsed(
+      offset: _controllers[index - 1].text.length,
+    );
+    return KeyEventResult.handled;
   }
 
   void _onOtpSubmitted(int index) {
@@ -187,11 +230,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         )
                       : Text(
                           'Gửi lại mã',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: AppTheme.primary,
-                            decoration: TextDecoration.underline,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: AppTheme.primary,
+                                decoration: TextDecoration.underline,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                 ),
               ),
@@ -206,41 +250,41 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     return SizedBox(
       width: 48,
       height: 48,
-      child: TextField(
-        controller: _controllers[index],
-        focusNode: _focusNodes[index],
-        enabled: !_isBusy,
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        textInputAction: index == _otpLength - 1
-            ? TextInputAction.done
-            : TextInputAction.next,
-        maxLength: 1,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: AppTheme.onSurface,
-        ),
-        decoration: InputDecoration(
-          counterText: '',
-          contentPadding: EdgeInsets.zero,
-          filled: true,
-          fillColor: AppTheme.surfaceContainerHighest,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            borderSide: BorderSide(
-              color: AppTheme.outlineVariant.withAlpha(51),
+      child: Focus(
+        onKeyEvent: (node, event) => _onOtpKeyEvent(index, event),
+        child: TextField(
+          controller: _controllers[index],
+          focusNode: _focusNodes[index],
+          enabled: !_isBusy,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          textInputAction: index == _otpLength - 1
+              ? TextInputAction.done
+              : TextInputAction.next,
+          maxLength: 2,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.onSurface,
+          ),
+          decoration: InputDecoration(
+            counterText: '',
+            contentPadding: EdgeInsets.zero,
+            filled: true,
+            fillColor: AppTheme.surfaceContainerHighest,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              borderSide: BorderSide(
+                color: AppTheme.outlineVariant.withAlpha(51),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              borderSide: const BorderSide(color: AppTheme.primary, width: 2),
             ),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            borderSide: const BorderSide(
-              color: AppTheme.primary,
-              width: 2,
-            ),
-          ),
+          onChanged: (value) => _onOtpChanged(index, value),
+          onSubmitted: (_) => _onOtpSubmitted(index),
         ),
-        onChanged: (value) => _onOtpChanged(index, value),
-        onSubmitted: (_) => _onOtpSubmitted(index),
       ),
     );
   }
