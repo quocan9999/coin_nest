@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
@@ -136,7 +137,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       }
 
       // Nhánh email+password → gửi link reset qua Firebase
-      final success = await auth.sendPasswordResetEmailForUser(email: normalised);
+      final success = await auth.sendPasswordResetEmailForUser(
+        email: normalised,
+      );
 
       if (!mounted) return;
       setState(() => _isSubmitting = false);
@@ -226,6 +229,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   void _onOtpChanged(int index, String value) {
     final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleaned.length > 1) {
+      final currentDigit = cleaned.characters.first;
+      final nextDigit = cleaned.characters.last;
+      _otpControllers[index].text = currentDigit;
+      _otpControllers[index].selection = TextSelection.collapsed(
+        offset: currentDigit.length,
+      );
+
+      if (index < _otpLength - 1) {
+        _otpControllers[index + 1].text = nextDigit;
+        _otpControllers[index + 1].selection = TextSelection.collapsed(
+          offset: nextDigit.length,
+        );
+        _otpFocusNodes[index + 1].requestFocus();
+      }
+
+      setState(() {});
+      return;
+    }
+
     if (cleaned != value) {
       _otpControllers[index].text = cleaned;
       _otpControllers[index].selection = TextSelection.fromPosition(
@@ -233,11 +256,33 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       );
     }
 
+    if (cleaned.isEmpty && index > 0) {
+      _otpFocusNodes[index - 1].requestFocus();
+    }
+
     if (cleaned.isNotEmpty && index < _otpLength - 1) {
       _otpFocusNodes[index + 1].requestFocus();
     }
 
     setState(() {});
+  }
+
+  KeyEventResult _onOtpKeyEvent(int index, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey != LogicalKeyboardKey.backspace) {
+      return KeyEventResult.ignored;
+    }
+    if (_otpControllers[index].text.isNotEmpty || index == 0) {
+      return KeyEventResult.ignored;
+    }
+
+    _otpFocusNodes[index - 1].requestFocus();
+    _otpControllers[index - 1].selection = TextSelection.collapsed(
+      offset: _otpControllers[index - 1].text.length,
+    );
+    return KeyEventResult.handled;
   }
 
   void _onOtpFieldSubmitted(int index) {
@@ -356,9 +401,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -367,18 +410,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             const SizedBox(height: 16),
             Text(
               title,
-              style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                ctx,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               message,
               style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.onSurfaceVariant,
-                    height: 1.5,
-                  ),
+                color: AppTheme.onSurfaceVariant,
+                height: 1.5,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -461,16 +504,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           const SizedBox(height: 8),
           Text(
             'Quên mật khẩu',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           Text(
             'Nhập số điện thoại hoặc email đã đăng ký để đặt lại mật khẩu.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
           ),
 
           const SizedBox(height: 28),
@@ -489,10 +532,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
           const SizedBox(height: 28),
 
-          _submitButton(
-            label: 'Tiếp tục',
-            onPressed: _handleIdentifierSubmit,
-          ),
+          _submitButton(label: 'Tiếp tục', onPressed: _handleIdentifierSubmit),
 
           const SizedBox(height: 24),
         ],
@@ -509,25 +549,25 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         const SizedBox(height: 8),
         Text(
           'Xác thực OTP',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         Text(
           'Nhập mã gồm 6 chữ số đã được gửi đến số điện thoại của bạn',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.onSurfaceVariant,
-                height: 1.6,
-              ),
+            color: AppTheme.onSurfaceVariant,
+            height: 1.6,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           _phoneDisplay,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppTheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
+            color: AppTheme.primary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
 
         const SizedBox(height: 30),
@@ -564,14 +604,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ? 'Gửi lại mã ($_resendCountdown s)'
                         : 'Gửi lại mã',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: _resendCountdown > 0
-                              ? AppTheme.outline
-                              : AppTheme.primary,
-                          decoration: _resendCountdown > 0
-                              ? null
-                              : TextDecoration.underline,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: _resendCountdown > 0
+                          ? AppTheme.outline
+                          : AppTheme.primary,
+                      decoration: _resendCountdown > 0
+                          ? null
+                          : TextDecoration.underline,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
           ),
         ),
@@ -585,40 +625,41 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return SizedBox(
       width: 48,
       height: 48,
-      child: TextField(
-        controller: _otpControllers[index],
-        focusNode: _otpFocusNodes[index],
-        enabled: !_isSubmitting,
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        textInputAction:
-            index == _otpLength - 1 ? TextInputAction.done : TextInputAction.next,
-        maxLength: 1,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: AppTheme.onSurface,
+      child: Focus(
+        onKeyEvent: (node, event) => _onOtpKeyEvent(index, event),
+        child: TextField(
+          controller: _otpControllers[index],
+          focusNode: _otpFocusNodes[index],
+          enabled: !_isSubmitting,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          textInputAction: index == _otpLength - 1
+              ? TextInputAction.done
+              : TextInputAction.next,
+          maxLength: 2,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.onSurface,
+          ),
+          decoration: InputDecoration(
+            counterText: '',
+            contentPadding: EdgeInsets.zero,
+            filled: true,
+            fillColor: AppTheme.surfaceContainerHighest,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              borderSide: BorderSide(
+                color: AppTheme.outlineVariant.withAlpha(51),
+              ),
             ),
-        decoration: InputDecoration(
-          counterText: '',
-          contentPadding: EdgeInsets.zero,
-          filled: true,
-          fillColor: AppTheme.surfaceContainerHighest,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            borderSide: BorderSide(
-              color: AppTheme.outlineVariant.withAlpha(51),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              borderSide: const BorderSide(color: AppTheme.primary, width: 2),
             ),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            borderSide: const BorderSide(
-              color: AppTheme.primary,
-              width: 2,
-            ),
-          ),
+          onChanged: (value) => _onOtpChanged(index, value),
+          onSubmitted: (_) => _onOtpFieldSubmitted(index),
         ),
-        onChanged: (value) => _onOtpChanged(index, value),
-        onSubmitted: (_) => _onOtpFieldSubmitted(index),
       ),
     );
   }
@@ -634,16 +675,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           const SizedBox(height: 8),
           Text(
             'Đặt mật khẩu mới',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           Text(
             'Nhập mật khẩu mới cho tài khoản của bạn.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
           ),
 
           const SizedBox(height: 28),
@@ -675,10 +716,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           TextFormField(
             controller: _confirmPasswordController,
             obscureText: _obscure2,
-            validator: (v) => Validators.confirmPassword(
-              v,
-              _newPasswordController.text,
-            ),
+            validator: (v) =>
+                Validators.confirmPassword(v, _newPasswordController.text),
             decoration: InputDecoration(
               hintText: '••••••••',
               suffixIcon: IconButton(
@@ -712,16 +751,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Text(
       text,
       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.8,
-          ),
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.8,
+      ),
     );
   }
 
-  Widget _submitButton({
-    required String label,
-    VoidCallback? onPressed,
-  }) {
+  Widget _submitButton({required String label, VoidCallback? onPressed}) {
     final isDisabled = onPressed == null || _isSubmitting;
     return SizedBox(
       height: 52,
