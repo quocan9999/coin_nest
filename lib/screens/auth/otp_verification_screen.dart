@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../theme/app_theme.dart';
 
@@ -34,9 +37,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   bool _isSubmitting = false;
   bool _isResending = false;
+  int _resendCountdown = 0;
+  Timer? _resendTimer;
 
   @override
   void dispose() {
+    _resendTimer?.cancel();
     for (final controller in _controllers) {
       controller.dispose();
     }
@@ -51,6 +57,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   bool get _canSubmit => _otpCode.length == _otpLength && !_isBusy;
 
   bool get _isBusy => widget.isLoading || _isSubmitting || _isResending;
+
+  bool get _canResend => !_isBusy && _resendCountdown == 0;
 
   Future<void> _submit() async {
     if (!_canSubmit) return;
@@ -67,11 +75,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   Future<void> _resend() async {
-    if (_isBusy || widget.onResend == null) return;
+    if (!_canResend || widget.onResend == null) return;
 
     setState(() => _isResending = true);
     try {
       await widget.onResend!();
+      _startResendTimer();
     } finally {
       if (mounted) {
         setState(() => _isResending = false);
@@ -79,8 +88,49 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
+  void _startResendTimer() {
+    _resendTimer?.cancel();
+    if (!mounted) return;
+
+    setState(() => _resendCountdown = 60);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _resendCountdown--;
+        if (_resendCountdown <= 0) {
+          _resendCountdown = 0;
+          timer.cancel();
+        }
+      });
+    });
+  }
+
   void _onOtpChanged(int index, String value) {
     final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleaned.length > 1) {
+      final currentDigit = cleaned.characters.first;
+      final nextDigit = cleaned.characters.last;
+      _controllers[index].text = currentDigit;
+      _controllers[index].selection = TextSelection.collapsed(
+        offset: currentDigit.length,
+      );
+
+      if (index < _otpLength - 1) {
+        _controllers[index + 1].text = nextDigit;
+        _controllers[index + 1].selection = TextSelection.collapsed(
+          offset: nextDigit.length,
+        );
+        _focusNodes[index + 1].requestFocus();
+      }
+
+      setState(() {});
+      return;
+    }
+
     if (cleaned != value) {
       _controllers[index].text = cleaned;
       _controllers[index].selection = TextSelection.fromPosition(
@@ -88,11 +138,33 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       );
     }
 
+    if (cleaned.isEmpty && index > 0) {
+      _focusNodes[index - 1].requestFocus();
+    }
+
     if (cleaned.isNotEmpty && index < _otpLength - 1) {
       _focusNodes[index + 1].requestFocus();
     }
 
     setState(() {});
+  }
+
+  KeyEventResult _onOtpKeyEvent(int index, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey != LogicalKeyboardKey.backspace) {
+      return KeyEventResult.ignored;
+    }
+    if (_controllers[index].text.isNotEmpty || index == 0) {
+      return KeyEventResult.ignored;
+    }
+
+    _focusNodes[index - 1].requestFocus();
+    _controllers[index - 1].selection = TextSelection.collapsed(
+      offset: _controllers[index - 1].text.length,
+    );
+    return KeyEventResult.handled;
   }
 
   void _onOtpSubmitted(int index) {
@@ -178,7 +250,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               const SizedBox(height: 20),
               Center(
                 child: TextButton(
-                  onPressed: _isBusy ? null : _resend,
+                  onPressed: _canResend ? _resend : null,
                   child: _isResending
                       ? const SizedBox(
                           width: 18,
@@ -186,12 +258,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          'Gửi lại mã',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: AppTheme.primary,
-                            decoration: TextDecoration.underline,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          _resendCountdown > 0
+                              ? 'Gửi lại mã ($_resendCountdown s)'
+                              : 'Gửi lại mã',
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: _resendCountdown > 0
+                                    ? AppTheme.outline
+                                    : AppTheme.primary,
+                                decoration: _resendCountdown > 0
+                                    ? null
+                                    : TextDecoration.underline,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                 ),
               ),
@@ -206,41 +285,41 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     return SizedBox(
       width: 48,
       height: 48,
-      child: TextField(
-        controller: _controllers[index],
-        focusNode: _focusNodes[index],
-        enabled: !_isBusy,
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        textInputAction: index == _otpLength - 1
-            ? TextInputAction.done
-            : TextInputAction.next,
-        maxLength: 1,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: AppTheme.onSurface,
-        ),
-        decoration: InputDecoration(
-          counterText: '',
-          contentPadding: EdgeInsets.zero,
-          filled: true,
-          fillColor: AppTheme.surfaceContainerHighest,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            borderSide: BorderSide(
-              color: AppTheme.outlineVariant.withAlpha(51),
+      child: Focus(
+        onKeyEvent: (node, event) => _onOtpKeyEvent(index, event),
+        child: TextField(
+          controller: _controllers[index],
+          focusNode: _focusNodes[index],
+          enabled: !_isBusy,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          textInputAction: index == _otpLength - 1
+              ? TextInputAction.done
+              : TextInputAction.next,
+          maxLength: 2,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.onSurface,
+          ),
+          decoration: InputDecoration(
+            counterText: '',
+            contentPadding: EdgeInsets.zero,
+            filled: true,
+            fillColor: AppTheme.surfaceContainerHighest,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              borderSide: BorderSide(
+                color: AppTheme.outlineVariant.withAlpha(51),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              borderSide: const BorderSide(color: AppTheme.primary, width: 2),
             ),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            borderSide: const BorderSide(
-              color: AppTheme.primary,
-              width: 2,
-            ),
-          ),
+          onChanged: (value) => _onOtpChanged(index, value),
+          onSubmitted: (_) => _onOtpSubmitted(index),
         ),
-        onChanged: (value) => _onOtpChanged(index, value),
-        onSubmitted: (_) => _onOtpSubmitted(index),
       ),
     );
   }
