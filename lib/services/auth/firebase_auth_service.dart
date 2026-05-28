@@ -355,6 +355,25 @@ class FirebaseAuthService implements AuthService {
   }
 
   @override
+  Future<bool> confirmForgotPasswordOtp(
+    String verificationId,
+    String code,
+  ) async {
+    try {
+      final credential = firebase_auth.PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: code,
+      );
+      final phoneCredentialResult = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
+      return phoneCredentialResult.user?.phoneNumber != null;
+    } on firebase_auth.FirebaseAuthException {
+      return false;
+    }
+  }
+
+  @override
   Future<String?> checkAccountProvider(String email) async {
     final normalisedEmail = email.trim().toLowerCase();
 
@@ -419,11 +438,13 @@ class FirebaseAuthService implements AuthService {
   }) async {
     // Bước 1: Sign-in tạm bằng PhoneAuthCredential để Firebase tạo phiên
     // có phone_number claim trong token — Cloud Function sẽ đọc claim này.
-    final credential = firebase_auth.PhoneAuthProvider.credential(
-      verificationId: verificationId,
-      smsCode: otpCode,
-    );
-    await _firebaseAuth.signInWithCredential(credential);
+    if (_firebaseAuth.currentUser?.phoneNumber == null) {
+      final credential = firebase_auth.PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: otpCode,
+      );
+      await _firebaseAuth.signInWithCredential(credential);
+    }
 
     try {
       // Bước 2: Gọi Cloud Function resetPasswordByPhone — chỉ truyền
@@ -551,7 +572,6 @@ class FirebaseAuthService implements AuthService {
     if (third != null && third.trim().isNotEmpty) return third;
     return 'Người dùng CoinNest';
   }
-
 
   String _mapAuthError(Object error, {required String fallback}) {
     final message = error.toString().toLowerCase();
