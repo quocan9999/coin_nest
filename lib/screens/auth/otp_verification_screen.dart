@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -35,9 +37,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   bool _isSubmitting = false;
   bool _isResending = false;
+  int _resendCountdown = 0;
+  Timer? _resendTimer;
 
   @override
   void dispose() {
+    _resendTimer?.cancel();
     for (final controller in _controllers) {
       controller.dispose();
     }
@@ -52,6 +57,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   bool get _canSubmit => _otpCode.length == _otpLength && !_isBusy;
 
   bool get _isBusy => widget.isLoading || _isSubmitting || _isResending;
+
+  bool get _canResend => !_isBusy && _resendCountdown == 0;
 
   Future<void> _submit() async {
     if (!_canSubmit) return;
@@ -68,16 +75,38 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   }
 
   Future<void> _resend() async {
-    if (_isBusy || widget.onResend == null) return;
+    if (!_canResend || widget.onResend == null) return;
 
     setState(() => _isResending = true);
     try {
       await widget.onResend!();
+      _startResendTimer();
     } finally {
       if (mounted) {
         setState(() => _isResending = false);
       }
     }
+  }
+
+  void _startResendTimer() {
+    _resendTimer?.cancel();
+    if (!mounted) return;
+
+    setState(() => _resendCountdown = 60);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _resendCountdown--;
+        if (_resendCountdown <= 0) {
+          _resendCountdown = 0;
+          timer.cancel();
+        }
+      });
+    });
   }
 
   void _onOtpChanged(int index, String value) {
@@ -221,7 +250,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               const SizedBox(height: 20),
               Center(
                 child: TextButton(
-                  onPressed: _isBusy ? null : _resend,
+                  onPressed: _canResend ? _resend : null,
                   child: _isResending
                       ? const SizedBox(
                           width: 18,
@@ -229,11 +258,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          'Gửi lại mã',
+                          _resendCountdown > 0
+                              ? 'Gửi lại mã ($_resendCountdown s)'
+                              : 'Gửi lại mã',
                           style: Theme.of(context).textTheme.labelLarge
                               ?.copyWith(
-                                color: AppTheme.primary,
-                                decoration: TextDecoration.underline,
+                                color: _resendCountdown > 0
+                                    ? AppTheme.outline
+                                    : AppTheme.primary,
+                                decoration: _resendCountdown > 0
+                                    ? null
+                                    : TextDecoration.underline,
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
