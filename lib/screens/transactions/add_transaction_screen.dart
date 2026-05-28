@@ -39,6 +39,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
     if (widget.transaction != null) {
       final txn = widget.transaction!;
+      if (txn.isLoanLinked) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showLoanLinkedMessage();
+          Navigator.pop(context);
+        });
+      }
 
       String initialAmount = txn.amount.toInt().toString();
       String formatted = '';
@@ -105,6 +112,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   }
 
   bool get isEditMode => widget.transaction != null;
+  bool get _isLoanLinkedEdit =>
+      widget.transaction != null && widget.transaction!.isLoanLinked;
 
   // HÀM HIỂN THỊ HỘP THOẠI XÁC NHẬN
   void _showConfirmDialog({
@@ -147,6 +156,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
   // LOGIC LƯU DỮ LIỆU
   Future<void> _executeSave() async {
+    if (_isLoanLinkedEdit) {
+      _showLoanLinkedMessage();
+      return;
+    }
+
     final userId = context.read<AuthProvider>().currentUserId;
     bool success;
 
@@ -190,6 +204,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   }
 
   Future<void> _save() async {
+    if (_isLoanLinkedEdit) {
+      _showLoanLinkedMessage();
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
     if (_selectedAccountId == null) {
       ScaffoldMessenger.of(
@@ -211,6 +230,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
   // LOGIC XOÁ DỮ LIỆU
   Future<void> _executeDelete() async {
+    if (_isLoanLinkedEdit) {
+      _showLoanLinkedMessage();
+      return;
+    }
+
     final userId = context.read<AuthProvider>().currentUserId;
     final success = await context.read<TransactionProvider>().deleteTransaction(
       widget.transaction!.id!,
@@ -226,6 +250,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
   Future<void> _delete() async {
     if (!isEditMode) return;
+    if (_isLoanLinkedEdit) {
+      _showLoanLinkedMessage();
+      return;
+    }
+
     _showConfirmDialog(
       message:
           'Chú ý! Dữ liệu bị xoá sẽ không thể khôi phục lại được. Bạn có muốn tiếp tục?',
@@ -546,6 +575,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       lastDate: DateTime.now().add(const Duration(days: 1)),
     );
     if (picked != null) setState(() => _selectedDate = picked);
+  }
+
+  void _showLoanLinkedMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Giao dịch khoản vay chỉ được chỉnh sửa trong chi tiết khoản vay',
+        ),
+      ),
+    );
   }
 }
 

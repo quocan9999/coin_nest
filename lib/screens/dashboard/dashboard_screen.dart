@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/account_provider.dart';
+import '../../providers/loan_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../models/transaction_model.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/category_icons.dart';
+import '../loans/loan_detail_screen.dart';
 import '../transactions/transaction_list_screen.dart';
 import '../transactions/add_transaction_screen.dart';
 
@@ -288,22 +291,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildTransactionTile(BuildContext context, dynamic txn) {
-    final isExpense = txn.type == 'expense';
-    final amountColor = isExpense ? AppTheme.tertiary : AppTheme.secondary;
-    final sign = isExpense ? '- ' : '+ ';
+  Widget _buildTransactionTile(BuildContext context, TransactionModel txn) {
+    final amountColor = txn.isNegative ? AppTheme.tertiary : AppTheme.secondary;
+    final sign = txn.isNegative ? '- ' : '+ ';
     final iconKey = txn.categoryIconName ?? txn.type;
 
     return GestureDetector(
-      // Thêm tính năng bấm vào giao dịch ở trang chủ để sửa luôn (tùy chọn, giống trang list)
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AddTransactionScreen(transaction: txn),
-          ),
-        );
-      },
+      onTap: () => _openTransaction(context, txn),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(16),
@@ -373,10 +367,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Future<void> _openTransaction(
+    BuildContext context,
+    TransactionModel txn,
+  ) async {
+    if (txn.isLoanLinked) {
+      final userId = context.read<AuthProvider>().currentUserId;
+      final loan = await context.read<LoanProvider>().findLoanForTransaction(
+        userId: userId,
+        loanId: txn.loanId,
+        transactionId: txn.id,
+      );
+      if (!context.mounted) return;
+      if (loan == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không tìm thấy khoản vay liên kết với giao dịch này'),
+          ),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => LoanDetailScreen(loan: loan)),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddTransactionScreen(transaction: txn),
+      ),
+    );
+  }
+
   double _calculateMonthlyAmount(List transactions, String type) {
     double total = 0;
     for (final txn in transactions) {
-      if (txn.type == type) total += txn.amount;
+      if (type == 'income' && (txn.type == 'income' || txn.type == 'loan')) {
+        total += txn.amount;
+      }
+      if (type == 'expense' && (txn.type == 'expense' || txn.type == 'lend')) {
+        total += txn.amount;
+      }
     }
     return total;
   }
