@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
+import '../../providers/report_provider.dart';
 import '../../theme/app_theme.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../accounts/account_list_screen.dart';
@@ -46,11 +47,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final accountProv = context.read<AccountProvider>();
     final txnProv = context.read<TransactionProvider>();
     final catProv = context.read<CategoryProvider>();
+    final reportProv = context.read<ReportProvider>();
+    final now = DateTime.now();
 
     await Future.wait([
       accountProv.loadAccounts(userId),
       txnProv.loadTransactions(userId),
       catProv.loadCategories(userId),
+      reportProv.loadReport(
+        userId,
+        from: DateTime(now.year, now.month, 1),
+        to: DateTime(now.year, now.month + 1, 0),
+      ),
     ]);
   }
 
@@ -60,7 +68,10 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
-      );
+      ).then((_) {
+        if (!mounted) return;
+        _loadData();
+      });
       return;
     }
     setState(() => _currentIndex = index);
