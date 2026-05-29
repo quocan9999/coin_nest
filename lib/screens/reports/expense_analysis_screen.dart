@@ -640,7 +640,7 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
     return AxisTitles(
       sideTitles: SideTitles(
         showTitles: true,
-        reservedSize: AppTheme.spacing24,
+        reservedSize: 40,
         interval: chartMaxY / 4,
         getTitlesWidget: (value, meta) {
           if (value < meta.min || value > meta.max) return const SizedBox();
@@ -689,17 +689,10 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           show: true,
           drawHorizontalLine: true,
           horizontalInterval: chartMaxY / 4,
-          drawVerticalLine: true,
-          verticalInterval: 6,
+          drawVerticalLine: false,
           getDrawingHorizontalLine: (_) => FlLine(
-            color: AppTheme.outlineVariant.withValues(alpha: 0.4),
+            color: AppTheme.outlineVariant.withValues(alpha: 0.35),
             strokeWidth: 1,
-            dashArray: [5, 5],
-          ),
-          getDrawingVerticalLine: (_) => FlLine(
-            color: AppTheme.outlineVariant.withValues(alpha: 0.32),
-            strokeWidth: 1,
-            dashArray: [4, 6],
           ),
         ),
         titlesData: FlTitlesData(
@@ -713,7 +706,21 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           ),
         ),
         lineTouchData: _buildLineTouchData(AppTheme.tertiary),
-        borderData: FlBorderData(show: false),
+        borderData: FlBorderData(
+          show: true,
+          border: Border(
+            left: BorderSide(
+              color: AppTheme.outlineVariant.withValues(alpha: 0.6),
+              width: 1,
+            ),
+            bottom: BorderSide(
+              color: AppTheme.outlineVariant.withValues(alpha: 0.6),
+              width: 1,
+            ),
+            top: BorderSide.none,
+            right: BorderSide.none,
+          ),
+        ),
         minX: 0,
         maxX: 23,
         minY: 0,
@@ -804,17 +811,10 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           show: true,
           drawHorizontalLine: true,
           horizontalInterval: chartMaxY / 4,
-          drawVerticalLine: true,
-          verticalInterval: tabIndex == 1 ? 5 : 2,
+          drawVerticalLine: false,
           getDrawingHorizontalLine: (_) => FlLine(
-            color: AppTheme.outlineVariant.withValues(alpha: 0.4),
+            color: AppTheme.outlineVariant.withValues(alpha: 0.35),
             strokeWidth: 1,
-            dashArray: [5, 5],
-          ),
-          getDrawingVerticalLine: (_) => FlLine(
-            color: AppTheme.outlineVariant.withValues(alpha: 0.32),
-            strokeWidth: 1,
-            dashArray: [4, 6],
           ),
         ),
         titlesData: FlTitlesData(
@@ -828,7 +828,21 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           ),
         ),
         lineTouchData: _buildLineTouchData(AppTheme.tertiary),
-        borderData: FlBorderData(show: false),
+        borderData: FlBorderData(
+          show: true,
+          border: Border(
+            left: BorderSide(
+              color: AppTheme.outlineVariant.withValues(alpha: 0.6),
+              width: 1,
+            ),
+            bottom: BorderSide(
+              color: AppTheme.outlineVariant.withValues(alpha: 0.6),
+              width: 1,
+            ),
+            top: BorderSide.none,
+            right: BorderSide.none,
+          ),
+        ),
         minX: minX,
         maxX: maxX,
         minY: 0,
