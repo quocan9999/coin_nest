@@ -484,7 +484,7 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
                                                 .titleSmall
                                                 ?.copyWith(
                                                   fontWeight: FontWeight.w700,
-                                                  color: AppTheme.primary,
+                                                  color: AppTheme.secondary,
                                                 ),
                                           ),
                                         ],
