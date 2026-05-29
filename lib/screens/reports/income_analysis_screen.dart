@@ -103,7 +103,19 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
   }
 
   String _periodLabel() {
-    if (_selectedTab == 0) return 'Hôm nay, ${Formatters.date(_selectedDate)}';
+    if (_selectedTab == 0) {
+      final now = DateTime.now();
+      // Kiểm tra xem _selectedDate có trùng Ngày/Tháng/Năm với thời gian hiện tại không
+      final isToday = _selectedDate.year == now.year &&
+          _selectedDate.month == now.month &&
+          _selectedDate.day == now.day;
+
+      if (isToday) {
+        return 'Hôm nay, ${Formatters.date(_selectedDate)}';
+      } else {
+        return Formatters.date(_selectedDate); // Hoặc: 'Ngày ${Formatters.date(_selectedDate)}'
+      }
+    }
     if (_selectedTab == 1) {
       return 'Tháng ${_selectedDate.month}/${_selectedDate.year}';
     }
