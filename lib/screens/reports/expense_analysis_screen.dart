@@ -538,41 +538,118 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
     );
   }
 
-  String _formatYLabel(double value) {
-    if (value == 0) return '0';
-    final absValue = value.abs();
-    if (absValue >= 1000000000) {
-      return '${(absValue / 1000000000).toStringAsFixed(1)}tỷ'.replaceAll(
-        '.0',
-        '',
-      );
-    }
-    if (absValue >= 1000000) {
-      return '${(absValue / 1000000).toStringAsFixed(1)}tr'.replaceAll(
-        '.0',
-        '',
-      );
-    }
-    if (absValue >= 1000) {
-      return '${(absValue / 1000).toStringAsFixed(0)}k'.replaceAll('.0', '');
-    }
-    return absValue.toStringAsFixed(0);
+  double _chartUnitScale(double maxY) {
+    final absValue = maxY.abs();
+    if (absValue >= 1000000000) return 1000000000;
+    if (absValue >= 1000000) return 1000000;
+    if (absValue >= 1000) return 1000;
+    return 1;
   }
 
-  AxisTitles _buildLeftTitles(double chartMaxY) {
+  String _chartUnitLabel(double unitScale) {
+    if (unitScale == 1000000000) return '(Đơn vị: tỷ)';
+    if (unitScale == 1000000) return '(Đơn vị: triệu)';
+    if (unitScale == 1000) return '(Đơn vị: nghìn)';
+    return '(Đơn vị: VNĐ)';
+  }
+
+  String _formatYLabel(double value, double unitScale) {
+    return (value / unitScale).toStringAsFixed(1);
+  }
+
+  String _tooltipPeriodLabel(double x) {
+    switch (_selectedTab) {
+      case 0:
+        final hour = x.round().clamp(0, 23).toInt();
+        return '${hour.toString().padLeft(2, '0')}:00';
+      case 2:
+        final month = x.round().clamp(1, 12).toInt();
+        return 'Tháng $month/${_selectedDate.year}';
+      case 1:
+      default:
+        final daysInMonth = DateTime(
+          _selectedDate.year,
+          _selectedDate.month + 1,
+          0,
+        ).day;
+        final day = x.round().clamp(1, daysInMonth).toInt();
+        return Formatters.date(
+          DateTime(_selectedDate.year, _selectedDate.month, day),
+        );
+    }
+  }
+
+  LineTouchData _buildLineTouchData(Color amountColor) {
+    final amountStyle = Theme.of(context).textTheme.labelLarge!.copyWith(
+      color: amountColor,
+      fontWeight: FontWeight.w700,
+    );
+    final labelStyle = Theme.of(context).textTheme.labelSmall!.copyWith(
+      color: AppTheme.onSurfaceVariant,
+      fontWeight: FontWeight.w500,
+    );
+
+    return LineTouchData(
+      handleBuiltInTouches: true,
+      touchTooltipData: LineTouchTooltipData(
+        getTooltipColor: (_) => AppTheme.surfaceContainerLowest,
+        tooltipRoundedRadius: AppTheme.radiusSm,
+        tooltipPadding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacing6,
+          vertical: AppTheme.spacing4,
+        ),
+        tooltipMargin: AppTheme.spacing8,
+        tooltipBorder: BorderSide(
+          color: AppTheme.outlineVariant.withValues(alpha: 0.24),
+        ),
+        fitInsideHorizontally: true,
+        fitInsideVertically: true,
+        maxContentWidth: AppTheme.spacing20 * 4,
+        getTooltipItems: (touchedSpots) => touchedSpots.map((spot) {
+          return LineTooltipItem(
+            '${Formatters.currencyVnd(spot.y)}\n',
+            amountStyle,
+            textAlign: TextAlign.start,
+            children: [
+              TextSpan(text: _tooltipPeriodLabel(spot.x), style: labelStyle),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  AxisTitles _buildTopUnitTitle(double unitScale) {
+    return AxisTitles(
+      axisNameSize: AppTheme.spacing12,
+      axisNameWidget: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          _chartUnitLabel(unitScale),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: AppTheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      sideTitles: const SideTitles(showTitles: false),
+    );
+  }
+
+  AxisTitles _buildLeftTitles(double chartMaxY, double unitScale) {
     return AxisTitles(
       sideTitles: SideTitles(
         showTitles: true,
-        reservedSize: 52,
+        reservedSize: AppTheme.spacing24,
         interval: chartMaxY / 4,
         getTitlesWidget: (value, meta) {
-          if (value == 0 || value == meta.max) return const SizedBox();
+          if (value < meta.min || value > meta.max) return const SizedBox();
           return Text(
-            _formatYLabel(value),
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppTheme.outlineVariant,
-            ),
+            _formatYLabel(value, unitScale),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: AppTheme.outlineVariant),
+            textAlign: TextAlign.right,
           );
         },
       ),
@@ -603,55 +680,39 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
 
     spots.sort((a, b) => a.x.compareTo(b.x));
     if (maxY == 0) maxY = 1000;
+    final unitScale = _chartUnitScale(maxY);
     final chartMaxY = maxY * 1.2;
-    final labelMap = <double, String>{
-      0: '0',
-      6: '6',
-      12: '12',
-      18: '18',
-      23: '23',
-    };
 
     return LineChart(
       LineChartData(
         gridData: FlGridData(
           show: true,
-          drawVerticalLine: false,
+          drawHorizontalLine: true,
+          horizontalInterval: chartMaxY / 4,
+          drawVerticalLine: true,
+          verticalInterval: 6,
           getDrawingHorizontalLine: (_) => FlLine(
-            color: AppTheme.outlineVariant.withValues(alpha: 0.2),
+            color: AppTheme.outlineVariant.withValues(alpha: 0.4),
             strokeWidth: 1,
             dashArray: [5, 5],
           ),
+          getDrawingVerticalLine: (_) => FlLine(
+            color: AppTheme.outlineVariant.withValues(alpha: 0.32),
+            strokeWidth: 1,
+            dashArray: [4, 6],
+          ),
         ),
         titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              interval: 1,
-              getTitlesWidget: (v, meta) {
-                final key = v.roundToDouble();
-                if (!labelMap.containsKey(key)) return const SizedBox();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    labelMap[key]!,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.outlineVariant,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          leftTitles: _buildLeftTitles(chartMaxY),
-          topTitles: const AxisTitles(
+          bottomTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
+          leftTitles: _buildLeftTitles(chartMaxY, unitScale),
+          topTitles: _buildTopUnitTitle(unitScale),
           rightTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
         ),
+        lineTouchData: _buildLineTouchData(AppTheme.tertiary),
         borderData: FlBorderData(show: false),
         minX: 0,
         maxX: 23,
@@ -691,7 +752,6 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
     double maxY = 0;
     late final double minX;
     late final double maxX;
-    final labelMap = <double, String>{};
 
     if (tabIndex == 1) {
       final daysInMonth = DateTime(
@@ -715,13 +775,6 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
         spots.add(FlSpot(x, amount));
         if (amount > maxY) maxY = amount;
       }
-      labelMap[1] = '1';
-      if (daysInMonth >= 5) labelMap[5] = '5';
-      if (daysInMonth >= 10) labelMap[10] = '10';
-      if (daysInMonth >= 15) labelMap[15] = '15';
-      if (daysInMonth >= 20) labelMap[20] = '20';
-      if (daysInMonth >= 25) labelMap[25] = '25';
-      labelMap[daysInMonth.toDouble()] = '$daysInMonth';
     } else {
       minX = 1;
       maxX = 12;
@@ -734,11 +787,6 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
         spots.add(FlSpot(x, amount));
         if (amount > maxY) maxY = amount;
       }
-      labelMap[1] = '1';
-      labelMap[3] = '3';
-      labelMap[6] = '6';
-      labelMap[9] = '9';
-      labelMap[12] = '12';
     }
 
     if (spots.isEmpty) {
@@ -747,48 +795,39 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
 
     spots.sort((a, b) => a.x.compareTo(b.x));
     if (maxY == 0) maxY = 1000;
+    final unitScale = _chartUnitScale(maxY);
     final chartMaxY = maxY * 1.2;
 
     return LineChart(
       LineChartData(
         gridData: FlGridData(
           show: true,
-          drawVerticalLine: false,
+          drawHorizontalLine: true,
+          horizontalInterval: chartMaxY / 4,
+          drawVerticalLine: true,
+          verticalInterval: tabIndex == 1 ? 5 : 2,
           getDrawingHorizontalLine: (_) => FlLine(
-            color: AppTheme.outlineVariant.withValues(alpha: 0.2),
+            color: AppTheme.outlineVariant.withValues(alpha: 0.4),
             strokeWidth: 1,
             dashArray: [5, 5],
           ),
+          getDrawingVerticalLine: (_) => FlLine(
+            color: AppTheme.outlineVariant.withValues(alpha: 0.32),
+            strokeWidth: 1,
+            dashArray: [4, 6],
+          ),
         ),
         titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              interval: 1,
-              getTitlesWidget: (v, meta) {
-                final key = v.roundToDouble();
-                if (!labelMap.containsKey(key)) return const SizedBox();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    labelMap[key]!,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.outlineVariant,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          leftTitles: _buildLeftTitles(chartMaxY),
-          topTitles: const AxisTitles(
+          bottomTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
+          leftTitles: _buildLeftTitles(chartMaxY, unitScale),
+          topTitles: _buildTopUnitTitle(unitScale),
           rightTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
         ),
+        lineTouchData: _buildLineTouchData(AppTheme.tertiary),
         borderData: FlBorderData(show: false),
         minX: minX,
         maxX: maxX,
