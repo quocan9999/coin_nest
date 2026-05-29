@@ -382,129 +382,17 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                     ),
                   ),
               ],
-              Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primaryContainer, AppTheme.surface],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              if (totalLent > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'Tổng cho vay: ${Formatters.currency(totalLent)}',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.secondary,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                 ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Tổng tài sản',
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(
-                                      color: AppTheme.onSurfaceVariant,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                Formatters.currency(totalAssets),
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      color: AppTheme.secondary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Cho vay',
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(
-                                      color: AppTheme.onSurfaceVariant,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                Formatters.currency(totalLent),
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      color: AppTheme.secondary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Tổng nợ',
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(
-                                      color: AppTheme.onSurfaceVariant,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '- ${Formatters.currency(totalDebt)}',
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      color: AppTheme.tertiary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Tài sản ròng',
-                                style: Theme.of(context).textTheme.labelSmall
-                                    ?.copyWith(
-                                      color: AppTheme.onSurfaceVariant,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                Formatters.currency(netWorth),
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      color: netWorth >= 0
-                                          ? AppTheme.secondary
-                                          : AppTheme.tertiary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 40),
             ],
           ),
