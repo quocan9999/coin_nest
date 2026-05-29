@@ -430,6 +430,31 @@ class TransactionDao {
     );
   }
 
+  Future<List<Map<String, dynamic>>> hourlyTotals(
+    int userId,
+    String date,
+    String type,
+  ) async {
+    final db = await _dbHelper.database;
+    return db.rawQuery(
+      '''
+      SELECT
+        CASE
+          WHEN time IS NOT NULL AND length(time) >= 2
+            THEN CAST(substr(time, 1, 2) AS INTEGER)
+          ELSE CAST(strftime('%H', created_at) AS INTEGER)
+        END as hour,
+        COALESCE(SUM(amount), 0) as total,
+        COUNT(*) as count
+      FROM transactions
+      WHERE user_id = ? AND type = ? AND date = ?
+      GROUP BY hour
+      ORDER BY hour ASC
+    ''',
+      [userId, type, date],
+    );
+  }
+
   Future<List<Map<String, dynamic>>> expenseByAccount(
     int userId,
     String startDate,

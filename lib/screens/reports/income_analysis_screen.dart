@@ -8,7 +8,14 @@ import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 
 class IncomeAnalysisScreen extends StatefulWidget {
-  const IncomeAnalysisScreen({super.key});
+  final int initialTab;
+  final DateTime? initialDate;
+
+  const IncomeAnalysisScreen({
+    super.key,
+    this.initialTab = 1,
+    this.initialDate,
+  });
 
   @override
   State<IncomeAnalysisScreen> createState() => _IncomeAnalysisScreenState();
@@ -19,6 +26,7 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
   DateTime _selectedDate = DateTime.now();
 
   List<Map<String, dynamic>> _localDailyData = [];
+  List<Map<String, dynamic>> _localHourlyData = [];
   List<Map<String, dynamic>> _localMonthlyData = [];
   double _localTotal = 0;
   bool _localLoading = false;
@@ -28,6 +36,10 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedTab = widget.initialTab;
+    if (widget.initialDate != null) {
+      _selectedDate = widget.initialDate!;
+    }
     _loadData();
   }
 
@@ -71,6 +83,7 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
       setState(() {
         _localMonthlyData = monthly;
         _localDailyData = [];
+        _localHourlyData = [];
         _localTotal = total;
         _localHasError = report.hasError;
         _localLoading = false;
@@ -78,6 +91,9 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
     } else {
       setState(() {
         _localDailyData = List<Map<String, dynamic>>.from(report.dailyIncome);
+        _localHourlyData = _selectedTab == 0
+            ? List<Map<String, dynamic>>.from(report.hourlyIncome)
+            : [];
         _localMonthlyData = [];
         _localTotal = report.totalIncome;
         _localHasError = report.hasError;
@@ -113,15 +129,16 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
     return true;
   }
 
-  int _dailyTransactionCount() {
-    return _localDailyData.fold<int>(0, (sum, row) {
-      final count = row['count'];
-      if (count is num) return sum + count.toInt();
-      return sum + 1;
-    });
-  }
-
   String _detailLabel(Map<String, dynamic> data) {
+    if (_selectedTab == 0) {
+      final rawHour = data['hour'];
+      final hour = rawHour is num
+          ? rawHour.toInt()
+          : int.tryParse(rawHour?.toString() ?? '');
+      if (hour == null) return 'N/A';
+      return '${hour.toString().padLeft(2, '0')}:00';
+    }
+
     if (_selectedTab == 2) {
       final monthInt = int.tryParse(data['month']?.toString() ?? '') ?? 0;
       return monthInt > 0 ? 'Tháng $monthInt/${_selectedDate.year}' : 'N/A';
@@ -138,6 +155,42 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
       return Formatters.date(DateTime.parse(rawDate));
     } catch (_) {
       return rawDate;
+    }
+  }
+
+  void _onDetailTap(Map<String, dynamic> data) {
+    if (_selectedTab == 0) return;
+
+    if (_selectedTab == 2) {
+      final monthInt = int.tryParse(data['month']?.toString() ?? '');
+      if (monthInt == null) return;
+      final target = DateTime(_selectedDate.year, monthInt, 1);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              IncomeAnalysisScreen(initialTab: 1, initialDate: target),
+        ),
+      );
+      return;
+    }
+
+    if (_selectedTab == 1) {
+      final rawDate = data['date']?.toString();
+      if (rawDate == null || rawDate.isEmpty) return;
+      late DateTime target;
+      try {
+        target = DateTime.parse(rawDate);
+      } catch (_) {
+        return;
+      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              IncomeAnalysisScreen(initialTab: 0, initialDate: target),
+        ),
+      );
     }
   }
 
@@ -205,17 +258,27 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
     final chartData = _selectedTab == 2 ? _localMonthlyData : _localDailyData;
     final totalAmount = _localTotal;
 
-    final listData = List<Map<String, dynamic>>.from(chartData)
-      ..sort((a, b) {
-        if (_selectedTab == 2) {
-          final ma = a['month'] as String? ?? '';
-          final mb = b['month'] as String? ?? '';
-          return mb.compareTo(ma);
-        }
-        final da = a['date'] as String? ?? '';
-        final db = b['date'] as String? ?? '';
-        return db.compareTo(da);
-      });
+    final listData =
+        (_selectedTab == 0
+              ? List<Map<String, dynamic>>.from(_localHourlyData)
+              : List<Map<String, dynamic>>.from(chartData))
+          ..sort((a, b) {
+            if (_selectedTab == 0) {
+              final ha = a['hour'];
+              final hb = b['hour'];
+              final hourA = ha is num ? ha.toInt() : 0;
+              final hourB = hb is num ? hb.toInt() : 0;
+              return hourA.compareTo(hourB);
+            }
+            if (_selectedTab == 2) {
+              final ma = a['month'] as String? ?? '';
+              final mb = b['month'] as String? ?? '';
+              return mb.compareTo(ma);
+            }
+            final da = a['date'] as String? ?? '';
+            final db = b['date'] as String? ?? '';
+            return db.compareTo(da);
+          });
 
     return Scaffold(
       backgroundColor: AppTheme.surface,
@@ -328,7 +391,7 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
                                 SizedBox(
                                   height: 180,
                                   child: _selectedTab == 0
-                                      ? _buildDaySummary(totalAmount)
+                                      ? _buildHourlyChart(_localHourlyData)
                                       : _buildChart(chartData, _selectedTab),
                                 ),
                               ],
@@ -361,44 +424,71 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 if (listData.isEmpty)
-                                  const Padding(
-                                    padding: EdgeInsets.all(16),
+                                  Padding(
+                                    padding: const EdgeInsets.all(16),
                                     child: Center(
-                                      child: Text('Không có dữ liệu'),
+                                      child: Text(
+                                        _selectedTab == 0
+                                            ? 'Không có giao dịch trong ngày'
+                                            : 'Không có dữ liệu',
+                                      ),
                                     ),
                                   ),
                                 ...listData.map((d) {
                                   final label = _detailLabel(d);
                                   final amt = (d['total'] as num).toDouble();
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
+                                  final tappable =
+                                      _selectedTab == 1 || _selectedTab == 2;
+                                  return InkWell(
+                                    onTap: tappable
+                                        ? () => _onDetailTap(d)
+                                        : null,
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusSm,
                                     ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          label,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.copyWith(
-                                                color:
-                                                    AppTheme.onSurfaceVariant,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                label,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyMedium
+                                                    ?.copyWith(
+                                                      color: AppTheme
+                                                          .onSurfaceVariant,
+                                                    ),
                                               ),
-                                        ),
-                                        Text(
-                                          Formatters.currency(amt),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w700,
-                                                color: AppTheme.secondary,
-                                              ),
-                                        ),
-                                      ],
+                                              if (tappable) ...[
+                                                const SizedBox(width: 4),
+                                                const Icon(
+                                                  Icons.chevron_right_rounded,
+                                                  size: 16,
+                                                  color:
+                                                      AppTheme.outlineVariant,
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          Text(
+                                            Formatters.currency(amt),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppTheme.primary,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   );
                                 }),
@@ -448,66 +538,79 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
     );
   }
 
-  Widget _buildChart(List<Map<String, dynamic>> data, int tabIndex) {
+  String _formatYLabel(double value) {
+    if (value == 0) return '0';
+    final absValue = value.abs();
+    if (absValue >= 1000000000) {
+      return '${(absValue / 1000000000).toStringAsFixed(1)}tỷ'.replaceAll(
+        '.0',
+        '',
+      );
+    }
+    if (absValue >= 1000000) {
+      return '${(absValue / 1000000).toStringAsFixed(1)}tr'.replaceAll(
+        '.0',
+        '',
+      );
+    }
+    if (absValue >= 1000) {
+      return '${(absValue / 1000).toStringAsFixed(0)}k'.replaceAll('.0', '');
+    }
+    return absValue.toStringAsFixed(0);
+  }
+
+  AxisTitles _buildLeftTitles(double chartMaxY) {
+    return AxisTitles(
+      sideTitles: SideTitles(
+        showTitles: true,
+        reservedSize: 52,
+        interval: chartMaxY / 4,
+        getTitlesWidget: (value, meta) {
+          if (value == 0 || value == meta.max) return const SizedBox();
+          return Text(
+            _formatYLabel(value),
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppTheme.outlineVariant,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHourlyChart(List<Map<String, dynamic>> data) {
     if (data.isEmpty) {
       return _buildEmptyChartState(_periodLabel());
     }
 
     final spots = <FlSpot>[];
     double maxY = 0;
-    double maxX = 30;
-    final labelMap = <double, String>{};
-
-    if (tabIndex == 1) {
-      final daysInMonth = DateTime(
-        _selectedDate.year,
-        _selectedDate.month + 1,
-        0,
-      ).day;
-      maxX = (daysInMonth - 1).toDouble();
-      for (final row in data) {
-        final amount = (row['total'] as num).toDouble();
-        final rawDate = row['date']?.toString();
-        if (rawDate == null || rawDate.isEmpty) continue;
-        late DateTime date;
-        try {
-          date = DateTime.parse(rawDate);
-        } catch (_) {
-          continue;
-        }
-        final x = (date.day - 1).toDouble();
-        spots.add(FlSpot(x, amount));
-        if (amount > maxY) maxY = amount;
-      }
-      labelMap[0] = '1';
-      if (daysInMonth >= 5) labelMap[4] = '5';
-      if (daysInMonth >= 10) labelMap[9] = '10';
-      if (daysInMonth >= 15) labelMap[14] = '15';
-      if (daysInMonth >= 20) labelMap[19] = '20';
-      if (daysInMonth >= 25) labelMap[24] = '25';
-      labelMap[(daysInMonth - 1).toDouble()] = '$daysInMonth';
-    } else {
-      maxX = 11;
-      for (final row in data) {
-        final amount = (row['total'] as num).toDouble();
-        final monthStr = row['month'] as String? ?? '0';
-        final monthInt = int.tryParse(monthStr) ?? 0;
-        final x = (monthInt - 1).toDouble();
-        spots.add(FlSpot(x, amount));
-        if (amount > maxY) maxY = amount;
-      }
-      labelMap[0] = '1';
-      labelMap[2] = '3';
-      labelMap[5] = '6';
-      labelMap[8] = '9';
-      labelMap[11] = '12';
+    for (final row in data) {
+      final rawHour = row['hour'];
+      final hour = rawHour is num
+          ? rawHour.toInt()
+          : int.tryParse(rawHour?.toString() ?? '');
+      if (hour == null || hour < 0 || hour > 23) continue;
+      final amount = (row['total'] as num).toDouble();
+      spots.add(FlSpot(hour.toDouble(), amount));
+      if (amount > maxY) maxY = amount;
     }
 
     if (spots.isEmpty) {
       return _buildEmptyChartState(_periodLabel());
     }
 
+    spots.sort((a, b) => a.x.compareTo(b.x));
     if (maxY == 0) maxY = 1000;
+    final chartMaxY = maxY * 1.2;
+    final labelMap = <double, String>{
+      0: '0',
+      6: '6',
+      12: '12',
+      18: '18',
+      23: '23',
+    };
 
     return LineChart(
       LineChartData(
@@ -524,14 +627,15 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
+              interval: 1,
               getTitlesWidget: (v, meta) {
-                final key = v.toInt().toDouble();
+                final key = v.roundToDouble();
                 if (!labelMap.containsKey(key)) return const SizedBox();
                 return Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                     labelMap[key]!,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 10,
                       color: AppTheme.outlineVariant,
                     ),
@@ -540,9 +644,7 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
               },
             ),
           ),
-          leftTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
+          leftTitles: _buildLeftTitles(chartMaxY),
           topTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
@@ -552,9 +654,146 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
         ),
         borderData: FlBorderData(show: false),
         minX: 0,
+        maxX: 23,
+        minY: 0,
+        maxY: chartMaxY,
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            color: AppTheme.primary,
+            barWidth: 3,
+            isStrokeCapRound: true,
+            dotData: const FlDotData(show: false),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primary.withValues(alpha: 0.3),
+                  AppTheme.primary.withValues(alpha: 0.0),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChart(List<Map<String, dynamic>> data, int tabIndex) {
+    if (data.isEmpty) {
+      return _buildEmptyChartState(_periodLabel());
+    }
+
+    final spots = <FlSpot>[];
+    double maxY = 0;
+    late final double minX;
+    late final double maxX;
+    final labelMap = <double, String>{};
+
+    if (tabIndex == 1) {
+      final daysInMonth = DateTime(
+        _selectedDate.year,
+        _selectedDate.month + 1,
+        0,
+      ).day;
+      minX = 1;
+      maxX = daysInMonth.toDouble();
+      for (final row in data) {
+        final amount = (row['total'] as num).toDouble();
+        final rawDate = row['date']?.toString();
+        if (rawDate == null || rawDate.isEmpty) continue;
+        late DateTime date;
+        try {
+          date = DateTime.parse(rawDate);
+        } catch (_) {
+          continue;
+        }
+        final x = date.day.toDouble();
+        spots.add(FlSpot(x, amount));
+        if (amount > maxY) maxY = amount;
+      }
+      labelMap[1] = '1';
+      if (daysInMonth >= 5) labelMap[5] = '5';
+      if (daysInMonth >= 10) labelMap[10] = '10';
+      if (daysInMonth >= 15) labelMap[15] = '15';
+      if (daysInMonth >= 20) labelMap[20] = '20';
+      if (daysInMonth >= 25) labelMap[25] = '25';
+      labelMap[daysInMonth.toDouble()] = '$daysInMonth';
+    } else {
+      minX = 1;
+      maxX = 12;
+      for (final row in data) {
+        final amount = (row['total'] as num).toDouble();
+        final monthStr = row['month'] as String? ?? '0';
+        final monthInt = int.tryParse(monthStr) ?? 0;
+        if (monthInt < 1 || monthInt > 12) continue;
+        final x = monthInt.toDouble();
+        spots.add(FlSpot(x, amount));
+        if (amount > maxY) maxY = amount;
+      }
+      labelMap[1] = '1';
+      labelMap[3] = '3';
+      labelMap[6] = '6';
+      labelMap[9] = '9';
+      labelMap[12] = '12';
+    }
+
+    if (spots.isEmpty) {
+      return _buildEmptyChartState(_periodLabel());
+    }
+
+    spots.sort((a, b) => a.x.compareTo(b.x));
+    if (maxY == 0) maxY = 1000;
+    final chartMaxY = maxY * 1.2;
+
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: AppTheme.outlineVariant.withValues(alpha: 0.2),
+            strokeWidth: 1,
+            dashArray: [5, 5],
+          ),
+        ),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 1,
+              getTitlesWidget: (v, meta) {
+                final key = v.roundToDouble();
+                if (!labelMap.containsKey(key)) return const SizedBox();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    labelMap[key]!,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.outlineVariant,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          leftTitles: _buildLeftTitles(chartMaxY),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        minX: minX,
         maxX: maxX,
         minY: 0,
-        maxY: maxY * 1.2,
+        maxY: chartMaxY,
         lineBarsData: [
           LineChartBarData(
             spots: spots,
@@ -602,48 +841,6 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
               context,
             ).textTheme.bodySmall?.copyWith(color: AppTheme.outline),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDaySummary(double totalAmount) {
-    final transactionCount = _dailyTransactionCount();
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            Formatters.currency(totalAmount),
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: AppTheme.secondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tổng trong ngày',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppTheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _periodLabel(),
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppTheme.outline),
-          ),
-          if (transactionCount > 0) ...[
-            const SizedBox(height: 4),
-            Text(
-              '$transactionCount giao dịch',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppTheme.onSurfaceVariant,
-              ),
-            ),
-          ],
         ],
       ),
     );
