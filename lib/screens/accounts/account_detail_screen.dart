@@ -9,7 +9,6 @@ import '../../utils/constants.dart';
 import '../../utils/category_icons.dart';
 import 'add_edit_account_screen.dart';
 
-
 class AccountDetailScreen extends StatelessWidget {
   final Account account;
   const AccountDetailScreen({super.key, required this.account});
@@ -17,66 +16,102 @@ class AccountDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
-        title: const Text('Chi tiết tài khoản'),
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_rounded), onPressed: () => Navigator.pop(context)),
+        title: Text('Chi tiết tài khoản'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditAccountScreen(account: account))),
+            icon: Icon(Icons.edit_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AddEditAccountScreen(account: account),
+              ),
+            ),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppTheme.tertiary),
+            icon: Icon(
+              Icons.delete_outline,
+              color: AppTheme.colors(context).expense,
+            ),
             onPressed: () => _confirmDelete(context),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20),
         child: Column(
           children: [
             // Account card
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceContainerLowest,
+                color: AppTheme.colors(context).card,
                 borderRadius: BorderRadius.circular(AppTheme.radiusLg),
               ),
               child: Column(
                 children: [
                   Container(
-                    width: 64, height: 64,
+                    width: 64,
+                    height: 64,
                     decoration: BoxDecoration(
-                      color: CategoryIcons.getColor(account.iconName ?? account.type).withAlpha(30),
+                      color: CategoryIcons.getColor(
+                        account.iconName ?? account.type,
+                      ).withAlpha(30),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Icon(CategoryIcons.getIcon(account.iconName ?? account.type),
-                        color: CategoryIcons.getColor(account.iconName ?? account.type), size: 32),
+                    child: Icon(
+                      CategoryIcons.getIcon(account.iconName ?? account.type),
+                      color: CategoryIcons.getColor(
+                        account.iconName ?? account.type,
+                      ),
+                      size: 32,
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(account.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 4),
-                  Text(AppConstants.accountTypeLabels[account.type] ?? account.type,
-                      style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 16),
-                  Text(Formatters.currency(account.balance),
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  SizedBox(height: 16),
+                  Text(
+                    account.name,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    AppConstants.accountTypeLabels[account.type] ??
+                        account.type,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    Formatters.currency(account.balance),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // Actions
             SizedBox(
-              width: double.infinity, height: 48,
+              width: double.infinity,
+              height: 48,
               child: OutlinedButton.icon(
-                onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => AddEditAccountScreen(account: account))),
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Chỉnh sửa thông tin tài khoản'),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AddEditAccountScreen(account: account),
+                  ),
+                ),
+                icon: Icon(Icons.edit_outlined),
+                label: Text('Chỉnh sửa thông tin tài khoản'),
               ),
             ),
           ],
@@ -89,18 +124,24 @@ class AccountDetailScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Xóa tài khoản'),
+        title: Text('Xóa tài khoản'),
         content: Text('Bạn có chắc chắn muốn xóa "${account.name}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Hủy')),
           TextButton(
             onPressed: () async {
               final userId = context.read<AuthProvider>().currentUserId;
-              await context.read<AccountProvider>().deleteAccount(account.id!, userId);
+              await context.read<AccountProvider>().deleteAccount(
+                account.id!,
+                userId,
+              );
               if (ctx.mounted) Navigator.pop(ctx);
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Xóa', style: TextStyle(color: AppTheme.tertiary)),
+            child: Text(
+              'Xóa',
+              style: TextStyle(color: AppTheme.colors(context).expense),
+            ),
           ),
         ],
       ),

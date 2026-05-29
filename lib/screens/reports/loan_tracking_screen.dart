@@ -48,37 +48,34 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
     final loanProv = context.watch<LoanProvider>();
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
         title: Text(
           'Theo dõi vay nợ',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppTheme.primary,
-              ),
+            fontWeight: FontWeight.w700,
+            color: AppTheme.colors(context).primary,
+          ),
         ),
-        backgroundColor: AppTheme.surface,
+        backgroundColor: AppTheme.colors(context).surface,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: AppTheme.primary),
+        iconTheme: IconThemeData(color: AppTheme.colors(context).primary),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppTheme.primary,
-          unselectedLabelColor: AppTheme.onSurfaceVariant,
-          indicatorColor: AppTheme.primary,
+          labelColor: AppTheme.colors(context).primary,
+          unselectedLabelColor: AppTheme.colors(context).textSecondary,
+          indicatorColor: AppTheme.colors(context).primary,
           indicatorWeight: 3,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-          ),
-          tabs: const [
+          labelStyle: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          tabs: [
             Tab(text: 'Cho vay'),
             Tab(text: 'Còn nợ'),
           ],
         ),
       ),
       body: loanProv.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : TabBarView(
               controller: _tabController,
               children: [
@@ -112,17 +109,19 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
     final totalPaid = totalAmount - totalRemaining;
     final progress = totalAmount > 0 ? totalPaid / totalAmount : 0.0;
 
-    final color = isLend ? AppTheme.secondary : AppTheme.tertiary;
+    final color = isLend
+        ? AppTheme.colors(context).income
+        : AppTheme.colors(context).expense;
     final colorContainer = isLend
-        ? AppTheme.secondaryContainer
-        : AppTheme.tertiaryContainer;
+        ? AppTheme.colors(context).incomeBg
+        : AppTheme.colors(context).expenseBg;
 
     return RefreshIndicator(
       color: color,
       onRefresh: _loadLoans,
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        physics: AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(20),
         child: loans.isEmpty
             ? _buildEmptyState(context)
             : Column(
@@ -137,16 +136,16 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
                     totalAmount: totalAmount,
                     progress: progress,
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32),
                   Text(
                     isLend ? 'DANH SÁCH CHO VAY' : 'DANH SÁCH CẦN TRẢ',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.outline,
-                          letterSpacing: 1.2,
-                        ),
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.colors(context).textDisabled,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   ...loans.map(
                     (loan) => _buildLoanCard(
                       context: context,
@@ -154,7 +153,7 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
                       color: color,
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
                 ],
               ),
       ),
@@ -174,7 +173,7 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: colorContainer,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
@@ -188,23 +187,23 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
                 Text(
                   isLend ? 'Tổng tiến độ thu tiền' : 'Tổng tiến độ trả nợ',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   Formatters.currency(totalPaid),
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: color,
-                      ),
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
                 ),
                 Text(
                   '/ ${Formatters.currency(totalAmount)}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: color.withValues(alpha: 0.8),
-                      ),
+                    color: color.withValues(alpha: 0.8),
+                  ),
                 ),
               ],
             ),
@@ -218,17 +217,15 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
                 child: CircularProgressIndicator(
                   value: clampedProgress,
                   strokeWidth: 6,
-                  backgroundColor:
-                      AppTheme.surfaceContainerLowest.withValues(alpha: 0.4),
+                  backgroundColor: AppTheme.colors(
+                    context,
+                  ).card.withValues(alpha: 0.4),
                   valueColor: AlwaysStoppedAnimation<Color>(color),
                 ),
               ),
               Text(
                 '${(clampedProgress * 100).toStringAsFixed(0)}%',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w700, color: color),
               ),
             ],
           ),
@@ -251,16 +248,18 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
       borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       onTap: () => _openLoanDetail(context, loan),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
+        margin: EdgeInsets.only(bottom: 16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceContainerLowest,
+          color: AppTheme.colors(context).card,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: AppTheme.colors(
+                context,
+              ).textPrimary.withValues(alpha: 0.04),
               blurRadius: 8,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             ),
           ],
         ),
@@ -274,45 +273,45 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
                   child: Text(
                     loan.personName,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
                       Formatters.currency(loan.remainingAmount),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: color,
-                          ),
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     _buildStatusBadge(statusLabel, statusColor),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             if (loan.dueDate != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: EdgeInsets.only(bottom: 12),
                 child: Row(
                   children: [
                     Icon(
                       Icons.calendar_month_rounded,
                       size: 14,
-                      color: AppTheme.outlineVariant,
+                      color: AppTheme.colors(context).border,
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4),
                     Text(
                       'Hạn: ${Formatters.date(loan.dueDate!)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.outline,
-                          ),
+                        color: AppTheme.colors(context).textDisabled,
+                      ),
                     ),
                   ],
                 ),
@@ -322,28 +321,28 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
                 Expanded(
                   child: LinearProgressIndicator(
                     value: progress,
-                    backgroundColor: AppTheme.surfaceContainerHigh,
+                    backgroundColor: AppTheme.colors(context).input,
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                     minHeight: 6,
                     borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Text(
                   Formatters.percent(loan.paidPercentage),
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                      ),
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Đã thanh toán: ${Formatters.currency(paid)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.onSurfaceVariant,
-                  ),
+                color: AppTheme.colors(context).textSecondary,
+              ),
             ),
           ],
         ),
@@ -353,7 +352,7 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
 
   Widget _buildStatusBadge(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withAlpha(18),
         borderRadius: BorderRadius.circular(AppTheme.radiusSm),
@@ -371,7 +370,7 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
 
   Widget _buildEmptyState(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 80),
+      padding: EdgeInsets.symmetric(vertical: 80),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -379,14 +378,14 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
             Icon(
               Icons.receipt_long_rounded,
               size: 72,
-              color: AppTheme.outlineVariant,
+              color: AppTheme.colors(context).border,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Chưa có khoản nào',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -401,9 +400,9 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
   }
 
   Color _statusColor(Loan loan) {
-    if (loan.isPaid) return AppTheme.secondary;
-    if (loan.isOverdue) return AppTheme.tertiary;
-    return AppTheme.primary;
+    if (loan.isPaid) return AppTheme.colors(context).income;
+    if (loan.isOverdue) return AppTheme.colors(context).expense;
+    return AppTheme.colors(context).primary;
   }
 
   Future<void> _openLoanDetail(BuildContext context, Loan loan) async {

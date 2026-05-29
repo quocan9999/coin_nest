@@ -58,20 +58,20 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     final grouped = txnProv.groupedByDate;
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
         title: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.account_balance_wallet_rounded,
-              color: AppTheme.primary,
+              color: AppTheme.colors(context).primary,
               size: 22,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               'CoinNest',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppTheme.primary,
+                color: AppTheme.colors(context).primary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -79,7 +79,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
+            icon: Icon(Icons.notifications_outlined),
             onPressed: () {},
           ),
         ],
@@ -88,7 +88,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         children: [
           // Search
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+            padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
             child: TextField(
               controller: _searchController,
               onChanged: (q) {
@@ -99,9 +99,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               },
               decoration: InputDecoration(
                 hintText: 'Tìm kiếm giao dịch...',
-                prefixIcon: const Icon(Icons.search, size: 20),
+                prefixIcon: Icon(Icons.search, size: 20),
                 filled: true,
-                fillColor: AppTheme.surfaceContainerLowest,
+                fillColor: AppTheme.colors(context).card,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                   borderSide: BorderSide.none,
@@ -115,23 +115,23 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             height: 36,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: 20),
               children: [
                 _filterChip('Tháng này', Icons.calendar_month, true),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _filterChip('Hạng mục', Icons.category_outlined, false),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 _filterChip('Tài khoản', Icons.account_balance_outlined, false),
               ],
             ),
           ),
 
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
 
           // Transaction list
           Expanded(
             child: txnProv.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator())
                 : txnProv.transactions.isEmpty
                 ? Center(
                     child: Column(
@@ -140,18 +140,20 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                         Icon(
                           Icons.receipt_long_outlined,
                           size: 56,
-                          color: AppTheme.outlineVariant,
+                          color: AppTheme.colors(context).border,
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         Text(
                           'Chưa có giao dịch nào',
-                          style: TextStyle(color: AppTheme.onSurfaceVariant),
+                          style: TextStyle(
+                            color: AppTheme.colors(context).textSecondary,
+                          ),
                         ),
                       ],
                     ),
                   )
                 : ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: EdgeInsets.symmetric(horizontal: 20),
                     children: grouped.entries.map((entry) {
                       final total = entry.value.fold<double>(
                         0,
@@ -160,7 +162,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -177,14 +179,14 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                                 style: Theme.of(context).textTheme.labelMedium
                                     ?.copyWith(
                                       color: total >= 0
-                                          ? AppTheme.secondary
-                                          : AppTheme.tertiary,
+                                          ? AppTheme.colors(context).income
+                                          : AppTheme.colors(context).expense,
                                       fontWeight: FontWeight.w600,
                                     ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8),
                           ...entry.value.map(
                             (txn) => _buildTxnTile(context, txn),
                           ),
@@ -200,9 +202,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   Widget _filterChip(String label, IconData icon, bool selected) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: selected ? AppTheme.primary : AppTheme.surfaceContainerLow,
+        color: selected
+            ? AppTheme.colors(context).primary
+            : AppTheme.colors(context).input,
         borderRadius: BorderRadius.circular(AppTheme.radiusFull),
       ),
       child: Row(
@@ -211,15 +215,19 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           Icon(
             icon,
             size: 14,
-            color: selected ? Colors.white : AppTheme.onSurfaceVariant,
+            color: selected
+                ? Theme.of(context).colorScheme.onPrimary
+                : AppTheme.colors(context).textSecondary,
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: selected ? Colors.white : AppTheme.onSurface,
+              color: selected
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : AppTheme.colors(context).textPrimary,
             ),
           ),
         ],
@@ -229,8 +237,10 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   Widget _buildTxnTile(BuildContext context, TransactionModel txn) {
     final color = txn.isNegative
-        ? AppTheme.tertiary
-        : (txn.type == 'transfer' ? AppTheme.primary : AppTheme.secondary);
+        ? AppTheme.colors(context).expense
+        : (txn.type == 'transfer'
+              ? AppTheme.colors(context).primary
+              : AppTheme.colors(context).income);
     final sign = txn.isNegative
         ? '- '
         : (txn.type == 'transfer' || txn.type == 'balance_adjust' ? '' : '+ ');
@@ -245,10 +255,10 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         _openTransaction(context, txn);
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
+        margin: EdgeInsets.only(bottom: 8),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceContainerLowest,
+          color: AppTheme.colors(context).card,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Row(
@@ -266,7 +276,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 size: 20,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,7 +311,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                   Text(
                     txn.accountName!,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
+                      color: AppTheme.colors(context).textSecondary,
                     ),
                   ),
               ],
@@ -326,8 +336,10 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       if (!context.mounted) return;
       if (loan == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không tìm thấy khoản vay liên kết với giao dịch này'),
+          SnackBar(
+            content: Text(
+              'Không tìm thấy khoản vay liên kết với giao dịch này',
+            ),
           ),
         );
         return;

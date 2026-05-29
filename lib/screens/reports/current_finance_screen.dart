@@ -54,17 +54,17 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
     }
     switch (acc.type) {
       case 'cash':
-        return AppTheme.secondary;
+        return AppTheme.colors(context).income;
       case 'bank':
-        return AppTheme.primary;
+        return AppTheme.colors(context).primary;
       case 'e_wallet':
-        return const Color(0xFF9C27B0);
+        return AppTheme.colors(context).transfer;
       case 'savings':
-        return const Color(0xFFFF9800);
+        return AppTheme.colors(context).warning;
       case 'credit_card':
-        return const Color(0xFFE53935);
+        return AppTheme.colors(context).expense;
       default:
-        return AppTheme.primary;
+        return AppTheme.colors(context).primary;
     }
   }
 
@@ -99,20 +99,20 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
     final netWorth = totalAssets + totalLent - totalDebt;
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
-        title: const Text('Tài chính hiện tại'),
-        backgroundColor: AppTheme.surface,
+        title: Text('Tài chính hiện tại'),
+        backgroundColor: AppTheme.colors(context).surface,
         elevation: 0,
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppTheme.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: AppTheme.colors(context).primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddEditAccountScreen()),
+            MaterialPageRoute(builder: (_) => AddEditAccountScreen()),
           ).then((_) {
             if (!context.mounted) return;
             if (context.read<AuthProvider>().currentUserId != 0) {
@@ -122,32 +122,37 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
             }
           });
         },
-        child: const Icon(Icons.add_rounded),
+        child: Icon(Icons.add_rounded),
       ),
       body: RefreshIndicator(
-        color: AppTheme.primary,
+        color: AppTheme.colors(context).primary,
         onRefresh: _refreshData,
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(20),
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primary, AppTheme.primaryContainer],
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.colors(context).primary,
+                      AppTheme.colors(context).transferBg,
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primary.withValues(alpha: 0.3),
+                      color: AppTheme.colors(
+                        context,
+                      ).primary.withValues(alpha: 0.3),
                       blurRadius: 15,
-                      offset: const Offset(0, 8),
+                      offset: Offset(0, 8),
                     ),
                   ],
                 ),
@@ -156,32 +161,38 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                     Text(
                       'Tổng tài sản ròng',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onPrimary.withValues(alpha: 0.9),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       Formatters.currency(netWorth),
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.sync_rounded,
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary.withValues(alpha: 0.8),
                           size: 14,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           'Cập nhật hôm nay',
                           style: Theme.of(context).textTheme.labelMedium
                               ?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.8),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimary.withValues(alpha: 0.8),
                               ),
                         ),
                       ],
@@ -189,24 +200,24 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               Text(
                 'TÀI KHOẢN',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.outline,
+                  color: AppTheme.colors(context).textDisabled,
                   letterSpacing: 1.2,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               if (accountProv.isLoading)
                 _buildSkeletonCards(count: 2)
               else ...[
                 ...accountProv.accounts.map((acc) {
                   final iconColor = _getAccountColor(acc);
                   final amountColor = acc.balance < 0
-                      ? AppTheme.tertiary
-                      : AppTheme.secondary;
+                      ? AppTheme.colors(context).expense
+                      : AppTheme.colors(context).income;
                   return _buildCard(
                     context: context,
                     icon: _getAccountIcon(acc),
@@ -219,7 +230,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                     amount: acc.balance,
                     amountColor: acc.isIncludedInTotal
                         ? amountColor
-                        : AppTheme.outline,
+                        : AppTheme.colors(context).textDisabled,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -241,7 +252,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                   );
                 }),
                 if (accountProv.accounts.isEmpty)
-                  const Center(
+                  Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
                       child: Text('Chưa có tài khoản'),
@@ -249,7 +260,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                   ),
               ],
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   'Tổng tài khoản: ${Formatters.currency(totalAssets)}',
                   style: Theme.of(
@@ -257,16 +268,16 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               Text(
                 'KHOẢN NỢ',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.outline,
+                  color: AppTheme.colors(context).textDisabled,
                   letterSpacing: 1.2,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               if (loanProv.isLoading)
                 _buildSkeletonCards(count: 1)
               else ...[
@@ -276,14 +287,16 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                       return _buildCard(
                         context: context,
                         icon: Icons.person_rounded,
-                        iconBgColor: AppTheme.tertiary.withValues(alpha: 0.15),
-                        iconColor: AppTheme.tertiary,
+                        iconBgColor: AppTheme.colors(
+                          context,
+                        ).expense.withValues(alpha: 0.15),
+                        iconColor: AppTheme.colors(context).expense,
                         title: '${loan.personName} - Vay',
                         subtitle: loan.dueDate != null
                             ? 'Hạn: ${Formatters.date(loan.dueDate!)}'
                             : null,
                         amount: loan.remainingAmount,
-                        amountColor: AppTheme.tertiary,
+                        amountColor: AppTheme.colors(context).expense,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -307,7 +320,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                 if (loanProv.loans
                     .where((l) => l.type == 'borrow' && l.status != 'paid')
                     .isEmpty)
-                  const Center(
+                  Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
                       child: Text('Không có khoản nợ'),
@@ -316,25 +329,25 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
               ],
               if (totalDebt > 0)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     'Tổng nợ: ${Formatters.currency(totalDebt)}',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.tertiary,
+                      color: AppTheme.colors(context).expense,
                     ),
                   ),
                 ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               Text(
                 'KHOẢN CHO VAY',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.outline,
+                  color: AppTheme.colors(context).textDisabled,
                   letterSpacing: 1.2,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               if (loanProv.isLoading)
                 _buildSkeletonCards(count: 1)
               else ...[
@@ -344,14 +357,16 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                       return _buildCard(
                         context: context,
                         icon: Icons.person_rounded,
-                        iconBgColor: AppTheme.secondary.withValues(alpha: 0.15),
-                        iconColor: AppTheme.secondary,
+                        iconBgColor: AppTheme.colors(
+                          context,
+                        ).income.withValues(alpha: 0.15),
+                        iconColor: AppTheme.colors(context).income,
                         title: '${loan.personName} - Cho vay',
                         subtitle: loan.dueDate != null
                             ? 'Hạn: ${Formatters.date(loan.dueDate!)}'
                             : null,
                         amount: loan.remainingAmount,
-                        amountColor: AppTheme.secondary,
+                        amountColor: AppTheme.colors(context).income,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -375,7 +390,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                 if (loanProv.loans
                     .where((l) => l.type == 'lend' && l.status != 'paid')
                     .isEmpty)
-                  const Center(
+                  Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
                       child: Text('Không có khoản cho vay'),
@@ -384,16 +399,16 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
               ],
               if (totalLent > 0)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     'Tổng cho vay: ${Formatters.currency(totalLent)}',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.secondary,
+                      color: AppTheme.colors(context).income,
                     ),
                   ),
                 ),
-              const SizedBox(height: 40),
+              SizedBox(height: 40),
             ],
           ),
         ),
@@ -410,9 +425,9 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
           (_) => Container(
             height: 72,
             width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceContainerHigh,
+              color: AppTheme.colors(context).input,
               borderRadius: BorderRadius.circular(12),
             ),
           ),
@@ -438,16 +453,18 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         onTap: onTap,
         child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
+          margin: EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceContainerLowest,
+            color: AppTheme.colors(context).card,
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: AppTheme.colors(
+                  context,
+                ).textPrimary.withValues(alpha: 0.04),
                 blurRadius: 10,
-                offset: const Offset(0, 4),
+                offset: Offset(0, 4),
               ),
             ],
           ),
@@ -462,7 +479,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                 ),
                 child: Icon(icon, color: iconColor, size: 24),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -474,18 +491,18 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                       ),
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         subtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.onSurfaceVariant,
+                          color: AppTheme.colors(context).textSecondary,
                         ),
                       ),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Text(
                 Formatters.currency(amount.abs()),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(

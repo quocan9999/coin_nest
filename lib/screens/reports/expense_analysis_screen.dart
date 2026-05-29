@@ -11,11 +11,7 @@ class ExpenseAnalysisScreen extends StatefulWidget {
   final int initialTab;
   final DateTime? initialDate;
 
-  const ExpenseAnalysisScreen({
-    super.key,
-    this.initialTab = 1,
-    this.initialDate,
-  });
+  const ExpenseAnalysisScreen({super.key, this.initialTab = 1, this.initialDate});
 
   @override
   State<ExpenseAnalysisScreen> createState() => _ExpenseAnalysisScreenState();
@@ -106,14 +102,17 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
     if (_selectedTab == 0) {
       final now = DateTime.now();
       // Kiểm tra xem _selectedDate có trùng Ngày/Tháng/Năm với thời gian hiện tại không
-      final isToday = _selectedDate.year == now.year &&
+      final isToday =
+          _selectedDate.year == now.year &&
           _selectedDate.month == now.month &&
           _selectedDate.day == now.day;
 
       if (isToday) {
         return 'Hôm nay, ${Formatters.date(_selectedDate)}';
       } else {
-        return Formatters.date(_selectedDate); // Hoặc: 'Ngày ${Formatters.date(_selectedDate)}'
+        return Formatters.date(
+          _selectedDate,
+        ); // Hoặc: 'Ngày ${Formatters.date(_selectedDate)}'
       }
     }
     if (_selectedTab == 1) {
@@ -231,15 +230,15 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
     final disabledForward = _isForwardDisabled();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
             onPressed: () => _changePeriod(-1),
-            icon: const Icon(Icons.chevron_left_rounded, size: 20),
-            color: AppTheme.primary,
-            disabledColor: AppTheme.outlineVariant,
+            icon: Icon(Icons.chevron_left_rounded, size: 20),
+            color: AppTheme.colors(context).primary,
+            disabledColor: AppTheme.colors(context).border,
           ),
           Text(
             _selectedTab == 0
@@ -249,14 +248,14 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                 : 'Năm ${_selectedDate.year}',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppTheme.onSurface,
+              color: AppTheme.colors(context).textPrimary,
             ),
           ),
           IconButton(
             onPressed: disabledForward ? null : () => _changePeriod(1),
-            icon: const Icon(Icons.chevron_right_rounded, size: 20),
-            color: AppTheme.primary,
-            disabledColor: AppTheme.outlineVariant,
+            icon: Icon(Icons.chevron_right_rounded, size: 20),
+            color: AppTheme.colors(context).primary,
+            disabledColor: AppTheme.colors(context).border,
           ),
         ],
       ),
@@ -293,30 +292,30 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           });
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
         title: Text(
           'Phân tích chi tiêu',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
-            color: AppTheme.primary,
+            color: AppTheme.colors(context).primary,
           ),
         ),
-        backgroundColor: AppTheme.surface,
+        backgroundColor: AppTheme.colors(context).surface,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: AppTheme.primary),
+        iconTheme: IconThemeData(color: AppTheme.colors(context).primary),
       ),
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
               children: [
                 _buildTab('Ngày', 0),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 _buildTab('Tháng', 1),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 _buildTab('Năm', 2),
               ],
             ),
@@ -324,51 +323,53 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           _buildNavigationRow(),
           Expanded(
             child: _localLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator())
                 : _localHasError
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.error_outline_rounded,
                           size: 48,
-                          color: AppTheme.outlineVariant,
+                          color: AppTheme.colors(context).border,
                         ),
-                        const SizedBox(height: 12),
-                        const Text('Không thể tải dữ liệu'),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 12),
+                        Text('Không thể tải dữ liệu'),
+                        SizedBox(height: 8),
                         TextButton(
                           onPressed: _loadData,
-                          child: const Text('Thử lại'),
+                          child: Text('Thử lại'),
                         ),
                       ],
                     ),
                   )
                 : RefreshIndicator(
-                    color: AppTheme.tertiary,
+                    color: AppTheme.colors(context).expense,
                     onRefresh: _loadData,
                     child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(20),
+                      physics: AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.all(20),
                       child: Column(
                         children: [
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
+                            padding: EdgeInsets.symmetric(
                               vertical: 24,
                               horizontal: 16,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.surfaceContainerLowest,
+                              color: AppTheme.colors(context).card,
                               borderRadius: BorderRadius.circular(
                                 AppTheme.radiusLg,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
+                                  color: AppTheme.colors(
+                                    context,
+                                  ).textPrimary.withValues(alpha: 0.04),
                                   blurRadius: 10,
-                                  offset: const Offset(0, 4),
+                                  offset: Offset(0, 4),
                                 ),
                               ],
                             ),
@@ -380,7 +381,7 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                                   style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(letterSpacing: 1.2),
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: 8),
                                 Text(
                                   Formatters.currency(totalAmount),
                                   style: Theme.of(context)
@@ -388,18 +389,20 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                                       .headlineMedium
                                       ?.copyWith(
                                         fontWeight: FontWeight.w700,
-                                        color: AppTheme.tertiary,
+                                        color: AppTheme.colors(context).expense,
                                       ),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: 4),
                                 Text(
                                   _periodLabel(),
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
-                                        color: AppTheme.onSurfaceVariant,
+                                        color: AppTheme.colors(
+                                          context,
+                                        ).textSecondary,
                                       ),
                                 ),
-                                const SizedBox(height: 24),
+                                SizedBox(height: 24),
                                 SizedBox(
                                   height: 180,
                                   child: _selectedTab == 0
@@ -409,20 +412,22 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: 24),
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.all(20),
+                            padding: EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: AppTheme.surfaceContainerLowest,
+                              color: AppTheme.colors(context).card,
                               borderRadius: BorderRadius.circular(
                                 AppTheme.radiusLg,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
+                                  color: AppTheme.colors(
+                                    context,
+                                  ).textPrimary.withValues(alpha: 0.04),
                                   blurRadius: 10,
-                                  offset: const Offset(0, 4),
+                                  offset: Offset(0, 4),
                                 ),
                               ],
                             ),
@@ -434,10 +439,10 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                                   style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(letterSpacing: 1.2),
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: 16),
                                 if (listData.isEmpty)
                                   Padding(
-                                    padding: const EdgeInsets.all(16),
+                                    padding: EdgeInsets.all(16),
                                     child: Center(
                                       child: Text(
                                         _selectedTab == 0
@@ -459,7 +464,7 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                                       AppTheme.radiusSm,
                                     ),
                                     child: Padding(
-                                      padding: const EdgeInsets.symmetric(
+                                      padding: EdgeInsets.symmetric(
                                         vertical: 12,
                                       ),
                                       child: Row(
@@ -479,12 +484,13 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                                                     ),
                                               ),
                                               if (tappable) ...[
-                                                const SizedBox(width: 4),
-                                                const Icon(
+                                                SizedBox(width: 4),
+                                                Icon(
                                                   Icons.chevron_right_rounded,
                                                   size: 16,
-                                                  color:
-                                                      AppTheme.outlineVariant,
+                                                  color: AppTheme.colors(
+                                                    context,
+                                                  ).border,
                                                 ),
                                               ],
                                             ],
@@ -496,7 +502,9 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                                                 .titleSmall
                                                 ?.copyWith(
                                                   fontWeight: FontWeight.w700,
-                                                  color: AppTheme.tertiary,
+                                                  color: AppTheme.colors(
+                                                    context,
+                                                  ).expense,
                                                 ),
                                           ),
                                         ],
@@ -507,7 +515,7 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          SizedBox(height: 40),
                         ],
                       ),
                     ),
@@ -529,11 +537,13 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
         _loadData();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: sel ? AppTheme.tertiary : Colors.transparent,
+              color: sel
+                  ? AppTheme.colors(context).expense
+                  : Colors.transparent,
               width: 2,
             ),
           ),
@@ -543,7 +553,9 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           style: TextStyle(
             fontSize: 15,
             fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-            color: sel ? AppTheme.tertiary : AppTheme.onSurfaceVariant,
+            color: sel
+                ? AppTheme.colors(context).expense
+                : AppTheme.colors(context).textSecondary,
           ),
         ),
       ),
@@ -597,22 +609,22 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
       fontWeight: FontWeight.w700,
     );
     final labelStyle = Theme.of(context).textTheme.labelSmall!.copyWith(
-      color: AppTheme.onSurfaceVariant,
+      color: AppTheme.colors(context).textSecondary,
       fontWeight: FontWeight.w500,
     );
 
     return LineTouchData(
       handleBuiltInTouches: true,
       touchTooltipData: LineTouchTooltipData(
-        getTooltipColor: (_) => AppTheme.surfaceContainerLowest,
+        getTooltipColor: (_) => AppTheme.colors(context).card,
         tooltipRoundedRadius: AppTheme.radiusSm,
-        tooltipPadding: const EdgeInsets.symmetric(
+        tooltipPadding: EdgeInsets.symmetric(
           horizontal: AppTheme.spacing6,
           vertical: AppTheme.spacing4,
         ),
         tooltipMargin: AppTheme.spacing8,
         tooltipBorder: BorderSide(
-          color: AppTheme.outlineVariant.withValues(alpha: 0.24),
+          color: AppTheme.colors(context).border.withValues(alpha: 0.24),
         ),
         fitInsideHorizontally: true,
         fitInsideVertically: true,
@@ -639,12 +651,12 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
         child: Text(
           _chartUnitLabel(unitScale),
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppTheme.onSurfaceVariant,
+            color: AppTheme.colors(context).textSecondary,
             fontWeight: FontWeight.w500,
           ),
         ),
       ),
-      sideTitles: const SideTitles(showTitles: false),
+      sideTitles: SideTitles(showTitles: false),
     );
   }
 
@@ -655,12 +667,12 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
         reservedSize: 40,
         interval: chartMaxY / 4,
         getTitlesWidget: (value, meta) {
-          if (value < meta.min || value > meta.max) return const SizedBox();
+          if (value < meta.min || value > meta.max) return SizedBox();
           return Text(
             _formatYLabel(value, unitScale),
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: AppTheme.outlineVariant),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: AppTheme.colors(context).border,
+            ),
             textAlign: TextAlign.right,
           );
         },
@@ -703,30 +715,26 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           horizontalInterval: chartMaxY / 4,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (_) => FlLine(
-            color: AppTheme.outlineVariant.withValues(alpha: 0.35),
+            color: AppTheme.colors(context).border.withValues(alpha: 0.35),
             strokeWidth: 1,
           ),
         ),
         titlesData: FlTitlesData(
-          bottomTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
+          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: _buildLeftTitles(chartMaxY, unitScale),
           topTitles: _buildTopUnitTitle(unitScale),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
-        lineTouchData: _buildLineTouchData(AppTheme.tertiary),
+        lineTouchData: _buildLineTouchData(AppTheme.colors(context).expense),
         borderData: FlBorderData(
           show: true,
           border: Border(
             left: BorderSide(
-              color: AppTheme.outlineVariant.withValues(alpha: 0.6),
+              color: AppTheme.colors(context).border.withValues(alpha: 0.6),
               width: 1,
             ),
             bottom: BorderSide(
-              color: AppTheme.outlineVariant.withValues(alpha: 0.6),
+              color: AppTheme.colors(context).border.withValues(alpha: 0.6),
               width: 1,
             ),
             top: BorderSide.none,
@@ -741,16 +749,16 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: AppTheme.tertiary,
+            color: AppTheme.colors(context).expense,
             barWidth: 3,
             isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
+            dotData: FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.tertiary.withValues(alpha: 0.3),
-                  AppTheme.tertiary.withValues(alpha: 0.0),
+                  AppTheme.colors(context).expense.withValues(alpha: 0.3),
+                  AppTheme.colors(context).expense.withValues(alpha: 0.0),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -825,30 +833,26 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           horizontalInterval: chartMaxY / 4,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (_) => FlLine(
-            color: AppTheme.outlineVariant.withValues(alpha: 0.35),
+            color: AppTheme.colors(context).border.withValues(alpha: 0.35),
             strokeWidth: 1,
           ),
         ),
         titlesData: FlTitlesData(
-          bottomTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
+          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: _buildLeftTitles(chartMaxY, unitScale),
           topTitles: _buildTopUnitTitle(unitScale),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
-        lineTouchData: _buildLineTouchData(AppTheme.tertiary),
+        lineTouchData: _buildLineTouchData(AppTheme.colors(context).expense),
         borderData: FlBorderData(
           show: true,
           border: Border(
             left: BorderSide(
-              color: AppTheme.outlineVariant.withValues(alpha: 0.6),
+              color: AppTheme.colors(context).border.withValues(alpha: 0.6),
               width: 1,
             ),
             bottom: BorderSide(
-              color: AppTheme.outlineVariant.withValues(alpha: 0.6),
+              color: AppTheme.colors(context).border.withValues(alpha: 0.6),
               width: 1,
             ),
             top: BorderSide.none,
@@ -863,16 +867,16 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: AppTheme.tertiary,
+            color: AppTheme.colors(context).expense,
             barWidth: 3,
             isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
+            dotData: FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.tertiary.withValues(alpha: 0.3),
-                  AppTheme.tertiary.withValues(alpha: 0.0),
+                  AppTheme.colors(context).expense.withValues(alpha: 0.3),
+                  AppTheme.colors(context).expense.withValues(alpha: 0.0),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -892,19 +896,19 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           Icon(
             Icons.bar_chart_rounded,
             size: 48,
-            color: AppTheme.outlineVariant,
+            color: AppTheme.colors(context).border,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Chưa có dữ liệu',
-            style: TextStyle(color: AppTheme.onSurfaceVariant),
+            style: TextStyle(color: AppTheme.colors(context).textSecondary),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             periodLabel,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppTheme.outline),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.colors(context).textDisabled,
+            ),
           ),
         ],
       ),

@@ -16,7 +16,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pageController = PageController();
   int _currentPage = 0;
 
-  final _pages = const [
+  final _pages = [
     _OnboardingPage(
       icon: Icons.account_balance_wallet_rounded,
       title: 'Quản lý tài chính\ndễ dàng',
@@ -40,7 +40,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _next() {
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
+        duration: Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
@@ -50,9 +50,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _finish() {
     context.read<AuthProvider>().completeOnboarding();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => LoginScreen()));
   }
 
   @override
@@ -64,17 +64,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       body: SafeArea(
         child: Column(
           children: [
             // Skip button
             Align(
               alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: _finish,
-                child: const Text('Bỏ qua'),
-              ),
+              child: TextButton(onPressed: _finish, child: Text('Bỏ qua')),
             ),
 
             // Pages
@@ -93,25 +90,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               children: List.generate(
                 _pages.length,
                 (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  duration: Duration(milliseconds: 300),
+                  margin: EdgeInsets.symmetric(horizontal: 4),
                   width: _currentPage == i ? 24 : 8,
                   height: 8,
                   decoration: BoxDecoration(
                     color: _currentPage == i
-                        ? AppTheme.primary
-                        : AppTheme.outlineVariant,
+                        ? AppTheme.colors(context).primary
+                        : AppTheme.colors(context).border,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 32),
+            SizedBox(height: 32),
 
             // Next button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -126,7 +123,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            const SizedBox(height: 48),
+            SizedBox(height: 48),
           ],
         ),
       ),
@@ -148,7 +145,7 @@ class _OnboardingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
+      padding: EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -156,28 +153,32 @@ class _OnboardingPage extends StatelessWidget {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppTheme.primaryContainer.withAlpha(30),
+              color: AppTheme.colors(context).transferBg.withAlpha(30),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 56, color: AppTheme.primaryContainer),
+            child: Icon(
+              icon,
+              size: 56,
+              color: AppTheme.colors(context).transferBg,
+            ),
           ),
-          const SizedBox(height: 40),
+          SizedBox(height: 40),
           Text(
             title,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.onSurface,
-                ),
+              fontWeight: FontWeight.w700,
+              color: AppTheme.colors(context).textPrimary,
+            ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             description,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
-                  height: 1.5,
-                ),
+              color: AppTheme.colors(context).textSecondary,
+              height: 1.5,
+            ),
           ),
         ],
       ),

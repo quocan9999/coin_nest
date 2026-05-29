@@ -25,19 +25,19 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: Duration(milliseconds: 1500),
     );
 
     _fadeIn = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0, 0.6, curve: Curves.easeIn),
+        curve: Interval(0, 0.6, curve: Curves.easeIn),
       ),
     );
     _scale = Tween<double>(begin: 0.8, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0, 0.6, curve: Curves.easeOutBack),
+        curve: Interval(0, 0.6, curve: Curves.easeOutBack),
       ),
     );
 
@@ -48,16 +48,16 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _initAndNavigate() async {
     final auth = context.read<AuthProvider>();
     await auth.init();
-    await Future.delayed(const Duration(milliseconds: 2200));
+    await Future.delayed(Duration(milliseconds: 2200));
     if (!mounted) return;
 
     Widget destination;
     if (auth.isFirstLaunch) {
-      destination = const OnboardingScreen();
+      destination = OnboardingScreen();
     } else if (auth.isLoggedIn) {
-      destination = const HomeScreen();
+      destination = HomeScreen();
     } else {
-      destination = const LoginScreen();
+      destination = LoginScreen();
     }
 
     Navigator.of(context).pushReplacement(
@@ -65,7 +65,7 @@ class _SplashScreenState extends State<SplashScreen>
         pageBuilder: (context, animation1, animation2) => destination,
         transitionsBuilder: (context, animation, secondaryAnimation, child) =>
             FadeTransition(opacity: animation, child: child),
-        transitionDuration: const Duration(milliseconds: 500),
+        transitionDuration: Duration(milliseconds: 500),
       ),
     );
   }
@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       body: Stack(
         children: [
           // Center logo
@@ -89,10 +89,7 @@ class _SplashScreenState extends State<SplashScreen>
               builder: (context, child) {
                 return Opacity(
                   opacity: _fadeIn.value,
-                  child: Transform.scale(
-                    scale: _scale.value,
-                    child: child,
-                  ),
+                  child: Transform.scale(scale: _scale.value, child: child),
                 );
               },
               child: Column(
@@ -102,30 +99,30 @@ class _SplashScreenState extends State<SplashScreen>
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryContainer,
+                      color: AppTheme.colors(context).transferBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.account_balance_wallet_rounded,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       size: 44,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   Text(
                     AppConstants.appName,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: AppTheme.colors(context).primary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     AppConstants.appTagline,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: AppTheme.onSurfaceVariant,
-                          letterSpacing: 3,
-                        ),
+                      color: AppTheme.colors(context).textSecondary,
+                      letterSpacing: 3,
+                    ),
                   ),
                 ],
               ),
@@ -144,9 +141,9 @@ class _SplashScreenState extends State<SplashScreen>
                 'SECURE BANKING ENVIRONMENT',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppTheme.outline,
-                      letterSpacing: 2,
-                    ),
+                  color: AppTheme.colors(context).textDisabled,
+                  letterSpacing: 2,
+                ),
               ),
             ),
           ),

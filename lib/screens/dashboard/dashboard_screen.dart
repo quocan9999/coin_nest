@@ -62,49 +62,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final txnProv = context.watch<TransactionProvider>();
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _loadRecent,
           child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            physics: AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
 
                 // AppBar row
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.menu_rounded,
-                      color: AppTheme.onSurface,
+                      color: AppTheme.colors(context).textPrimary,
                       size: 24,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text(
                       'CoinNest',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppTheme.primary,
+                        color: AppTheme.colors(context).primary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const Spacer(),
+                    Spacer(),
                     IconButton(
-                      icon: const Icon(Icons.notifications_outlined),
+                      icon: Icon(Icons.notifications_outlined),
                       onPressed: () {},
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
 
                 // Greeting
                 Text(
                   _greeting(),
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppTheme.onSurfaceVariant,
+                    color: AppTheme.colors(context).textSecondary,
                     letterSpacing: 1,
                   ),
                 ),
@@ -115,14 +115,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
 
                 // Total balance card
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerLowest,
+                    color: AppTheme.colors(context).card,
                     borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                   ),
                   child: Column(
@@ -131,20 +131,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(
                         'TỔNG SỐ DƯ',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: AppTheme.onSurfaceVariant,
+                          color: AppTheme.colors(context).textSecondary,
                           letterSpacing: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         Formatters.currency(accounts.totalBalance),
                         style: Theme.of(context).textTheme.displaySmall
                             ?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.onSurface,
+                              color: AppTheme.colors(context).textPrimary,
                             ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       // Income / Expense chips
                       Row(
                         children: [
@@ -156,9 +156,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               txnProv.transactions,
                               'income',
                             ),
-                            color: AppTheme.secondary,
+                            color: AppTheme.colors(context).income,
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           _buildSummaryChip(
                             context,
                             icon: Icons.arrow_upward_rounded,
@@ -167,7 +167,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               txnProv.transactions,
                               'expense',
                             ),
-                            color: AppTheme.tertiary,
+                            color: AppTheme.colors(context).expense,
                           ),
                         ],
                       ),
@@ -175,7 +175,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
 
                 // Recent transactions
                 Row(
@@ -191,14 +191,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const TransactionListScreen(),
+                          builder: (_) => TransactionListScreen(),
                         ),
                       ),
                       child: Text(
                         'XEM TẤT CẢ',
                         style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(
-                              color: AppTheme.primary,
+                              color: AppTheme.colors(context).primary,
                               fontWeight: FontWeight.w600,
                             ),
                       ),
@@ -206,13 +206,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
 
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
 
                 if (txnProv.transactions.isEmpty)
                   Container(
-                    padding: const EdgeInsets.all(32),
+                    padding: EdgeInsets.all(32),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceContainerLowest,
+                      color: AppTheme.colors(context).card,
                       borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                     ),
                     child: Center(
@@ -221,13 +221,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Icon(
                             Icons.receipt_long_outlined,
                             size: 48,
-                            color: AppTheme.outlineVariant,
+                            color: AppTheme.colors(context).border,
                           ),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           Text(
                             'Chưa có giao dịch nào',
                             style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: AppTheme.onSurfaceVariant),
+                                ?.copyWith(
+                                  color: AppTheme.colors(context).textSecondary,
+                                ),
                           ),
                         ],
                       ),
@@ -238,7 +240,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       .take(5)
                       .map((txn) => _buildTransactionTile(context, txn)),
 
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
               ],
             ),
           ),
@@ -256,7 +258,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: color.withAlpha(20),
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -264,7 +266,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Row(
           children: [
             Icon(icon, size: 16, color: color),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,7 +274,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     label,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
+                      color: AppTheme.colors(context).textSecondary,
                     ),
                   ),
                   Text(
@@ -292,17 +294,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTransactionTile(BuildContext context, TransactionModel txn) {
-    final amountColor = txn.isNegative ? AppTheme.tertiary : AppTheme.secondary;
+    final amountColor = txn.isNegative
+        ? AppTheme.colors(context).expense
+        : AppTheme.colors(context).income;
     final sign = txn.isNegative ? '- ' : '+ ';
     final iconKey = txn.categoryIconName ?? txn.type;
 
     return GestureDetector(
       onTap: () => _openTransaction(context, txn),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(16),
+        margin: EdgeInsets.only(bottom: 8),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceContainerLowest,
+          color: AppTheme.colors(context).card,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Row(
@@ -320,7 +324,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 size: 22,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,7 +360,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     txn.accountName!,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
+                      color: AppTheme.colors(context).textSecondary,
                     ),
                   ),
               ],
@@ -381,8 +385,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!context.mounted) return;
       if (loan == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không tìm thấy khoản vay liên kết với giao dịch này'),
+          SnackBar(
+            content: Text(
+              'Không tìm thấy khoản vay liên kết với giao dịch này',
+            ),
           ),
         );
         return;

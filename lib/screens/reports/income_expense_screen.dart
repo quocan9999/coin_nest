@@ -96,11 +96,11 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
   }
 
   Color _parseCategoryColor(String? value) {
-    if (value == null || value.isEmpty) return AppTheme.primary;
+    if (value == null || value.isEmpty) return AppTheme.colors(context).primary;
     try {
       return Color(int.parse(value.replaceAll('#', '0xFF')));
     } catch (_) {
-      return AppTheme.primary;
+      return AppTheme.colors(context).primary;
     }
   }
 
@@ -117,43 +117,40 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
         : 0.0;
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
-        title: const Text('Tình hình thu chi'),
-        backgroundColor: AppTheme.surface,
+        title: Text('Tình hình thu chi'),
+        backgroundColor: AppTheme.colors(context).surface,
         elevation: 0,
         centerTitle: true,
       ),
       body: report.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator())
           : report.hasError
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.error_outline_rounded,
                     size: 48,
-                    color: AppTheme.outlineVariant,
+                    color: AppTheme.colors(context).border,
                   ),
-                  const SizedBox(height: 12),
-                  const Text('Không thể tải dữ liệu'),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: _loadData,
-                    child: const Text('Thử lại'),
-                  ),
+                  SizedBox(height: 12),
+                  Text('Không thể tải dữ liệu'),
+                  SizedBox(height: 8),
+                  TextButton(onPressed: _loadData, child: Text('Thử lại')),
                 ],
               ),
             )
           : RefreshIndicator(
-              color: AppTheme.primary,
+              color: AppTheme.colors(context).primary,
               onRefresh: () async {
                 await _loadData();
               },
               child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(20),
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -167,15 +164,15 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         if (_selectedFilter != 0)
                           IconButton(
                             onPressed: () => _shiftPeriod(-1),
-                            icon: const Icon(Icons.chevron_left_rounded),
-                            color: AppTheme.primary,
+                            icon: Icon(Icons.chevron_left_rounded),
+                            color: AppTheme.colors(context).primary,
                           ),
                         Text(
                           _getPeriodLabel(),
@@ -187,13 +184,13 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                             onPressed: _isForwardDisabled()
                                 ? null
                                 : () => _shiftPeriod(1),
-                            icon: const Icon(Icons.chevron_right_rounded),
-                            color: AppTheme.primary,
-                            disabledColor: AppTheme.outlineVariant,
+                            icon: Icon(Icons.chevron_right_rounded),
+                            color: AppTheme.colors(context).primary,
+                            disabledColor: AppTheme.colors(context).border,
                           ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
@@ -201,7 +198,7 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                             context: context,
                             title: 'Thu nhập',
                             amount: report.totalIncome,
-                            color: AppTheme.secondary,
+                            color: AppTheme.colors(context).income,
                             icon: Icons.trending_up_rounded,
                             ratio: incomeBarRatio,
                             percentageLabel: totalSum > 0
@@ -209,13 +206,13 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                                 : null,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Expanded(
                           child: _buildSummaryCard(
                             context: context,
                             title: 'Chi tiêu',
                             amount: report.totalExpense,
-                            color: AppTheme.tertiary,
+                            color: AppTheme.colors(context).expense,
                             icon: Icons.trending_down_rounded,
                             ratio: expenseBarRatio,
                             percentageLabel: report.totalIncome > 0
@@ -227,18 +224,20 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(20),
+                      padding: EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceContainerLowest,
+                        color: AppTheme.colors(context).card,
                         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
+                            color: AppTheme.colors(
+                              context,
+                            ).textPrimary.withValues(alpha: 0.04),
                             blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            offset: Offset(0, 4),
                           ),
                         ],
                       ),
@@ -247,9 +246,11 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                           Text(
                             'Chênh lệch',
                             style: Theme.of(context).textTheme.labelMedium
-                                ?.copyWith(color: AppTheme.onSurfaceVariant),
+                                ?.copyWith(
+                                  color: AppTheme.colors(context).textSecondary,
+                                ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -260,30 +261,30 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                                     ? Icons.trending_down_rounded
                                     : Icons.remove_rounded,
                                 color: report.netBalance > 0
-                                    ? AppTheme.secondary
+                                    ? AppTheme.colors(context).income
                                     : report.netBalance < 0
-                                    ? AppTheme.tertiary
-                                    : AppTheme.outline,
+                                    ? AppTheme.colors(context).expense
+                                    : AppTheme.colors(context).textDisabled,
                               ),
-                              const SizedBox(width: 8),
+                              SizedBox(width: 8),
                               Text(
                                 Formatters.signedCurrency(report.netBalance),
                                 style: Theme.of(context).textTheme.headlineSmall
                                     ?.copyWith(
                                       fontWeight: FontWeight.w700,
                                       color: report.netBalance >= 0
-                                          ? AppTheme.secondary
-                                          : AppTheme.tertiary,
+                                          ? AppTheme.colors(context).income
+                                          : AppTheme.colors(context).expense,
                                     ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Container(
                             height: 8,
                             width: double.infinity,
                             decoration: BoxDecoration(
-                              color: AppTheme.surfaceContainerHigh,
+                              color: AppTheme.colors(context).input,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Row(
@@ -293,11 +294,11 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                                     flex: (incomeRatio * 100).toInt(),
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: AppTheme.secondary,
+                                        color: AppTheme.colors(context).income,
                                         borderRadius: BorderRadius.horizontal(
-                                          left: const Radius.circular(4),
+                                          left: Radius.circular(4),
                                           right: expenseRatio == 0
-                                              ? const Radius.circular(4)
+                                              ? Radius.circular(4)
                                               : Radius.zero,
                                         ),
                                       ),
@@ -308,11 +309,11 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                                     flex: (expenseRatio * 100).toInt(),
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: AppTheme.tertiary,
+                                        color: AppTheme.colors(context).expense,
                                         borderRadius: BorderRadius.horizontal(
-                                          right: const Radius.circular(4),
+                                          right: Radius.circular(4),
                                           left: incomeRatio == 0
-                                              ? const Radius.circular(4)
+                                              ? Radius.circular(4)
                                               : Radius.zero,
                                         ),
                                       ),
@@ -324,7 +325,7 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: 32),
                     if (report.totalIncome == 0 && report.totalExpense == 0)
                       SizedBox(
                         height: 200,
@@ -335,19 +336,21 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                               Icon(
                                 Icons.insert_chart_outlined_rounded,
                                 size: 64,
-                                color: AppTheme.outlineVariant,
+                                color: AppTheme.colors(context).border,
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: 12),
                               Text(
                                 'Không có dữ liệu',
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 'Chưa có giao dịch trong kỳ này',
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
-                                      color: AppTheme.onSurfaceVariant,
+                                      color: AppTheme.colors(
+                                        context,
+                                      ).textSecondary,
                                     ),
                               ),
                             ],
@@ -360,25 +363,25 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                         'CHI TIẾT THU NHẬP',
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.outline,
+                          color: AppTheme.colors(context).textDisabled,
                           letterSpacing: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       ...report.incomeByCategory.map(
                         (c) => _buildBreakdownRow(
                           context,
                           c['name'] ?? 'Khác',
                           (c['total'] as num).toDouble(),
                           report.totalIncome,
-                          AppTheme.secondary,
+                          AppTheme.colors(context).income,
                           subtitleSuffix: 'tổng thu',
                           categoryColor: _parseCategoryColor(
                             c['color'] as String?,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24),
                     ],
                     if (report.totalExpense > 0 &&
                         report.expenseByCategory.isNotEmpty) ...[
@@ -386,18 +389,18 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                         'CHI TIẾT CHI TIÊU',
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.outline,
+                          color: AppTheme.colors(context).textDisabled,
                           letterSpacing: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       ...report.expenseByCategory.map(
                         (c) => _buildBreakdownRow(
                           context,
                           c['name'] ?? 'Khác',
                           (c['total'] as num).toDouble(),
                           report.totalExpense,
-                          AppTheme.tertiary,
+                          AppTheme.colors(context).expense,
                           subtitleSuffix: 'tổng chi',
                           categoryColor: _parseCategoryColor(
                             c['color'] as String?,
@@ -405,7 +408,7 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 40),
+                    SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -418,10 +421,12 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
     return GestureDetector(
       onTap: () => _changeFilter(index),
       child: Container(
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: EdgeInsets.only(right: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: sel ? AppTheme.primary : AppTheme.surfaceContainerLow,
+          color: sel
+              ? AppTheme.colors(context).primary
+              : AppTheme.colors(context).input,
           borderRadius: BorderRadius.circular(AppTheme.radiusFull),
         ),
         child: Text(
@@ -429,7 +434,9 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: sel ? Colors.white : AppTheme.onSurface,
+            color: sel
+                ? Theme.of(context).colorScheme.onPrimary
+                : AppTheme.colors(context).textPrimary,
           ),
         ),
       ),
@@ -446,14 +453,14 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
     required String? percentageLabel,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLowest,
+        color: AppTheme.colors(context).card,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            offset: const Offset(0, 4),
+            color: AppTheme.colors(context).textPrimary.withValues(alpha: 0.04),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -463,16 +470,16 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
           Row(
             children: [
               Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 title,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
+                  color: AppTheme.colors(context).textSecondary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             Formatters.currency(amount),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -483,7 +490,7 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           if (percentageLabel != null) ...[
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               percentageLabel,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -491,7 +498,7 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
               ),
             ),
           ],
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           LinearProgressIndicator(
             value: ratio,
             backgroundColor: color.withValues(alpha: 0.1),
@@ -514,10 +521,10 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
     required Color categoryColor,
   }) {
     final pct = total > 0 ? (amount / total) : 0.0;
-    final isFallbackColor = categoryColor == AppTheme.primary;
+    final isFallbackColor = categoryColor == AppTheme.colors(context).primary;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: 16),
       child: Column(
         children: [
           Row(
@@ -531,7 +538,7 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                       size: 14,
                       color: categoryColor,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,7 +552,9 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                           Text(
                             '${(pct * 100).toStringAsFixed(1)}% $subtitleSuffix',
                             style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(color: AppTheme.onSurfaceVariant),
+                                ?.copyWith(
+                                  color: AppTheme.colors(context).textSecondary,
+                                ),
                           ),
                         ],
                       ),
@@ -553,7 +562,7 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Text(
                 Formatters.currency(amount),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -563,36 +572,36 @@ class _IncomeExpenseScreenState extends State<IncomeExpenseScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Row(
             children: [
               Expanded(
                 child: LinearProgressIndicator(
                   value: pct,
-                  backgroundColor: AppTheme.surfaceContainerHigh,
+                  backgroundColor: AppTheme.colors(context).input,
                   valueColor: AlwaysStoppedAnimation<Color>(color),
                   borderRadius: BorderRadius.circular(2),
                   minHeight: 4,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               SizedBox(
                 width: 48,
                 child: Text(
                   '${(pct * 100).toStringAsFixed(1)}%',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppTheme.onSurfaceVariant,
+                    color: AppTheme.colors(context).textSecondary,
                   ),
                   textAlign: TextAlign.right,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          const Divider(
+          SizedBox(height: 12),
+          Divider(
             height: 0.5,
             thickness: 0.5,
-            color: AppTheme.outlineVariant,
+            color: AppTheme.colors(context).border,
           ),
         ],
       ),

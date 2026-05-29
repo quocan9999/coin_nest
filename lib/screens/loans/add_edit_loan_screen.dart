@@ -65,12 +65,12 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
     if (_accountId == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn tài khoản')));
+      ).showSnackBar(SnackBar(content: Text('Vui lòng chọn tài khoản')));
       return;
     }
     if (_dueDate != null && _dueDate!.isBefore(_startDate)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Hạn trả không được trước ngày bắt đầu')),
+        SnackBar(content: Text('Hạn trả không được trước ngày bắt đầu')),
       );
       return;
     }
@@ -112,8 +112,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
       await context.read<AccountProvider>().loadAccounts(userId);
       if (mounted) Navigator.pop(context, true);
     } else {
-      final message =
-          loanProvider.errorMessage ?? 'Không thể lưu khoản vay';
+      final message = loanProvider.errorMessage ?? 'Không thể lưu khoản vay';
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
@@ -124,16 +123,16 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
   Widget build(BuildContext context) {
     final accounts = context.watch<AccountProvider>().accounts;
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
         title: Text(_isEditMode ? 'Sửa vay/cho vay' : 'Thêm vay/cho vay'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.spacing10),
+        padding: EdgeInsets.all(AppTheme.spacing10),
         child: Form(
           key: _formKey,
           child: Column(
@@ -142,60 +141,52 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
               Row(
                 children: [
                   _typeChip('Vay', 'borrow'),
-                  const SizedBox(width: AppTheme.spacing4),
+                  SizedBox(width: AppTheme.spacing4),
                   _typeChip('Cho vay', 'lend'),
                 ],
               ),
-              const SizedBox(height: AppTheme.spacing10),
+              SizedBox(height: AppTheme.spacing10),
               _label('NGƯỜI VAY/CHO VAY'),
-              const SizedBox(height: AppTheme.spacing4),
+              SizedBox(height: AppTheme.spacing4),
               TextFormField(
                 controller: _personController,
                 validator: (value) => Validators.entityName(value, 'Tên'),
-                decoration: const InputDecoration(hintText: 'VD: Nguyễn Văn B'),
+                decoration: InputDecoration(hintText: 'VD: Nguyễn Văn B'),
               ),
-              const SizedBox(height: AppTheme.spacing10),
+              SizedBox(height: AppTheme.spacing10),
               _label('SỐ TIỀN'),
-              const SizedBox(height: AppTheme.spacing4),
+              SizedBox(height: AppTheme.spacing4),
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
                 validator: Validators.amount,
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  suffixText: 'đ',
-                ),
+                decoration: InputDecoration(hintText: '0', suffixText: 'đ'),
               ),
-              const SizedBox(height: AppTheme.spacing10),
+              SizedBox(height: AppTheme.spacing10),
               _label('LÃI SUẤT (%/NĂM)'),
-              const SizedBox(height: AppTheme.spacing4),
+              SizedBox(height: AppTheme.spacing4),
               TextFormField(
                 controller: _interestController,
                 keyboardType: TextInputType.number,
                 validator: Validators.interestRate,
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  suffixText: '%',
-                ),
+                decoration: InputDecoration(hintText: '0', suffixText: '%'),
               ),
-              const SizedBox(height: AppTheme.spacing4),
+              SizedBox(height: AppTheme.spacing4),
               _metadataNote(context),
-              const SizedBox(height: AppTheme.spacing10),
+              SizedBox(height: AppTheme.spacing10),
               _label('TÀI KHOẢN LIÊN KẾT'),
-              const SizedBox(height: AppTheme.spacing4),
+              SizedBox(height: AppTheme.spacing4),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacing8,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: AppTheme.spacing8),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceContainerHighest,
+                  color: AppTheme.colors(context).input,
                   borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<int>(
                     value: _accountId,
                     isExpanded: true,
-                    hint: const Text('Chọn tài khoản'),
+                    hint: Text('Chọn tài khoản'),
                     items: accounts
                         .map(
                           (account) => DropdownMenuItem(
@@ -208,7 +199,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: AppTheme.spacing10),
+              SizedBox(height: AppTheme.spacing10),
               Row(
                 children: [
                   Expanded(
@@ -216,7 +207,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _label('NGÀY BẮT ĐẦU'),
-                        const SizedBox(height: AppTheme.spacing4),
+                        SizedBox(height: AppTheme.spacing4),
                         _datePicker(
                           _startDate,
                           (date) => setState(() => _startDate = date),
@@ -224,13 +215,13 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: AppTheme.spacing6),
+                  SizedBox(width: AppTheme.spacing6),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _label('HẠN TRẢ'),
-                        const SizedBox(height: AppTheme.spacing4),
+                        SizedBox(height: AppTheme.spacing4),
                         _datePicker(
                           _dueDate,
                           (date) => setState(() => _dueDate = date),
@@ -241,16 +232,16 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: AppTheme.spacing10),
+              SizedBox(height: AppTheme.spacing10),
               _label('GHI CHÚ'),
-              const SizedBox(height: AppTheme.spacing4),
+              SizedBox(height: AppTheme.spacing4),
               TextFormField(
                 controller: _noteController,
                 maxLines: 2,
                 validator: Validators.note,
-                decoration: const InputDecoration(hintText: 'Tùy chọn'),
+                decoration: InputDecoration(hintText: 'Tùy chọn'),
               ),
-              const SizedBox(height: AppTheme.spacing12),
+              SizedBox(height: AppTheme.spacing12),
               SizedBox(
                 height: AppTheme.spacing24 + AppTheme.spacing2,
                 child: ElevatedButton(
@@ -267,15 +258,15 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
 
   Widget _metadataNote(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppTheme.spacing6),
+      padding: EdgeInsets.all(AppTheme.spacing6),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLow,
+        color: AppTheme.colors(context).input,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Text(
         'Lãi suất chỉ được lưu để ghi chú, app chưa tự tính hoặc cộng lãi vào dư nợ.',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppTheme.onSurfaceVariant,
+          color: AppTheme.colors(context).textSecondary,
         ),
       ),
     );
@@ -286,18 +277,22 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
     return GestureDetector(
       onTap: () => setState(() => _type = value),
       child: Container(
-        padding: const EdgeInsets.symmetric(
+        padding: EdgeInsets.symmetric(
           horizontal: AppTheme.spacing10,
           vertical: AppTheme.spacing6,
         ),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.primary : AppTheme.surfaceContainerLow,
+          color: selected
+              ? AppTheme.colors(context).primary
+              : AppTheme.colors(context).input,
           borderRadius: BorderRadius.circular(AppTheme.radiusFull),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? AppTheme.onPrimary : AppTheme.onSurface,
+            color: selected
+                ? AppTheme.onPrimary
+                : AppTheme.colors(context).textPrimary,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
@@ -329,38 +324,40 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
         if (picked != null) onPicked(picked);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(
+        padding: EdgeInsets.symmetric(
           horizontal: AppTheme.spacing8,
           vertical: AppTheme.spacing6,
         ),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceContainerHighest,
+          color: AppTheme.colors(context).input,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.calendar_today_outlined,
               size: AppTheme.spacing8,
-              color: AppTheme.onSurfaceVariant,
+              color: AppTheme.colors(context).textSecondary,
             ),
-            const SizedBox(width: AppTheme.spacing4),
+            SizedBox(width: AppTheme.spacing4),
             Expanded(
               child: Text(
                 date != null ? Formatters.date(date) : 'Chọn ngày',
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: date != null ? AppTheme.onSurface : AppTheme.outline,
+                  color: date != null
+                      ? AppTheme.colors(context).textPrimary
+                      : AppTheme.colors(context).textDisabled,
                 ),
               ),
             ),
             if (canClear && date != null)
               GestureDetector(
                 onTap: () => setState(() => _dueDate = null),
-                child: const Icon(
+                child: Icon(
                   Icons.close_rounded,
                   size: AppTheme.spacing8,
-                  color: AppTheme.onSurfaceVariant,
+                  color: AppTheme.colors(context).textSecondary,
                 ),
               ),
           ],

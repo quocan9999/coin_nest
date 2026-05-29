@@ -93,7 +93,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (!mounted) return;
 
     setState(() => _resendCountdown = 60);
-    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _resendTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -178,81 +178,81 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: AppTheme.colors(context).surface,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: _isBusy ? null : () => Navigator.pop(context),
         ),
         title: Text(
           'Xác thực OTP',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppTheme.onSurface,
+            color: AppTheme.colors(context).textPrimary,
           ),
         ),
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          padding: EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 54),
+              SizedBox(height: 54),
               Text(
                 'Nhập mã gồm 6 chữ số đã được gửi đến số điện thoại của bạn',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
+                  color: AppTheme.colors(context).textSecondary,
                   height: 1.6,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 widget.phoneDisplay,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppTheme.primary,
+                  color: AppTheme.colors(context).primary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 30),
+              SizedBox(height: 30),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(_otpLength, _buildOtpField),
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: 28),
               SizedBox(
                 height: 56,
                 child: ElevatedButton(
                   onPressed: _canSubmit ? _submit : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
+                    backgroundColor: AppTheme.colors(context).primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                     ),
                   ),
                   child: _isSubmitting || widget.isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         )
-                      : const Text('Xác nhận'),
+                      : Text('Xác nhận'),
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Center(
                 child: TextButton(
                   onPressed: _canResend ? _resend : null,
                   child: _isResending
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
@@ -264,8 +264,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           style: Theme.of(context).textTheme.labelLarge
                               ?.copyWith(
                                 color: _resendCountdown > 0
-                                    ? AppTheme.outline
-                                    : AppTheme.primary,
+                                    ? AppTheme.colors(context).textDisabled
+                                    : AppTheme.colors(context).primary,
                                 decoration: _resendCountdown > 0
                                     ? null
                                     : TextDecoration.underline,
@@ -299,22 +299,25 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           maxLength: 2,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            color: AppTheme.onSurface,
+            color: AppTheme.colors(context).textPrimary,
           ),
           decoration: InputDecoration(
             counterText: '',
             contentPadding: EdgeInsets.zero,
             filled: true,
-            fillColor: AppTheme.surfaceContainerHighest,
+            fillColor: AppTheme.colors(context).input,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radiusSm),
               borderSide: BorderSide(
-                color: AppTheme.outlineVariant.withAlpha(51),
+                color: AppTheme.colors(context).border.withAlpha(51),
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-              borderSide: const BorderSide(color: AppTheme.primary, width: 2),
+              borderSide: BorderSide(
+                color: AppTheme.colors(context).primary,
+                width: 2,
+              ),
             ),
           ),
           onChanged: (value) => _onOtpChanged(index, value),

@@ -50,7 +50,7 @@ class _ReportScreenState extends State<ReportScreen> {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerHigh,
+        color: AppTheme.colors(context).input,
         borderRadius: BorderRadius.circular(6),
       ),
     );
@@ -75,31 +75,31 @@ class _ReportScreenState extends State<ReportScreen> {
         totalAccountBalance + totalLentRemaining - totalBorrowedRemaining;
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
         title: Text(
           'Báo cáo',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
-            color: AppTheme.primary,
+            color: AppTheme.colors(context).primary,
           ),
         ),
-        backgroundColor: AppTheme.surface,
+        backgroundColor: AppTheme.colors(context).surface,
         elevation: 0,
         centerTitle: false,
       ),
       body: RefreshIndicator(
-        color: AppTheme.primary,
+        color: AppTheme.colors(context).primary,
         onRefresh: _loadPreviewData,
         child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           children: [
             _buildMenuCard(
               context: context,
               icon: Icons.account_balance_wallet_rounded,
-              iconBgColor: AppTheme.primaryContainer,
-              iconColor: AppTheme.primary,
+              iconBgColor: AppTheme.colors(context).transferBg,
+              iconColor: AppTheme.colors(context).primary,
               title: 'Tài chính hiện tại',
               subtitle: 'Tổng quan tài sản và khoản nợ',
               previewKey: 'finance_${netWorth.toStringAsFixed(0)}',
@@ -110,16 +110,14 @@ class _ReportScreenState extends State<ReportScreen> {
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: netWorth >= 0
-                            ? AppTheme.secondary
-                            : AppTheme.tertiary,
+                            ? AppTheme.colors(context).income
+                            : AppTheme.colors(context).expense,
                       ),
                     ),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const CurrentFinanceScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => CurrentFinanceScreen()),
                 ).then((_) {
                   if (mounted) _loadPreviewData();
                 });
@@ -128,8 +126,8 @@ class _ReportScreenState extends State<ReportScreen> {
             _buildMenuCard(
               context: context,
               icon: Icons.bar_chart_rounded,
-              iconBgColor: AppTheme.secondaryContainer,
-              iconColor: AppTheme.secondary,
+              iconBgColor: AppTheme.colors(context).incomeBg,
+              iconColor: AppTheme.colors(context).income,
               title: 'Tình hình thu chi',
               subtitle: 'Phân tích thu nhập và chi tiêu',
               previewKey:
@@ -143,26 +141,30 @@ class _ReportScreenState extends State<ReportScreen> {
                         Text(
                           '↑ ${Formatters.currency(reportProv.totalIncome)}',
                           style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(color: AppTheme.secondary),
+                              ?.copyWith(
+                                color: AppTheme.colors(context).income,
+                              ),
                         ),
                         Text(
                           '↓ ${Formatters.currency(reportProv.totalExpense)}',
                           style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(color: AppTheme.tertiary),
+                              ?.copyWith(
+                                color: AppTheme.colors(context).expense,
+                              ),
                         ),
                         Text(
                           '(tháng này)',
                           style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(color: AppTheme.onSurfaceVariant),
+                              ?.copyWith(
+                                color: AppTheme.colors(context).textSecondary,
+                              ),
                         ),
                       ],
                     ),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const IncomeExpenseScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => IncomeExpenseScreen()),
                 ).then((_) {
                   if (mounted) _loadPreviewData();
                 });
@@ -171,8 +173,8 @@ class _ReportScreenState extends State<ReportScreen> {
             _buildMenuCard(
               context: context,
               icon: Icons.pie_chart_rounded,
-              iconBgColor: AppTheme.tertiaryContainer,
-              iconColor: AppTheme.tertiary,
+              iconBgColor: AppTheme.colors(context).expenseBg,
+              iconColor: AppTheme.colors(context).expense,
               title: 'Phân tích chi tiêu',
               subtitle: 'Chi tiết chi tiêu theo hạng mục',
               previewKey: 'exp_${reportProv.totalExpense}',
@@ -183,21 +185,19 @@ class _ReportScreenState extends State<ReportScreen> {
                       'Tháng này: ${Formatters.currency(reportProv.totalExpense)}',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.tertiary,
+                        color: AppTheme.colors(context).expense,
                       ),
                     )
                   : Text(
                       'Chưa có chi tiêu tháng này',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppTheme.onSurfaceVariant,
+                        color: AppTheme.colors(context).textSecondary,
                       ),
                     ),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const ExpenseAnalysisScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => ExpenseAnalysisScreen()),
                 ).then((_) {
                   if (mounted) _loadPreviewData();
                 });
@@ -206,8 +206,8 @@ class _ReportScreenState extends State<ReportScreen> {
             _buildMenuCard(
               context: context,
               icon: Icons.show_chart_rounded,
-              iconBgColor: const Color(0xFFC8E6C9),
-              iconColor: const Color(0xFF2E7D32),
+              iconBgColor: AppTheme.colors(context).incomeBg,
+              iconColor: AppTheme.colors(context).income,
               title: 'Phân tích thu',
               subtitle: 'Chi tiết thu nhập theo hạng mục',
               previewKey: 'inc_${reportProv.totalIncome}',
@@ -218,21 +218,19 @@ class _ReportScreenState extends State<ReportScreen> {
                       'Tháng này: ${Formatters.currency(reportProv.totalIncome)}',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.secondary,
+                        color: AppTheme.colors(context).income,
                       ),
                     )
                   : Text(
                       'Chưa có thu nhập tháng này',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppTheme.onSurfaceVariant,
+                        color: AppTheme.colors(context).textSecondary,
                       ),
                     ),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const IncomeAnalysisScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => IncomeAnalysisScreen()),
                 ).then((_) {
                   if (mounted) _loadPreviewData();
                 });
@@ -241,8 +239,8 @@ class _ReportScreenState extends State<ReportScreen> {
             _buildMenuCard(
               context: context,
               icon: Icons.receipt_long_rounded,
-              iconBgColor: const Color(0xFFFFE0B2),
-              iconColor: const Color(0xFFE65100),
+              iconBgColor: AppTheme.colors(context).warningBg,
+              iconColor: AppTheme.colors(context).warning,
               title: 'Theo dõi vay nợ',
               subtitle: 'Tổng quan khoản vay và cho vay',
               previewKey: 'loan_${totalLentRemaining}_$totalBorrowedRemaining',
@@ -252,7 +250,7 @@ class _ReportScreenState extends State<ReportScreen> {
                   ? Text(
                       'Không có khoản vay nào',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: AppTheme.onSurfaceVariant,
+                        color: AppTheme.colors(context).textSecondary,
                       ),
                     )
                   : Column(
@@ -261,19 +259,23 @@ class _ReportScreenState extends State<ReportScreen> {
                         Text(
                           'Cho vay: ${Formatters.currency(totalLentRemaining)}',
                           style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(color: AppTheme.secondary),
+                              ?.copyWith(
+                                color: AppTheme.colors(context).income,
+                              ),
                         ),
                         Text(
                           'Còn nợ: ${Formatters.currency(totalBorrowedRemaining)}',
                           style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(color: AppTheme.tertiary),
+                              ?.copyWith(
+                                color: AppTheme.colors(context).expense,
+                              ),
                         ),
                       ],
                     ),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const LoanTrackingScreen()),
+                  MaterialPageRoute(builder: (_) => LoanTrackingScreen()),
                 ).then((_) {
                   if (mounted) _loadPreviewData();
                 });
@@ -297,20 +299,22 @@ class _ReportScreenState extends State<ReportScreen> {
     required VoidCallback onTap,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceContainerLowest,
+            color: AppTheme.colors(context).card,
             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: AppTheme.colors(
+                  context,
+                ).textPrimary.withValues(alpha: 0.04),
                 blurRadius: 10,
-                offset: const Offset(0, 4),
+                offset: Offset(0, 4),
               ),
             ],
           ),
@@ -325,7 +329,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 ),
                 child: Icon(icon, color: iconColor),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,16 +340,16 @@ class _ReportScreenState extends State<ReportScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.onSurfaceVariant,
+                        color: AppTheme.colors(context).textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
+                      duration: Duration(milliseconds: 300),
                       child: KeyedSubtree(
                         key: ValueKey(previewKey),
                         child: preview,
@@ -354,10 +358,10 @@ class _ReportScreenState extends State<ReportScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              const Icon(
+              SizedBox(width: 16),
+              Icon(
                 Icons.chevron_right_rounded,
-                color: AppTheme.outlineVariant,
+                color: AppTheme.colors(context).border,
               ),
             ],
           ),

@@ -28,22 +28,22 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
   Widget build(BuildContext context) {
     final budgetProv = context.watch<BudgetProvider>();
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
-        title: const Text('Hạn mức chi'),
+        title: Text('Hạn mức chi'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.add_circle_outline_rounded,
-              color: AppTheme.primary,
+              color: AppTheme.colors(context).primary,
             ),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const AddEditBudgetScreen()),
+              MaterialPageRoute(builder: (_) => AddEditBudgetScreen()),
             ),
           ),
         ],
@@ -56,40 +56,40 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
                   Icon(
                     Icons.pie_chart_outline_rounded,
                     size: 56,
-                    color: AppTheme.outlineVariant,
+                    color: AppTheme.colors(context).border,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Text(
                     'Chưa có hạn mức nào',
-                    style: TextStyle(color: AppTheme.onSurfaceVariant),
+                    style: TextStyle(
+                      color: AppTheme.colors(context).textSecondary,
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const AddEditBudgetScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => AddEditBudgetScreen()),
                     ),
-                    child: const Text('Thêm hạn mức'),
+                    child: Text('Thêm hạn mức'),
                   ),
                 ],
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               itemCount: budgetProv.budgets.length,
               itemBuilder: (_, i) {
                 final b = budgetProv.budgets[i];
                 final pct = b.usagePercent.clamp(0.0, 100.0);
                 final barColor = b.isExceeded
-                    ? AppTheme.tertiary
-                    : AppTheme.primary;
+                    ? AppTheme.colors(context).expense
+                    : AppTheme.colors(context).primary;
                 return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
+                  margin: EdgeInsets.only(bottom: 12),
+                  padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerLowest,
+                    color: AppTheme.colors(context).card,
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Column(
@@ -115,8 +115,7 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
                                 size: 18,
                               ),
                             ),
-                          if (b.categoryIconName != null)
-                            const SizedBox(width: 10),
+                          if (b.categoryIconName != null) SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,26 +137,28 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
                           ),
                           if (b.isExceeded)
                             Container(
-                              padding: const EdgeInsets.symmetric(
+                              padding: EdgeInsets.symmetric(
                                 horizontal: 8,
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: AppTheme.tertiary.withAlpha(20),
+                                color: AppTheme.colors(
+                                  context,
+                                ).expense.withAlpha(20),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Vượt mức',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: AppTheme.tertiary,
+                                  color: AppTheme.colors(context).expense,
                                 ),
                               ),
                             ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -175,10 +176,12 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6),
                       LinearProgressIndicator(
                         value: (pct / 100).clamp(0, 1),
-                        backgroundColor: AppTheme.outlineVariant.withAlpha(51),
+                        backgroundColor: AppTheme.colors(
+                          context,
+                        ).border.withAlpha(51),
                         valueColor: AlwaysStoppedAnimation(barColor),
                         borderRadius: BorderRadius.circular(4),
                       ),

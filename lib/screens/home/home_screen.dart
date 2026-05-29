@@ -23,7 +23,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final _pages = const <Widget>[
+  final _pages = <Widget>[
     DashboardScreen(),
     AccountListScreen(),
     SizedBox(), // Placeholder — FAB opens add transaction sheet
@@ -67,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Center tab → open add transaction
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
+        MaterialPageRoute(builder: (_) => AddTransactionScreen()),
       ).then((_) {
         if (!mounted) return;
         _loadData();
@@ -83,12 +83,12 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: AppTheme.surfaceContainerLowest,
+          color: AppTheme.colors(context).card,
           boxShadow: [
             BoxShadow(
-              color: AppTheme.onSurface.withAlpha(10),
+              color: AppTheme.colors(context).textPrimary.withAlpha(10),
               blurRadius: 20,
-              offset: const Offset(0, -4),
+              offset: Offset(0, -4),
             ),
           ],
         ),
@@ -107,19 +107,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: AppTheme.primary,
+                      color: AppTheme.colors(context).primary,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.primary.withAlpha(77),
+                          color: AppTheme.colors(context).primary.withAlpha(77),
                           blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          offset: Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.add_rounded,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       size: 28,
                     ),
                   ),
@@ -147,15 +147,19 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(
               icon,
               size: 24,
-              color: isActive ? AppTheme.primary : AppTheme.outline,
+              color: isActive
+                  ? AppTheme.colors(context).primary
+                  : AppTheme.colors(context).textDisabled,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isActive ? AppTheme.primary : AppTheme.outline,
+                color: isActive
+                    ? AppTheme.colors(context).primary
+                    : AppTheme.colors(context).textDisabled,
               ),
             ),
           ],

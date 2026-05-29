@@ -123,10 +123,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(
-          'Thông báo',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Text('Thông báo', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text(message),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -134,9 +131,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Không',
-              style: TextStyle(color: AppTheme.onSurfaceVariant),
+              style: TextStyle(color: AppTheme.colors(context).textSecondary),
             ),
           ),
           TextButton(
@@ -144,10 +141,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               Navigator.pop(context); // Đóng hộp thoại
               onConfirm(); // Thực thi hành động
             },
-            child: const Text(
-              'Có',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            child: Text('Có', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -213,7 +207,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     if (_selectedAccountId == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn tài khoản')));
+      ).showSnackBar(SnackBar(content: Text('Vui lòng chọn tài khoản')));
       return;
     }
 
@@ -268,11 +262,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     final accProv = context.watch<AccountProvider>();
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
         title: Text(isEditMode ? 'Sửa giao dịch' : 'Ghi chép giao dịch'),
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: Icon(Icons.close_rounded),
           onPressed: () => Navigator.pop(context),
         ),
         bottom: TabBar(
@@ -285,18 +279,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               });
             }
           },
-          tabs: const [
+          tabs: [
             Tab(text: 'Chi tiêu'),
             Tab(text: 'Thu nhập'),
             Tab(text: 'Chuyển khoản'),
           ],
-          labelColor: AppTheme.primary,
-          unselectedLabelColor: AppTheme.onSurfaceVariant,
-          indicatorColor: AppTheme.primary,
+          labelColor: AppTheme.colors(context).primary,
+          unselectedLabelColor: AppTheme.colors(context).textSecondary,
+          indicatorColor: AppTheme.colors(context).primary,
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
@@ -309,7 +303,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   letterSpacing: 0.8,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
@@ -321,12 +315,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  suffixText: 'đ',
-                ),
+                decoration: InputDecoration(hintText: '0', suffixText: 'đ'),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               if (_currentType != 'transfer') ...[
                 Text(
@@ -336,13 +327,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                     letterSpacing: 0.8,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _buildCategoryGrid(
                   _currentType == 'expense'
                       ? catProv.expenseCategories
                       : catProv.incomeCategories,
                 ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
               ],
 
               Text(
@@ -352,11 +343,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   letterSpacing: 0.8,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               _buildAccountDropdown(accProv, isSource: true),
 
               if (_currentType == 'transfer') ...[
-                const SizedBox(height: 20),
+                SizedBox(height: 20),
                 Text(
                   'ĐẾN TÀI KHOẢN',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -364,11 +355,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                     letterSpacing: 0.8,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _buildAccountDropdown(accProv, isSource: false),
               ],
 
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               Text(
                 'NGÀY',
@@ -377,33 +368,30 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   letterSpacing: 0.8,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               GestureDetector(
                 onTap: _pickDate,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerHighest,
+                    color: AppTheme.colors(context).input,
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today_outlined,
                         size: 18,
-                        color: AppTheme.onSurfaceVariant,
+                        color: AppTheme.colors(context).textSecondary,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Text(Formatters.date(_selectedDate)),
                     ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               Text(
                 'GHI CHÚ',
@@ -412,17 +400,17 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   letterSpacing: 0.8,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               TextFormField(
                 controller: _noteController,
                 maxLines: 2,
                 validator: Validators.note,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Nhập ghi chú (tùy chọn)',
                 ),
               ),
 
-              const SizedBox(height: 28),
+              SizedBox(height: 28),
 
               if (isEditMode)
                 Row(
@@ -433,12 +421,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                         child: OutlinedButton(
                           onPressed: _delete,
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(
-                              color: AppTheme.tertiary,
+                            side: BorderSide(
+                              color: AppTheme.colors(context).expense,
                               width: 1.5,
                             ),
-                            backgroundColor: Colors.white,
-                            foregroundColor: AppTheme.tertiary,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
+                            foregroundColor: AppTheme.colors(context).expense,
                             // Bo góc giống hệt nút Lưu
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
@@ -446,14 +436,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                               ),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Xoá',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: SizedBox(
                         height: 52,
@@ -467,7 +457,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                               ),
                             ),
                           ),
-                          child: const Text('Lưu lại'),
+                          child: Text('Lưu lại'),
                         ),
                       ),
                     ),
@@ -485,7 +475,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                         ),
                       ),
                     ),
-                    child: const Text('Lưu giao dịch'),
+                    child: Text('Lưu giao dịch'),
                   ),
                 ),
             ],
@@ -505,11 +495,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           onTap: () =>
               setState(() => _selectedCategoryId = isSelected ? null : cat.id),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppTheme.primary
-                  : AppTheme.surfaceContainerLow,
+                  ? AppTheme.colors(context).primary
+                  : AppTheme.colors(context).input,
               borderRadius: BorderRadius.circular(AppTheme.radiusFull),
             ),
             child: Row(
@@ -519,16 +509,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   CategoryIcons.getIcon(cat.iconName),
                   size: 16,
                   color: isSelected
-                      ? Colors.white
+                      ? Theme.of(context).colorScheme.onPrimary
                       : CategoryIcons.getColor(cat.iconName),
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text(
                   cat.name,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: isSelected ? Colors.white : AppTheme.onSurface,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : AppTheme.colors(context).textPrimary,
                   ),
                 ),
               ],
@@ -542,16 +534,16 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   Widget _buildAccountDropdown(AccountProvider prov, {required bool isSource}) {
     final currentValue = isSource ? _selectedAccountId : _selectedToAccountId;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerHighest,
+        color: AppTheme.colors(context).input,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: currentValue,
           isExpanded: true,
-          hint: const Text('Chọn tài khoản'),
+          hint: Text('Chọn tài khoản'),
           items: prov.accounts
               .map((a) => DropdownMenuItem(value: a.id, child: Text(a.name)))
               .toList(),
@@ -572,14 +564,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
+      lastDate: DateTime.now().add(Duration(days: 1)),
     );
     if (picked != null) setState(() => _selectedDate = picked);
   }
 
   void _showLoanLinkedMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text(
           'Giao dịch khoản vay chỉ được chỉnh sửa trong chi tiết khoản vay',
         ),

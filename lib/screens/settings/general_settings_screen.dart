@@ -11,64 +11,119 @@ class GeneralSettingsScreen extends StatelessWidget {
     final settings = context.watch<SettingsProvider>();
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
-        title: const Text('Cài đặt chung'),
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_rounded), onPressed: () => Navigator.pop(context)),
+        title: Text('Cài đặt chung'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(20),
         children: [
           _sectionTitle(context, 'HIỂN THỊ'),
-          const SizedBox(height: 8),
-          _settingsCard(children: [
-            SwitchListTile(
-              title: const Text('Hiện số dư'), subtitle: const Text('Hiển thị số dư trên trang tổng quan'),
-              value: settings.showBalance, onChanged: settings.setShowBalance, activeTrackColor: AppTheme.primary,
-            ),
-          ]),
-          const SizedBox(height: 20),
+          SizedBox(height: 8),
+          _settingsCard(
+            context,
+            children: [
+              SwitchListTile(
+                title: Text('Hiện số dư'),
+                subtitle: Text('Hiển thị số dư trên trang tổng quan'),
+                value: settings.showBalance,
+                onChanged: settings.setShowBalance,
+              ),
+              SwitchListTile(
+                title: Text('Giao diện tối'),
+                subtitle: Text('Bật chế độ nền tối'),
+                value: settings.isDarkMode,
+                onChanged: settings.setDarkMode,
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
 
           _sectionTitle(context, 'NHẮC NHỞ'),
-          const SizedBox(height: 8),
-          _settingsCard(children: [
-            SwitchListTile(
-              title: const Text('Nhắc nhở ghi chép'), subtitle: const Text('Nhắc bạn ghi chép mỗi ngày'),
-              value: settings.dailyReminder, onChanged: settings.setDailyReminder, activeTrackColor: AppTheme.primary,
-            ),
-          ]),
-          const SizedBox(height: 20),
+          SizedBox(height: 8),
+          _settingsCard(
+            context,
+            children: [
+              SwitchListTile(
+                title: Text('Nhắc nhở ghi chép'),
+                subtitle: Text('Nhắc bạn ghi chép mỗi ngày'),
+                value: settings.dailyReminder,
+                onChanged: settings.setDailyReminder,
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
 
           _sectionTitle(context, 'ĐƠN VỊ TIỀN TỆ'),
-          const SizedBox(height: 8),
-          _settingsCard(children: [
-            ListTile(
-              title: const Text('Đơn vị tiền tệ'),
-              trailing: Text(settings.currency, style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.primary)),
-              onTap: () {},
-            ),
-          ]),
-          const SizedBox(height: 20),
+          SizedBox(height: 8),
+          _settingsCard(
+            context,
+            children: [
+              ListTile(
+                title: Text('Đơn vị tiền tệ'),
+                trailing: Text(
+                  settings.currency,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.colors(context).primary,
+                  ),
+                ),
+                onTap: () {},
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
 
           _sectionTitle(context, 'THÔNG TIN'),
-          const SizedBox(height: 8),
-          _settingsCard(children: [
-            const ListTile(title: Text('Phiên bản'), trailing: Text('1.0.0', style: TextStyle(color: AppTheme.onSurfaceVariant))),
-            const Divider(height: 1),
-            const ListTile(title: Text('Liên hệ hỗ trợ'), trailing: Icon(Icons.chevron_right_rounded, color: AppTheme.outline)),
-          ]),
+          SizedBox(height: 8),
+          _settingsCard(
+            context,
+            children: [
+              ListTile(
+                title: Text('Phiên bản'),
+                trailing: Text(
+                  '1.0.0',
+                  style: TextStyle(
+                    color: AppTheme.colors(context).textSecondary,
+                  ),
+                ),
+              ),
+              Divider(height: 1),
+              ListTile(
+                title: Text('Liên hệ hỗ trợ'),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppTheme.colors(context).textDisabled,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
   Widget _sectionTitle(BuildContext context, String title) {
-    return Text(title, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppTheme.onSurfaceVariant, fontWeight: FontWeight.w600, letterSpacing: 1));
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        color: AppTheme.colors(context).textSecondary,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1,
+      ),
+    );
   }
 
-  Widget _settingsCard({required List<Widget> children}) {
+  Widget _settingsCard(BuildContext context, {required List<Widget> children}) {
     return Container(
-      decoration: BoxDecoration(color: AppTheme.surfaceContainerLowest, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+      decoration: BoxDecoration(
+        color: AppTheme.colors(context).card,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
       clipBehavior: Clip.antiAlias,
       child: Column(children: children),
     );

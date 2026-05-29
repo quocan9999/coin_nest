@@ -60,6 +60,10 @@ class AppTheme {
   static const Color loanColor = Color(0xFF8A5100);
   static const Color warningColor = Color(0xFF750003);
 
+  static CoinNestColors colors(BuildContext context) {
+    return Theme.of(context).extension<CoinNestColors>()!;
+  }
+
   // ─── Spacing Scale ─────────────────────────────────────────────
   static const double spacing2 = 4;
   static const double spacing4 = 8;
@@ -137,7 +141,10 @@ class AppTheme {
         unselectedItemColor: outline,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        selectedLabelStyle: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
         unselectedLabelStyle: TextStyle(fontSize: 11),
       ),
 
@@ -161,7 +168,9 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radiusLg),
           ),
-          textStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
 
@@ -179,9 +188,7 @@ class AppTheme {
 
       // Text Button
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: primary,
-        ),
+        style: TextButton.styleFrom(foregroundColor: primary),
       ),
 
       // Input Decoration
@@ -208,8 +215,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(radiusMd),
           borderSide: const BorderSide(color: error, width: 2),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         hintStyle: TextStyle(color: outline.withAlpha(153)),
         labelStyle: const TextStyle(
           color: onSurfaceVariant,
@@ -264,14 +273,222 @@ class AppTheme {
       // Snackbar
       snackBarTheme: SnackBarThemeData(
         backgroundColor: inverseSurface,
-        contentTextStyle: textTheme.bodyMedium?.copyWith(color: inverseOnSurface),
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: inverseOnSurface,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusMd),
         ),
         behavior: SnackBarBehavior.floating,
       ),
 
+      extensions: const [CoinNestColors.light],
+
       // Text theme
+      textTheme: textTheme,
+    );
+  }
+
+  static ThemeData get darkTheme {
+    final textTheme = _textTheme.apply(
+      bodyColor: CoinNestColors.dark.textPrimary,
+      displayColor: CoinNestColors.dark.textPrimary,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: const ColorScheme.dark(
+        primary: CoinNestColors.darkPrimary,
+        primaryContainer: CoinNestColors.darkTransferBg,
+        onPrimary: CoinNestColors.darkTextPrimary,
+        onPrimaryContainer: CoinNestColors.darkTransferText,
+        secondary: CoinNestColors.darkIncomeText,
+        secondaryContainer: CoinNestColors.darkIncomeBg,
+        onSecondary: CoinNestColors.darkBgApp,
+        onSecondaryContainer: CoinNestColors.darkIncomeText,
+        tertiary: CoinNestColors.darkExpenseText,
+        tertiaryContainer: CoinNestColors.darkExpenseBg,
+        onTertiary: CoinNestColors.darkBgApp,
+        onTertiaryContainer: CoinNestColors.darkExpenseText,
+        surface: CoinNestColors.darkBgApp,
+        onSurface: CoinNestColors.darkTextPrimary,
+        onSurfaceVariant: CoinNestColors.darkTextSecondary,
+        error: CoinNestColors.darkExpenseText,
+        errorContainer: CoinNestColors.darkExpenseBg,
+        onError: CoinNestColors.darkBgApp,
+        onErrorContainer: CoinNestColors.darkExpenseText,
+        outline: CoinNestColors.darkTextSecondary,
+        outlineVariant: CoinNestColors.darkBgBorder,
+        inverseSurface: CoinNestColors.darkTextPrimary,
+        onInverseSurface: CoinNestColors.darkBgApp,
+        inversePrimary: CoinNestColors.darkTransferText,
+      ),
+      scaffoldBackgroundColor: CoinNestColors.darkBgApp,
+      appBarTheme: AppBarTheme(
+        backgroundColor: CoinNestColors.darkBgCard,
+        foregroundColor: CoinNestColors.darkTextPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          color: CoinNestColors.darkTransferText,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: CoinNestColors.darkBgCard,
+        selectedItemColor: CoinNestColors.darkTransferText,
+        unselectedItemColor: CoinNestColors.darkTextSecondary,
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+        selectedLabelStyle: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: TextStyle(fontSize: 11),
+      ),
+      cardTheme: CardThemeData(
+        color: CoinNestColors.darkBgCard,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusLg),
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 6),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: CoinNestColors.darkTransferBg,
+          foregroundColor: CoinNestColors.darkTextPrimary,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radiusLg),
+          ),
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: CoinNestColors.darkTransferText,
+          side: const BorderSide(color: CoinNestColors.darkBgBorder),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radiusLg),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: CoinNestColors.darkTransferText,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: CoinNestColors.darkBgInput,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(
+            color: CoinNestColors.darkTransferText,
+            width: 2,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(
+            color: CoinNestColors.darkExpenseText,
+            width: 1,
+          ),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+          borderSide: const BorderSide(
+            color: CoinNestColors.darkExpenseText,
+            width: 2,
+          ),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        hintStyle: const TextStyle(color: CoinNestColors.darkTextDisabled),
+        labelStyle: const TextStyle(
+          color: CoinNestColors.darkTextSecondary,
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: CoinNestColors.darkTransferBg,
+        foregroundColor: CoinNestColors.darkTextPrimary,
+        elevation: 4,
+        shape: CircleBorder(),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: CoinNestColors.darkBgInput,
+        selectedColor: CoinNestColors.darkTransferBg,
+        labelStyle: textTheme.labelMedium,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusFull),
+        ),
+        side: BorderSide.none,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: CoinNestColors.darkBgBorder,
+        thickness: 0.5,
+        space: 0,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: CoinNestColors.darkBgCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusXl),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: CoinNestColors.darkBgCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: CoinNestColors.darkBgInput,
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: CoinNestColors.darkTextPrimary,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? CoinNestColors.darkTextPrimary
+              : CoinNestColors.darkTextSecondary,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? CoinNestColors.darkTransferBg
+              : CoinNestColors.darkBgBorder,
+        ),
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? Colors.transparent
+              : CoinNestColors.darkTextSecondary,
+        ),
+      ),
+      extensions: const [CoinNestColors.dark],
       textTheme: textTheme,
     );
   }
@@ -365,6 +582,179 @@ class AppTheme {
           color: onSurfaceVariant,
         ),
       ),
+    );
+  }
+}
+
+@immutable
+class CoinNestColors extends ThemeExtension<CoinNestColors> {
+  const CoinNestColors({
+    required this.surface,
+    required this.card,
+    required this.input,
+    required this.border,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textDisabled,
+    required this.primary,
+    required this.income,
+    required this.incomeBg,
+    required this.expense,
+    required this.expenseBg,
+    required this.transfer,
+    required this.transferBg,
+    required this.warning,
+    required this.warningBg,
+    required this.overdue,
+    required this.overdueBg,
+  });
+
+  static const Color darkBgApp = Color(0xFF1A1A1E);
+  static const Color darkBgCard = Color(0xFF252529);
+  static const Color darkBgInput = Color(0xFF2E2E33);
+  static const Color darkBgBorder = Color(0xFF3A3A40);
+  static const Color darkTextPrimary = Color(0xFFE8E8EA);
+  static const Color darkTextSecondary = Color(0xFFA0A0A8);
+  static const Color darkTextDisabled = Color(0xFF606068);
+  static const Color darkPrimary = Color(0xFF79BBF5);
+  static const Color darkIncomeText = Color(0xFF7EC99A);
+  static const Color darkIncomeBg = Color(0xFF1D6B3F);
+  static const Color darkExpenseText = Color(0xFFF08080);
+  static const Color darkExpenseBg = Color(0xFF7A2020);
+  static const Color darkTransferText = Color(0xFF79BBF5);
+  static const Color darkTransferBg = Color(0xFF1A4A7A);
+  static const Color darkWarningText = Color(0xFFF5C469);
+  static const Color darkWarningBg = Color(0xFF6B4A0E);
+  static const Color darkOverdueText = Color(0xFFFF9999);
+  static const Color darkOverdueBg = Color(0xFF6B1A1A);
+
+  static const light = CoinNestColors(
+    surface: AppTheme.surface,
+    card: AppTheme.surfaceContainerLowest,
+    input: AppTheme.surfaceContainerHighest,
+    border: AppTheme.outlineVariant,
+    textPrimary: AppTheme.onSurface,
+    textSecondary: AppTheme.onSurfaceVariant,
+    textDisabled: AppTheme.outline,
+    primary: AppTheme.primary,
+    income: AppTheme.secondary,
+    incomeBg: AppTheme.secondaryContainer,
+    expense: AppTheme.tertiary,
+    expenseBg: AppTheme.tertiaryContainer,
+    transfer: AppTheme.primary,
+    transferBg: AppTheme.primaryContainer,
+    warning: AppTheme.warningColor,
+    warningBg: AppTheme.tertiaryContainer,
+    overdue: AppTheme.error,
+    overdueBg: AppTheme.errorContainer,
+  );
+
+  static const dark = CoinNestColors(
+    surface: darkBgApp,
+    card: darkBgCard,
+    input: darkBgInput,
+    border: darkBgBorder,
+    textPrimary: darkTextPrimary,
+    textSecondary: darkTextSecondary,
+    textDisabled: darkTextDisabled,
+    primary: darkPrimary,
+    income: darkIncomeText,
+    incomeBg: darkIncomeBg,
+    expense: darkExpenseText,
+    expenseBg: darkExpenseBg,
+    transfer: darkTransferText,
+    transferBg: darkTransferBg,
+    warning: darkWarningText,
+    warningBg: darkWarningBg,
+    overdue: darkOverdueText,
+    overdueBg: darkOverdueBg,
+  );
+
+  final Color surface;
+  final Color card;
+  final Color input;
+  final Color border;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textDisabled;
+  final Color primary;
+  final Color income;
+  final Color incomeBg;
+  final Color expense;
+  final Color expenseBg;
+  final Color transfer;
+  final Color transferBg;
+  final Color warning;
+  final Color warningBg;
+  final Color overdue;
+  final Color overdueBg;
+
+  @override
+  CoinNestColors copyWith({
+    Color? surface,
+    Color? card,
+    Color? input,
+    Color? border,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? textDisabled,
+    Color? primary,
+    Color? income,
+    Color? incomeBg,
+    Color? expense,
+    Color? expenseBg,
+    Color? transfer,
+    Color? transferBg,
+    Color? warning,
+    Color? warningBg,
+    Color? overdue,
+    Color? overdueBg,
+  }) {
+    return CoinNestColors(
+      surface: surface ?? this.surface,
+      card: card ?? this.card,
+      input: input ?? this.input,
+      border: border ?? this.border,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textSecondary: textSecondary ?? this.textSecondary,
+      textDisabled: textDisabled ?? this.textDisabled,
+      primary: primary ?? this.primary,
+      income: income ?? this.income,
+      incomeBg: incomeBg ?? this.incomeBg,
+      expense: expense ?? this.expense,
+      expenseBg: expenseBg ?? this.expenseBg,
+      transfer: transfer ?? this.transfer,
+      transferBg: transferBg ?? this.transferBg,
+      warning: warning ?? this.warning,
+      warningBg: warningBg ?? this.warningBg,
+      overdue: overdue ?? this.overdue,
+      overdueBg: overdueBg ?? this.overdueBg,
+    );
+  }
+
+  @override
+  CoinNestColors lerp(ThemeExtension<CoinNestColors>? other, double t) {
+    if (other is! CoinNestColors) return this;
+
+    return CoinNestColors(
+      surface: Color.lerp(surface, other.surface, t)!,
+      card: Color.lerp(card, other.card, t)!,
+      input: Color.lerp(input, other.input, t)!,
+      border: Color.lerp(border, other.border, t)!,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+      textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
+      textDisabled: Color.lerp(textDisabled, other.textDisabled, t)!,
+      primary: Color.lerp(primary, other.primary, t)!,
+      income: Color.lerp(income, other.income, t)!,
+      incomeBg: Color.lerp(incomeBg, other.incomeBg, t)!,
+      expense: Color.lerp(expense, other.expense, t)!,
+      expenseBg: Color.lerp(expenseBg, other.expenseBg, t)!,
+      transfer: Color.lerp(transfer, other.transfer, t)!,
+      transferBg: Color.lerp(transferBg, other.transferBg, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
+      warningBg: Color.lerp(warningBg, other.warningBg, t)!,
+      overdue: Color.lerp(overdue, other.overdue, t)!,
+      overdueBg: Color.lerp(overdueBg, other.overdueBg, t)!,
     );
   }
 }

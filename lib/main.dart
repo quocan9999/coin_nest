@@ -80,7 +80,9 @@ void main() async {
         ),
         ChangeNotifierProvider(create: (_) => BudgetProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider()..loadSettings(),
+        ),
       ],
       child: const CoinNestApp(),
     ),

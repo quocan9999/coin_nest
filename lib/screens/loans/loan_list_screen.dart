@@ -29,18 +29,18 @@ class _LoanListScreenState extends State<LoanListScreen> {
     final loanProv = context.watch<LoanProvider>();
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
-        title: const Text('Vay / Cho vay'),
+        title: Text('Vay / Cho vay'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.add_circle_outline_rounded,
-              color: AppTheme.primary,
+              color: AppTheme.colors(context).primary,
             ),
             onPressed: _openAddLoan,
           ),
@@ -50,7 +50,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
         children: [
           // Summary
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.all(20),
             child: Row(
               children: [
                 Expanded(
@@ -58,16 +58,16 @@ class _LoanListScreenState extends State<LoanListScreen> {
                     context,
                     'Đang vay',
                     loanProv.summary['borrowed'] ?? 0,
-                    AppTheme.tertiary,
+                    AppTheme.colors(context).expense,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: _summaryCard(
                     context,
                     'Cho vay',
                     loanProv.summary['lent'] ?? 0,
-                    AppTheme.loanColor,
+                    AppTheme.colors(context).warning,
                   ),
                 ),
               ],
@@ -82,28 +82,30 @@ class _LoanListScreenState extends State<LoanListScreen> {
                         Icon(
                           Icons.handshake_outlined,
                           size: 56,
-                          color: AppTheme.outlineVariant,
+                          color: AppTheme.colors(context).border,
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         Text(
                           'Chưa có khoản vay nào',
-                          style: TextStyle(color: AppTheme.onSurfaceVariant),
+                          style: TextStyle(
+                            color: AppTheme.colors(context).textSecondary,
+                          ),
                         ),
                       ],
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: EdgeInsets.symmetric(horizontal: 20),
                     itemCount: loanProv.loans.length,
                     itemBuilder: (_, i) {
                       final loan = loanProv.loans[i];
                       return GestureDetector(
                         onTap: () => _openLoanDetail(loan),
                         child: Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(16),
+                          margin: EdgeInsets.only(bottom: 10),
+                          padding: EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppTheme.surfaceContainerLowest,
+                            color: AppTheme.colors(context).card,
                             borderRadius: BorderRadius.circular(
                               AppTheme.radiusMd,
                             ),
@@ -114,14 +116,18 @@ class _LoanListScreenState extends State<LoanListScreen> {
                               Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
+                                    padding: EdgeInsets.symmetric(
                                       horizontal: 8,
                                       vertical: 3,
                                     ),
                                     decoration: BoxDecoration(
                                       color: loan.type == 'borrow'
-                                          ? AppTheme.tertiary.withAlpha(20)
-                                          : AppTheme.loanColor.withAlpha(20),
+                                          ? AppTheme.colors(
+                                              context,
+                                            ).expense.withAlpha(20)
+                                          : AppTheme.colors(
+                                              context,
+                                            ).warning.withAlpha(20),
                                       borderRadius: BorderRadius.circular(
                                         AppTheme.radiusSm,
                                       ),
@@ -132,14 +138,14 @@ class _LoanListScreenState extends State<LoanListScreen> {
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                         color: loan.type == 'borrow'
-                                            ? AppTheme.tertiary
-                                            : AppTheme.loanColor,
+                                            ? AppTheme.colors(context).expense
+                                            : AppTheme.colors(context).warning,
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8),
                                   _statusBadge(context, loan),
-                                  const Spacer(),
+                                  Spacer(),
                                   Text(
                                     Formatters.currency(loan.remainingAmount),
                                     style: Theme.of(context)
@@ -149,27 +155,28 @@ class _LoanListScreenState extends State<LoanListScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               Text(
                                 loan.personName,
                                 style: Theme.of(context).textTheme.titleSmall
                                     ?.copyWith(fontWeight: FontWeight.w600),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               LinearProgressIndicator(
                                 value: (loan.paidPercentage / 100).clamp(0, 1),
-                                backgroundColor: AppTheme.outlineVariant
-                                    .withAlpha(51),
+                                backgroundColor: AppTheme.colors(
+                                  context,
+                                ).border.withAlpha(51),
                                 valueColor: AlwaysStoppedAnimation(
                                   loan.type == 'borrow'
-                                      ? AppTheme.tertiary
-                                      : AppTheme.loanColor,
+                                      ? AppTheme.colors(context).expense
+                                      : AppTheme.colors(context).warning,
                                 ),
                                 borderRadius: BorderRadius.circular(
                                   AppTheme.radiusSm,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 '${Formatters.percent(loan.paidPercentage)} đã trả • ${Formatters.date(loan.startDate)}',
                                 style: Theme.of(context).textTheme.bodySmall,
@@ -194,7 +201,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
   Future<void> _openAddLoan() async {
     final changed = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => const AddEditLoanScreen()),
+      MaterialPageRoute(builder: (_) => AddEditLoanScreen()),
     );
     if (changed == true) await _refresh();
   }
@@ -212,10 +219,12 @@ class _LoanListScreenState extends State<LoanListScreen> {
         ? 'Đã trả'
         : (loan.isOverdue ? 'Quá hạn' : 'Đang hoạt động');
     final color = loan.isPaid
-        ? AppTheme.secondary
-        : (loan.isOverdue ? AppTheme.tertiary : AppTheme.primary);
+        ? AppTheme.colors(context).income
+        : (loan.isOverdue
+              ? AppTheme.colors(context).expense
+              : AppTheme.colors(context).primary);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withAlpha(18),
         borderRadius: BorderRadius.circular(6),
@@ -238,7 +247,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withAlpha(15),
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -252,7 +261,7 @@ class _LoanListScreenState extends State<LoanListScreen> {
               context,
             ).textTheme.labelMedium?.copyWith(color: color),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             Formatters.currency(amount),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(

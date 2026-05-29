@@ -48,14 +48,14 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
 
     if (success) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => HomeScreen()),
         (route) => false,
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(auth.errorMessage ?? 'Đăng ký thất bại'),
-          backgroundColor: AppTheme.error,
+          backgroundColor: AppTheme.colors(context).expense,
         ),
       );
     }
@@ -67,9 +67,9 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
     final isLoading = auth.isLoading;
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: AppTheme.colors(context).surface,
       appBar: AppBar(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: AppTheme.colors(context).surface,
         elevation: 0,
         centerTitle: true,
         title: Text(
@@ -77,18 +77,18 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontSize: 28,
             fontWeight: FontWeight.w600,
-            color: AppTheme.onSurface,
+            color: AppTheme.colors(context).textPrimary,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
+          icon: Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(horizontal: 24),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: Form(
@@ -96,24 +96,24 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       'Tạo tài khoản',
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.onSurface,
+                            color: AppTheme.colors(context).textPrimary,
                           ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       'Đăng ký để bắt đầu quản lý tài chính cá nhân.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.outline,
+                        color: AppTheme.colors(context).textDisabled,
                         height: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     // Trường họ tên
                     _buildInputField(
@@ -124,7 +124,7 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                       enabled: !isLoading,
                       textCapitalization: TextCapitalization.words,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Trường email — thay thế field SĐT trong màn phone
                     _buildInputField(
@@ -135,7 +135,7 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                       enabled: !isLoading,
                       keyboardType: TextInputType.emailAddress,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Trường mật khẩu
                     _buildInputField(
@@ -146,7 +146,7 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                       enabled: !isLoading,
                       obscureText: true,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Trường xác nhận mật khẩu
                     _buildInputField(
@@ -160,7 +160,7 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                       enabled: !isLoading,
                       obscureText: true,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
 
                     // Nút đăng ký chính
                     SizedBox(
@@ -171,24 +171,28 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          disabledBackgroundColor: AppTheme.primary.withAlpha(
-                            122,
-                          ),
+                          disabledBackgroundColor: AppTheme.colors(
+                            context,
+                          ).primary.withAlpha(122),
                         ),
                         child: isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimary,
                                 ),
                               )
                             : Text(
                                 'Đăng ký',
                                 style: Theme.of(context).textTheme.labelLarge
                                     ?.copyWith(
-                                      color: Colors.white,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onPrimary,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -200,39 +204,47 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                     if (auth.errorMessage != null &&
                         auth.errorMessage!.isNotEmpty)
                       Padding(
-                        padding: const EdgeInsets.only(top: 12),
+                        padding: EdgeInsets.only(top: 12),
                         child: Text(
                           auth.errorMessage!,
                           style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppTheme.error),
+                              ?.copyWith(
+                                color: AppTheme.colors(context).expense,
+                              ),
                         ),
                       ),
 
                     // Divider "Hoặc đăng ký bằng"
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
                     Row(
                       children: [
                         Expanded(
                           child: Divider(
-                            color: AppTheme.outlineVariant.withAlpha(120),
+                            color: AppTheme.colors(
+                              context,
+                            ).border.withAlpha(120),
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             'Hoặc đăng ký bằng',
                             style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppTheme.outline),
+                                ?.copyWith(
+                                  color: AppTheme.colors(context).textDisabled,
+                                ),
                           ),
                         ),
                         Expanded(
                           child: Divider(
-                            color: AppTheme.outlineVariant.withAlpha(120),
+                            color: AppTheme.colors(
+                              context,
+                            ).border.withAlpha(120),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
 
                     // Nút toggle chuyển sang đăng ký bằng SĐT
                     SizedBox(
@@ -245,16 +257,20 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => const RegisterScreen(),
+                                    builder: (_) => RegisterScreen(),
                                   ),
                                 );
                               },
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppTheme.outlineVariant),
+                          side: BorderSide(
+                            color: AppTheme.colors(context).border,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          backgroundColor: Colors.white,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -262,14 +278,16 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                             Icon(
                               Icons.phone_android_rounded,
                               size: 20,
-                              color: AppTheme.onSurfaceVariant,
+                              color: AppTheme.colors(context).textSecondary,
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             Text(
                               'Số điện thoại',
                               style: Theme.of(context).textTheme.labelLarge
                                   ?.copyWith(
-                                    color: AppTheme.onSurfaceVariant,
+                                    color: AppTheme.colors(
+                                      context,
+                                    ).textSecondary,
                                     fontWeight: FontWeight.w600,
                                   ),
                             ),
@@ -277,21 +295,23 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
 
                     // Nút đăng ký bằng Google — placeholder cho Phase 5
                     SizedBox(
                       height: 52,
                       child: OutlinedButton(
-                        onPressed: isLoading
-                            ? null
-                            : _loginWithGoogle,
+                        onPressed: isLoading ? null : _loginWithGoogle,
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppTheme.outlineVariant),
+                          side: BorderSide(
+                            color: AppTheme.colors(context).border,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          backgroundColor: Colors.white,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -301,14 +321,16 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                               width: 20,
                               height: 20,
                               errorBuilder: (_, _, _) =>
-                                  const Icon(Icons.g_mobiledata, size: 20),
+                                  Icon(Icons.g_mobiledata, size: 20),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             Text(
                               'Google',
                               style: Theme.of(context).textTheme.labelLarge
                                   ?.copyWith(
-                                    color: AppTheme.onSurfaceVariant,
+                                    color: AppTheme.colors(
+                                      context,
+                                    ).textSecondary,
                                     fontWeight: FontWeight.w600,
                                   ),
                             ),
@@ -318,14 +340,16 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                     ),
 
                     // Footer "Đã có tài khoản? Đăng nhập"
-                    const SizedBox(height: 150),
+                    SizedBox(height: 150),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           'Đã có tài khoản? ',
                           style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppTheme.outline),
+                              ?.copyWith(
+                                color: AppTheme.colors(context).textDisabled,
+                              ),
                         ),
                         GestureDetector(
                           onTap: isLoading
@@ -335,14 +359,14 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                             'Đăng nhập',
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: AppTheme.primary,
+                                  color: AppTheme.colors(context).primary,
                                   fontWeight: FontWeight.w700,
                                 ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: 32),
                   ],
                 ),
               ),
@@ -362,14 +386,14 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
 
     if (success) {
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => HomeScreen()),
         (route) => false,
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(auth.errorMessage ?? 'Đăng nhập Google thất bại'),
-          backgroundColor: AppTheme.error,
+          backgroundColor: AppTheme.colors(context).expense,
         ),
       );
     }
@@ -390,18 +414,18 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 4),
+          padding: EdgeInsets.only(left: 4),
           child: Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.55,
-              color: AppTheme.outline,
+              color: AppTheme.colors(context).textDisabled,
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         TextFormField(
           controller: controller,
           validator: validator,
@@ -411,7 +435,7 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
           obscureText: obscureText,
           decoration: InputDecoration(
             hintText: hint,
-            fillColor: AppTheme.surfaceContainerHigh,
+            fillColor: AppTheme.colors(context).input,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
