@@ -24,6 +24,10 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
     });
   }
 
+  String _formatShortDate(DateTime d) {
+    return "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}";
+  }
+
   @override
   Widget build(BuildContext context) {
     final budgetProv = context.watch<BudgetProvider>();
@@ -81,112 +85,265 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
               itemCount: budgetProv.budgets.length,
               itemBuilder: (_, i) {
                 final b = budgetProv.budgets[i];
-                final pct = b.usagePercent.clamp(0.0, 100.0);
-                final barColor = b.isExceeded
-                    ? AppTheme.tertiary
-                    : AppTheme.primary;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          if (b.categoryIconName != null)
+                
+                final now = DateTime.now();
+                final today = DateTime(now.year, now.month, now.day);
+                
+                DateTime cycleStart;
+                DateTime? cycleEnd;
+
+                if (b.period == 'monthly') {
+                  cycleStart = DateTime(today.year, today.month, 1);
+                  cycleEnd = DateTime(today.year, today.month + 1, 0); 
+                } else if (b.period == 'yearly') {
+                  cycleStart = DateTime(today.year, 1, 1);
+                  cycleEnd = DateTime(today.year, 12, 31);
+                } else if (b.period == 'weekly') {
+                  int diff = today.weekday - DateTime.monday;
+                  cycleStart = today.subtract(Duration(days: diff));
+                  cycleEnd = cycleStart.add(const Duration(days: 6));
+                } else if (b.period == 'daily') {
+                  cycleStart = today;
+                  cycleEnd = today;
+                } else {
+                  cycleStart = DateTime(b.startDate.year, b.startDate.month, b.startDate.day);
+                  if (b.endDate != null) {
+                    cycleEnd = DateTime(b.endDate!.year, b.endDate!.month, b.endDate!.day);
+                  }
+                }
+
+                double timePercent = 0.0;
+                int remainingDays = 0;
+                bool hasCycleEnd = cycleEnd != null;
+
+                if (hasCycleEnd) {
+                  final totalDays = cycleEnd.difference(cycleStart).inDays + 1;
+                  final passedDays = today.difference(cycleStart).inDays;
+                  
+                  if (today.isBefore(cycleStart)) {
+                    timePercent = 0.0;
+                    remainingDays = totalDays;
+                  } else if (today.isAfter(cycleEnd)) {
+                    timePercent = 1.0;
+                    remainingDays = 0;
+                  } else {
+                    timePercent = passedDays / totalDays;
+                    remainingDays = cycleEnd.difference(today).inDays + (b.period == 'daily' ? 0 : 1); 
+                  }
+                }
+
+                // --- GESTURE DETECTOR ĐỂ MỞ MÀN HÌNH SỬA KHI CHẠM ---
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AddEditBudgetScreen(budget: b),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
                             Container(
-                              width: 36,
-                              height: 36,
+                              width: 48,
+                              height: 48,
                               decoration: BoxDecoration(
-                                color: CategoryIcons.getColor(
-                                  b.categoryIconName!,
-                                ).withAlpha(30),
-                                borderRadius: BorderRadius.circular(10),
+                                color: b.categoryIconName != null 
+                                    ? CategoryIcons.getColor(b.categoryIconName!).withAlpha(30) 
+                                    : AppTheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
-                                CategoryIcons.getIcon(b.categoryIconName!),
-                                color: CategoryIcons.getColor(
-                                  b.categoryIconName!,
-                                ),
-                                size: 18,
+                                b.categoryIconName != null 
+                                    ? CategoryIcons.getIcon(b.categoryIconName!) 
+                                    : Icons.pie_chart_rounded,
+                                color: b.categoryIconName != null 
+                                    ? CategoryIcons.getColor(b.categoryIconName!) 
+                                    : AppTheme.onSurfaceVariant,
+                                size: 24,
                               ),
                             ),
-                          if (b.categoryIconName != null)
-                            const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  b.name,
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                                if (b.categoryName != null)
-                                  Text(
-                                    b.categoryName!,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          b.name,
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (b.isExceeded)
+                                        Container(
+                                          margin: const EdgeInsets.only(left: 8),
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.tertiary.withAlpha(20),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: const Text('Vượt mức', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppTheme.tertiary)),
+                                        ),
+                                    ],
                                   ),
-                              ],
-                            ),
-                          ),
-                          if (b.isExceeded)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.tertiary.withAlpha(20),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'Vượt mức',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.tertiary,
-                                ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    hasCycleEnd 
+                                        ? "${_formatShortDate(cycleStart)} - ${_formatShortDate(cycleEnd)}" 
+                                        : "${_formatShortDate(cycleStart)} - Liên tục", 
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.onSurfaceVariant),
+                                  ),
+                                ],
                               ),
                             ),
+                            Text(
+                              '${Formatters.currency(b.amount)} đ',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                        
+                        const SizedBox(height: 20),
+                        
+                        if (hasCycleEnd) ...[
+                          _buildTimelineBar(timePercent),
+                          const SizedBox(height: 16),
                         ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${Formatters.currency(b.spentAmount ?? 0)} / ${Formatters.currency(b.amount)}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          Text(
-                            Formatters.percent(pct),
-                            style: Theme.of(context).textTheme.labelMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: barColor,
-                                ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      LinearProgressIndicator(
-                        value: (pct / 100).clamp(0, 1),
-                        backgroundColor: AppTheme.outlineVariant.withAlpha(51),
-                        valueColor: AlwaysStoppedAnimation(barColor),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ],
+                        
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              hasCycleEnd 
+                                  ? (remainingDays > 0 ? 'Còn $remainingDays ngày' : 'Ngày cuối')
+                                  : 'Dài hạn', 
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
+                            ),
+                            RichText(
+                              text: TextSpan(
+                                text: 'Còn lại ',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
+                                children: [
+                                  TextSpan(
+                                    text: '${Formatters.currency(b.remainingAmount)} đ',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: b.remainingAmount < 0 ? AppTheme.tertiary : AppTheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
             ),
+    );
+  }
+
+  Widget _buildTimelineBar(double percent) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final clampedPercent = percent.clamp(0.0, 1.0);
+        
+        const tooltipWidth = 64.0; 
+        
+        double left = (maxWidth * clampedPercent) - (tooltipWidth / 2);
+        if (left < 0) left = 0;
+        if (left > maxWidth - tooltipWidth) left = maxWidth - tooltipWidth;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                SizedBox(height: 26, width: maxWidth), 
+                Positioned(
+                  left: left,
+                  top: 0,
+                  child: Stack(
+                    alignment: Alignment.topCenter,
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned(
+                        bottom: -3,
+                        child: Transform.rotate(
+                          angle: 3.14159 / 4,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            color: const Color(0xFF6B7280),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: tooltipWidth,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6B7280),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Hôm nay',
+                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Container(
+              height: 8, 
+              width: maxWidth,
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: maxWidth * clampedPercent,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary, 
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
