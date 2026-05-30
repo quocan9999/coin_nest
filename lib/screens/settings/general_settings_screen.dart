@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../theme/app_theme.dart';
-
+import 'support_map_screen.dart';
 class GeneralSettingsScreen extends StatelessWidget {
   const GeneralSettingsScreen({super.key});
 
@@ -277,18 +277,24 @@ class GeneralSettingsScreen extends StatelessWidget {
               const Divider(height: 1),
 
               ListTile(
-                title:
-                    const Text('Liên hệ hỗ trợ'),
+  title: const Text('Liên hệ hỗ trợ'),
 
-                trailing: Icon(
-                  Icons.chevron_right_rounded,
+  trailing: Icon(
+    Icons.chevron_right_rounded,
+    color: Theme.of(context)
+        .colorScheme
+        .outline,
+  ),
 
-                  color:
-                      Theme.of(context)
-                          .colorScheme
-                          .outline,
-                ),
-              ),
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SupportMapScreen(),
+      ),
+    );
+  },
+),
             ],
           ),
         ],
