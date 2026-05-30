@@ -30,11 +30,13 @@ class BudgetDao {
       SELECT b.*,
              c.name as category_name,
              c.icon_name as category_icon_name,
+             a.name as account_name,
              COALESCE(
                (SELECT SUM(t.amount) FROM transactions t
                 WHERE t.user_id = b.user_id
                   AND t.type = 'expense'
                   AND (b.category_id IS NULL OR t.category_id = b.category_id)
+                  AND (b.account_id IS NULL OR t.account_id = b.account_id)
                   AND t.date >= CASE b.period
                     WHEN 'monthly' THEN ?
                     WHEN 'yearly' THEN strftime('%Y', 'now') || '-01-01'
@@ -49,6 +51,7 @@ class BudgetDao {
              ) as spent_amount
       FROM budgets b
       LEFT JOIN categories c ON b.category_id = c.id
+      LEFT JOIN accounts a ON b.account_id = a.id
       WHERE b.user_id = ? $where
       ORDER BY b.created_at DESC
     ''', [monthStart, monthEnd, userId]);

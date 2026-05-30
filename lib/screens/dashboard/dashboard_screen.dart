@@ -28,6 +28,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadRecent() async {
     final userId = context.read<AuthProvider>().currentUserId;
+    // ĐÃ SỬA: Gọi hàm tải 5 giao dịch gần nhất
+    await context.read<TransactionProvider>().loadRecentTransactions(userId);
+    // Vẫn tải danh sách tổng để tính Tổng Thu/Chi
     await context.read<TransactionProvider>().loadTransactions(userId);
     if (mounted) {
       await context.read<AccountProvider>().loadAccounts(userId);
@@ -179,7 +182,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Giao dịch gần đây',
+                      'Ghi chép gần đây',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -205,7 +208,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 const SizedBox(height: 12),
 
-                if (txnProv.transactions.isEmpty)
+                // ĐÃ SỬA: Dùng recentTransactions thay vì transactions
+                if (txnProv.recentTransactions.isEmpty)
                   Container(
                     padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
@@ -231,8 +235,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   )
                 else
-                  ...txnProv.transactions
-                      .take(5)
+                  // ĐÃ SỬA: Dùng recentTransactions và bỏ .take(5) vì hàm SQL đã lấy 5 cái
+                  ...txnProv.recentTransactions
                       .map((txn) => _buildTransactionTile(context, txn)),
 
                 const SizedBox(height: 24),

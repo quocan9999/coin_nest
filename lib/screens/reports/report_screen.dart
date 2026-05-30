@@ -22,10 +22,14 @@ class ReportScreen extends StatefulWidget {
 
 class _ReportScreenState extends State<ReportScreen> {
   @override
-  void initState() {
-    super.initState();
+void initState() {
+  super.initState();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
     _loadPreviewData();
-  }
+  });
+}
 
   Future<void> _loadPreviewData() async {
     if (!mounted) return;
