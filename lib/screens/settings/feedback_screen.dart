@@ -5,7 +5,7 @@ import '../../utils/validators.dart';
 import '../../database/database_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
 
@@ -47,27 +47,16 @@ class _FeedbackScreenState
             .read<AuthProvider>()
             .currentUserId;
 
-    final db =
-        await DatabaseHelper
-            .instance
-            .database;
-
-    await db.insert(
-      'feedbacks',
-      {
-        'user_id': userId,
-        'type': _type,
-        'title':
-            _titleController.text.trim(),
-        'content':
-            _contentController.text
-                .trim(),
-        'rating': _rating,
-        'created_at':
-            DateTime.now()
-                .toIso8601String(),
-      },
-    );
+   await FirebaseFirestore.instance
+    .collection('feedbacks')
+    .add({
+  'user_id': userId,
+  'type': _type,
+  'title': _titleController.text.trim(),
+  'content': _contentController.text.trim(),
+  'rating': _rating,
+  'created_at': Timestamp.now(),
+});
 
     if (!mounted) return;
 
