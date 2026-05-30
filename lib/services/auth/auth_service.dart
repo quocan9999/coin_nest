@@ -60,6 +60,8 @@ abstract class AuthService {
 
   Future<bool> confirmPhoneOtp(String verificationId, String code);
 
+  Future<bool> confirmForgotPasswordOtp(String verificationId, String code);
+
   /// Kiểm tra tài khoản tồn tại trên Firebase và xác định provider.
   /// Trả về 'password', 'google', hoặc null nếu không tìm thấy.
   /// Sử dụng thay cho fetchSignInMethodsForEmail (đã bị remove trong SDK v6+).
@@ -72,7 +74,6 @@ abstract class AuthService {
     required String otpCode,
     required String newPassword,
   });
-
 
   Future<User?> findLocalUserById(int userId);
 
