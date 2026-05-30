@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'services/navigation_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash/splash_screen.dart';
 
@@ -11,6 +12,7 @@ class CoinNestApp extends StatelessWidget {
     return MaterialApp(
       title: 'CoinNest',
       debugShowCheckedModeBanner: false,
+      navigatorKey: NavigationService.navigatorKey,
       theme: AppTheme.lightTheme,
       home: const SplashScreen(),
     );

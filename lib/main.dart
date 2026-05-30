@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +15,8 @@ import 'providers/budget_provider.dart';
 import 'providers/report_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/auth/firebase_auth_service.dart';
+import 'services/navigation_service.dart';
+import 'services/notification_service.dart';
 
 // Firebase
 import 'package:firebase_core/firebase_core.dart';
@@ -29,6 +33,14 @@ void main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Init Vietnamese locale before services create locale-aware formatters.
+  await initializeDateFormatting('vi_VN', null);
+
+  await NotificationService.instance.init();
+  NotificationService.instance.setNotificationTapHandler(
+    NavigationService.handleNotificationPayload,
+  );
+
   // Khởi tạo Google Sign-In
   await GoogleSignIn.instance.initialize();
 
@@ -37,9 +49,6 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-
-  // Init Vietnamese locale for dates
-  await initializeDateFormatting('vi_VN', null);
 
   final authService = FirebaseAuthService();
 
@@ -75,7 +84,13 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LoanProvider()),
         ChangeNotifierProvider(create: (_) => BudgetProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final provider = SettingsProvider();
+            unawaited(provider.loadSettings());
+            return provider;
+          },
+        ),
       ],
       child: const CoinNestApp(),
     ),

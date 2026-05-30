@@ -54,6 +54,18 @@ class AppConstants {
   static const String prefShowBalance = 'show_balance';
   static const String prefDailyReminder = 'daily_reminder';
   static const String prefReminderTime = 'reminder_time';
+  static const String prefReminderTimeSlots = 'reminder_time_slots';
+  static const String prefDailyReminderEnabled = 'daily_reminder_enabled';
+  static const String prefReminderMorningHour = 'reminder_morning_hour';
+  static const String prefReminderMorningMinute = 'reminder_morning_minute';
+  static const String prefReminderAfternoonHour = 'reminder_afternoon_hour';
+  static const String prefReminderAfternoonMinute = 'reminder_afternoon_minute';
+  static const String prefLoanReminderEnabled = 'loan_reminder_enabled';
+  static const String prefLoanReminderDays = 'loan_reminder_days';
+
+  static const List<int> defaultLoanReminderDays = <int>[7, 3, 1, 0];
+  static const int minLoanReminderDayOffset = 0;
+  static const int maxLoanReminderDayOffset = 99;
 
   // ─── Secure Storage Keys ───────────────────────────────────────
   static const String secureSessionToken = 'session_token';

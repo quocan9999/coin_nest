@@ -5,6 +5,7 @@ import '../../providers/account_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/report_provider.dart';
+import '../../services/navigation_service.dart';
 import '../../theme/app_theme.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../accounts/account_list_screen.dart';
@@ -34,9 +35,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      _loadData();
+      await _loadData();
+      if (!mounted) return;
+      NavigationService.markNotificationNavigationReady();
     });
   }
 
