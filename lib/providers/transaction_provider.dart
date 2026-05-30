@@ -150,7 +150,7 @@ class TransactionProvider extends ChangeNotifier {
   // --- BỔ SUNG: Hàm tải riêng giao dịch gần nhất ---
   Future<void> loadRecentTransactions(int userId) async {
     try {
-      _recentTransactions = await getRecent(userId, count: 5);
+      _recentTransactions = await _txnDao.getRecent(userId, count: 5);
       notifyListeners();
     } catch (_) {
       _recentTransactions = [];
@@ -189,6 +189,7 @@ class TransactionProvider extends ChangeNotifier {
 
       final txnId = await _txnDao.insertWithBalance(txn);
       await loadTransactions(userId);
+      await loadRecentTransactions(userId); // <--- VÁ LỖI: Cập nhật danh sách gần đây tức thì
       return txnId;
     } catch (_) {
       return null;
@@ -213,6 +214,7 @@ class TransactionProvider extends ChangeNotifier {
 
       await _txnDao.updateWithBalance(txn);
       await loadTransactions(userId);
+      await loadRecentTransactions(userId); // <--- VÁ LỖI: Cập nhật danh sách gần đây tức thì
       return true;
     } catch (_) {
       return false;
@@ -223,6 +225,7 @@ class TransactionProvider extends ChangeNotifier {
     try {
       await _txnDao.deleteWithBalance(txnId);
       await loadTransactions(userId);
+      await loadRecentTransactions(userId); // <--- VÁ LỖI: Cập nhật danh sách gần đây tức thì
       return true;
     } catch (_) {
       return false;

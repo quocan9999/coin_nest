@@ -27,13 +27,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadRecent() async {
-    final userId = context.read<AuthProvider>().currentUserId;
+    // 1. Đọc tất cả Provider trước khi có bất kỳ lệnh await nào (tránh lỗi async gap)
+    final authProv = context.read<AuthProvider>();
+    final txnProv = context.read<TransactionProvider>();
+    final accProv = context.read<AccountProvider>();
+
+    final userId = authProv.currentUserId;
+
+    // 2. Dùng biến Provider đã lưu để gọi hàm thay vì gọi lại context
     // ĐÃ SỬA: Gọi hàm tải 5 giao dịch gần nhất
-    await context.read<TransactionProvider>().loadRecentTransactions(userId);
+    await txnProv.loadRecentTransactions(userId);
+    
     // Vẫn tải danh sách tổng để tính Tổng Thu/Chi
-    await context.read<TransactionProvider>().loadTransactions(userId);
+    await txnProv.loadTransactions(userId);
+    
     if (mounted) {
-      await context.read<AccountProvider>().loadAccounts(userId);
+      await accProv.loadAccounts(userId);
     }
   }
 
@@ -208,7 +217,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 const SizedBox(height: 12),
 
-                // ĐÃ SỬA: Dùng recentTransactions thay vì transactions
                 if (txnProv.recentTransactions.isEmpty)
                   Container(
                     padding: const EdgeInsets.all(32),
@@ -235,7 +243,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   )
                 else
-                  // ĐÃ SỬA: Dùng recentTransactions và bỏ .take(5) vì hàm SQL đã lấy 5 cái
+                  // ĐÃ SỬA: Thêm .toList() vào cuối map để triệt tiêu lỗi gạch đỏ ép kiểu trong hình
                   ...txnProv.recentTransactions
                       .map((txn) => _buildTransactionTile(context, txn)),
 
@@ -299,14 +307,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final iconKey = txn.categoryIconName ?? txn.type;
 
     return GestureDetector(
-      // Thêm tính năng bấm vào giao dịch ở trang chủ để sửa luôn (tùy chọn, giống trang list)
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => AddTransactionScreen(transaction: txn),
           ),
-        );
+        ).then((_) {
+          // --- VÁ LỖI: Ép trang chủ nạp lại số dư và danh sách mới khi quay về ---
+          if (!mounted) return;
+          _loadRecent();
+        });
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -335,7 +346,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ĐÃ SỬA: Sử dụng _getTypeLabel nếu không có categoryName
                   Text(
                     txn.categoryName ?? _getTypeLabel(txn.type),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
