@@ -5,7 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
-
+import '../../providers/report_provider.dart';
 import '../../theme/app_theme.dart';
 
 import '../dashboard/dashboard_screen.dart';
@@ -19,12 +19,10 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() =>
-      _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState
-    extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
   final _pages = const <Widget>[
@@ -39,8 +37,7 @@ class _HomeScreenState
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
       _loadData();
@@ -48,26 +45,25 @@ class _HomeScreenState
   }
 
   Future<void> _loadData() async {
-    final userId =
-        context
-            .read<AuthProvider>()
-            .currentUserId;
+    final userId = context.read<AuthProvider>().currentUserId;
 
     if (userId == 0) return;
 
-    final accountProv =
-        context.read<AccountProvider>();
-
-    final txnProv =
-        context.read<TransactionProvider>();
-
-    final catProv =
-        context.read<CategoryProvider>();
+    final accountProv = context.read<AccountProvider>();
+    final txnProv = context.read<TransactionProvider>();
+    final catProv = context.read<CategoryProvider>();
+    final reportProv = context.read<ReportProvider>();
+    final now = DateTime.now();
 
     await Future.wait([
       accountProv.loadAccounts(userId),
       txnProv.loadTransactions(userId),
       catProv.loadCategories(userId),
+      reportProv.loadReport(
+        userId,
+        from: DateTime(now.year, now.month, 1),
+        to: DateTime(now.year, now.month + 1, 0),
+      ),
     ]);
   }
 
@@ -75,12 +71,11 @@ class _HomeScreenState
     if (index == 2) {
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) =>
-              const AddTransactionScreen(),
-        ),
-      );
-
+        MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
+      ).then((_) {
+        if (!mounted) return;
+        _loadData();
+      });
       return;
     }
 
@@ -92,13 +87,9 @@ class _HomeScreenState
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor:
-          theme.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
 
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
 
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -106,9 +97,7 @@ class _HomeScreenState
 
           boxShadow: [
             BoxShadow(
-              color:
-                  theme.colorScheme.onSurface
-                      .withAlpha(10),
+              color: theme.colorScheme.onSurface.withAlpha(10),
 
               blurRadius: 20,
 
@@ -122,16 +111,10 @@ class _HomeScreenState
             height: 64,
 
             child: Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
 
               children: [
-                _buildNavItem(
-                  context,
-                  0,
-                  Icons.dashboard_rounded,
-                  'Tổng quan',
-                ),
+                _buildNavItem(context, 0, Icons.dashboard_rounded, 'Tổng quan'),
 
                 _buildNavItem(
                   context,
@@ -155,14 +138,11 @@ class _HomeScreenState
 
                       boxShadow: [
                         BoxShadow(
-                          color:
-                              AppTheme.primary
-                                  .withAlpha(77),
+                          color: AppTheme.primary.withAlpha(77),
 
                           blurRadius: 12,
 
-                          offset:
-                              const Offset(0, 4),
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
@@ -175,19 +155,9 @@ class _HomeScreenState
                   ),
                 ),
 
-                _buildNavItem(
-                  context,
-                  3,
-                  Icons.bar_chart_rounded,
-                  'Báo cáo',
-                ),
+                _buildNavItem(context, 3, Icons.bar_chart_rounded, 'Báo cáo'),
 
-                _buildNavItem(
-                  context,
-                  4,
-                  Icons.more_horiz_rounded,
-                  'Khác',
-                ),
+                _buildNavItem(context, 4, Icons.more_horiz_rounded, 'Khác'),
               ],
             ),
           ),
@@ -202,8 +172,7 @@ class _HomeScreenState
     IconData icon,
     String label,
   ) {
-    final isActive =
-        _currentIndex == index;
+    final isActive = _currentIndex == index;
 
     final theme = Theme.of(context);
 
@@ -224,12 +193,7 @@ class _HomeScreenState
 
               size: 24,
 
-              color:
-                  isActive
-                      ? AppTheme.primary
-                      : theme
-                          .colorScheme
-                          .outline,
+              color: isActive ? AppTheme.primary : theme.colorScheme.outline,
             ),
 
             const SizedBox(height: 4),
@@ -240,17 +204,9 @@ class _HomeScreenState
               style: TextStyle(
                 fontSize: 11,
 
-                fontWeight:
-                    isActive
-                        ? FontWeight.w600
-                        : FontWeight.w400,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
 
-                color:
-                    isActive
-                        ? AppTheme.primary
-                        : theme
-                            .colorScheme
-                            .outline,
+                color: isActive ? AppTheme.primary : theme.colorScheme.outline,
               ),
             ),
           ],

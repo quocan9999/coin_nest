@@ -72,7 +72,12 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AccountProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
-        ChangeNotifierProvider(create: (_) => LoanProvider()),
+        ChangeNotifierProxyProvider<TransactionProvider, LoanProvider>(
+          create: (_) => LoanProvider(),
+          update: (_, transactionProvider, loanProvider) =>
+              (loanProvider ?? LoanProvider())
+                ..setTransactionProvider(transactionProvider),
+        ),
         ChangeNotifierProvider(create: (_) => BudgetProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
