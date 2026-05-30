@@ -1,15 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../database/loan_dao.dart';
 import '../database/transaction_dao.dart';
 import '../models/loan.dart';
 import '../models/loan_payment.dart';
 import '../providers/transaction_provider.dart';
-import '../services/loan_notification_scheduler.dart';
-import '../utils/constants.dart';
 import '../utils/security_utils.dart';
 
 class LoanProvider extends ChangeNotifier {
@@ -41,7 +35,6 @@ class LoanProvider extends ChangeNotifier {
       _summary = await _loanDao.getSummary(userId);
       _errorMessage = null;
     } catch (e) {
-      debugPrint('LoanProvider.loadLoans failed: $e');
       _errorMessage = e.toString();
     }
     _isLoading = false;
@@ -119,8 +112,6 @@ class LoanProvider extends ChangeNotifier {
         _txnProvider.loadTransactions(userId),
       ]);
 
-      await _rescheduleLoanNotificationsIfEnabled();
-
       _errorMessage = null;
       return true;
     } catch (e) {
@@ -130,7 +121,6 @@ class LoanProvider extends ChangeNotifier {
       if (loanId != null) {
         await _loanDao.deleteForUser(loanId, userId);
       }
-      debugPrint('LoanProvider.addLoan failed: $e');
       _errorMessage = e.toString();
       notifyListeners();
       return false;
@@ -189,15 +179,12 @@ class LoanProvider extends ChangeNotifier {
         _txnProvider.loadTransactions(userId),
       ]);
 
-      await _rescheduleLoanNotificationsIfEnabled();
-
       _errorMessage = null;
       return true;
     } catch (e) {
       if (txnId != null) {
         await _txnDao.deleteWithBalance(txnId);
       }
-      debugPrint('LoanProvider.recordPayment failed: $e');
       _errorMessage = e.toString();
       notifyListeners();
       return false;
@@ -212,63 +199,12 @@ class LoanProvider extends ChangeNotifier {
     try {
       await _loanDao.deleteForUser(id, userId);
       await loadLoans(userId);
-      await _rescheduleLoanNotificationsIfEnabled();
       _errorMessage = null;
       return true;
     } catch (e) {
-      debugPrint('LoanProvider.deleteLoan failed: $e');
       _errorMessage = e.toString();
       notifyListeners();
       return false;
-    }
-  }
-
-  Future<void> _rescheduleLoanNotificationsIfEnabled() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final enabled =
-          prefs.getBool(AppConstants.prefLoanReminderEnabled) ?? true;
-
-      if (enabled) {
-        final daysOffsets = _readLoanReminderDays(prefs);
-        await LoanNotificationScheduler.rescheduleAll(_loans, daysOffsets);
-      }
-    } catch (error, stackTrace) {
-      debugPrint(
-        'LoanProvider._rescheduleLoanNotificationsIfEnabled failed: $error',
-      );
-      debugPrintStack(stackTrace: stackTrace);
-    }
-  }
-
-  List<int> _readLoanReminderDays(SharedPreferences prefs) {
-    try {
-      final rawDays = prefs.getString(AppConstants.prefLoanReminderDays);
-      if (rawDays == null) {
-        return List<int>.from(AppConstants.defaultLoanReminderDays);
-      }
-
-      final decoded = jsonDecode(rawDays);
-      if (decoded is! List) {
-        return List<int>.from(AppConstants.defaultLoanReminderDays);
-      }
-
-      final days = decoded
-          .whereType<num>()
-          .map((value) => value.toInt())
-          .where(
-            (value) =>
-                value >= AppConstants.minLoanReminderDayOffset &&
-                value <= AppConstants.maxLoanReminderDayOffset,
-          )
-          .toSet()
-          .toList();
-      days.sort((a, b) => b.compareTo(a));
-      return days;
-    } catch (error, stackTrace) {
-      debugPrint('LoanProvider._readLoanReminderDays failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-      return List<int>.from(AppConstants.defaultLoanReminderDays);
     }
   }
 }

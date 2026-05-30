@@ -190,6 +190,28 @@ class TransactionDao {
     );
   }
 
+  Future<TransactionModel?> findById(int id) async {
+    final db = await _dbHelper.database;
+    final result = await db.rawQuery(
+      '''
+      SELECT t.*,
+             a.name as account_name,
+             a2.name as to_account_name,
+             c.name as category_name,
+             c.icon_name as category_icon_name
+      FROM transactions t
+      LEFT JOIN accounts a ON t.account_id = a.id
+      LEFT JOIN accounts a2 ON t.to_account_id = a2.id
+      LEFT JOIN categories c ON t.category_id = c.id
+      WHERE t.id = ?
+      LIMIT 1
+    ''',
+      [id],
+    );
+    if (result.isEmpty) return null;
+    return TransactionModel.fromMap(result.first);
+  }
+
   /// Delete a transaction and reverse its balance impact.
   Future<void> deleteWithBalance(int txnId) async {
     final db = await _dbHelper.database;
@@ -329,8 +351,9 @@ class TransactionDao {
     final db = await _dbHelper.database;
     final result = await db.rawQuery(
       'SELECT COALESCE(SUM(amount), 0) as total FROM transactions '
-      'WHERE user_id = ? AND type = ? AND date >= ? AND date <= ?',
-      [userId, 'income', startDate, endDate],
+      "WHERE user_id = ? AND type IN ('income', 'loan') "
+      'AND date >= ? AND date <= ?',
+      [userId, startDate, endDate],
     );
     return (result.first['total'] as num).toDouble();
   }
@@ -344,8 +367,9 @@ class TransactionDao {
     final db = await _dbHelper.database;
     final result = await db.rawQuery(
       'SELECT COALESCE(SUM(amount), 0) as total FROM transactions '
-      'WHERE user_id = ? AND type = ? AND date >= ? AND date <= ?',
-      [userId, 'expense', startDate, endDate],
+      "WHERE user_id = ? AND type IN ('expense', 'lend') "
+      'AND date >= ? AND date <= ?',
+      [userId, startDate, endDate],
     );
     return (result.first['total'] as num).toDouble();
   }
@@ -362,7 +386,7 @@ class TransactionDao {
              COALESCE(SUM(t.amount), 0) as total
       FROM transactions t
       JOIN categories c ON t.category_id = c.id
-      WHERE t.user_id = ? AND t.type = 'expense'
+      WHERE t.user_id = ? AND t.type IN ('expense', 'lend')
         AND t.date >= ? AND t.date <= ?
       GROUP BY c.id
       ORDER BY total DESC
@@ -383,7 +407,7 @@ class TransactionDao {
              COALESCE(SUM(t.amount), 0) as total
       FROM transactions t
       JOIN categories c ON t.category_id = c.id
-      WHERE t.user_id = ? AND t.type = 'income'
+      WHERE t.user_id = ? AND t.type IN ('income', 'loan')
         AND t.date >= ? AND t.date <= ?
       GROUP BY c.id
       ORDER BY total DESC
@@ -400,15 +424,20 @@ class TransactionDao {
     String type,
   ) async {
     final db = await _dbHelper.database;
+    final types = type == 'income'
+        ? "('income', 'loan')"
+        : type == 'expense'
+            ? "('expense', 'lend')"
+            : "('$type')";
     return db.rawQuery(
       '''
       SELECT date, COALESCE(SUM(amount), 0) as total, COUNT(*) as count
       FROM transactions
-      WHERE user_id = ? AND type = ? AND date >= ? AND date <= ?
+      WHERE user_id = ? AND type IN $types AND date >= ? AND date <= ?
       GROUP BY date
       ORDER BY date ASC
     ''',
-      [userId, type, startDate, endDate],
+      [userId, startDate, endDate],
     );
   }
 
@@ -418,15 +447,20 @@ class TransactionDao {
     String type,
   ) async {
     final db = await _dbHelper.database;
+    final types = type == 'income'
+        ? "('income', 'loan')"
+        : type == 'expense'
+            ? "('expense', 'lend')"
+            : "('$type')";
     return db.rawQuery(
       '''
       SELECT strftime('%m', date) as month, COALESCE(SUM(amount), 0) as total
       FROM transactions
-      WHERE user_id = ? AND type = ? AND strftime('%Y', date) = ?
+      WHERE user_id = ? AND type IN $types AND strftime('%Y', date) = ?
       GROUP BY month
       ORDER BY month ASC
     ''',
-      [userId, type, year.toString()],
+      [userId, year.toString()],
     );
   }
 
@@ -467,7 +501,7 @@ class TransactionDao {
              COALESCE(SUM(t.amount), 0) as total
       FROM transactions t
       JOIN accounts a ON t.account_id = a.id
-      WHERE t.user_id = ? AND t.type = 'expense'
+      WHERE t.user_id = ? AND t.type IN ('expense', 'lend')
         AND t.date >= ? AND t.date <= ?
       GROUP BY a.id
       ORDER BY total DESC
@@ -488,7 +522,7 @@ class TransactionDao {
              COALESCE(SUM(t.amount), 0) as total
       FROM transactions t
       JOIN accounts a ON t.account_id = a.id
-      WHERE t.user_id = ? AND t.type = 'income'
+      WHERE t.user_id = ? AND t.type IN ('income', 'loan')
         AND t.date >= ? AND t.date <= ?
       GROUP BY a.id
       ORDER BY total DESC

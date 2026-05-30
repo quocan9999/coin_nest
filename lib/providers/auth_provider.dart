@@ -205,6 +205,25 @@ class AuthProvider extends ChangeNotifier {
 
   /// Đặt lại mật khẩu qua Cloud Function (nhánh phone) —
   /// signIn tạm bằng PhoneAuthCredential, gọi function, rồi signOut.
+  Future<bool> confirmForgotPasswordOtp({
+    required String verificationId,
+    required String otpCode,
+  }) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    final isValid = await _authService.confirmForgotPasswordOtp(
+      verificationId,
+      otpCode,
+    );
+
+    _setLoading(false);
+    if (isValid) return true;
+
+    _errorMessage = 'Mã OTP không hợp lệ hoặc đã hết hạn';
+    return false;
+  }
+
   Future<bool> resetPasswordByPhoneFirebase({
     required String verificationId,
     required String otpCode,
