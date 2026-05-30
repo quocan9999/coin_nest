@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/loan_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../models/transaction_model.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/category_icons.dart';
+import '../loans/loan_detail_screen.dart';
 import 'add_transaction_screen.dart';
 
 class TransactionListScreen extends StatefulWidget {
@@ -224,12 +227,13 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
-  Widget _buildTxnTile(BuildContext context, dynamic txn) {
-    final isExpense = txn.type == 'expense';
-    final color = isExpense
+  Widget _buildTxnTile(BuildContext context, TransactionModel txn) {
+    final color = txn.isNegative
         ? AppTheme.tertiary
-        : (txn.type == 'income' ? AppTheme.secondary : AppTheme.primary);
-    final sign = isExpense ? '- ' : (txn.type == 'income' ? '+ ' : '');
+        : (txn.type == 'transfer' ? AppTheme.primary : AppTheme.secondary);
+    final sign = txn.isNegative
+        ? '- '
+        : (txn.type == 'transfer' || txn.type == 'balance_adjust' ? '' : '+ ');
     final iconKey = txn.categoryIconName ?? txn.type;
 
     final noteStr = (txn.note != null && txn.note!.toString().trim().isNotEmpty)
@@ -238,12 +242,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AddTransactionScreen(transaction: txn),
-          ),
-        );
+        _openTransaction(context, txn);
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -309,6 +308,42 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _openTransaction(
+    BuildContext context,
+    TransactionModel txn,
+  ) async {
+    if (txn.isLoanLinked) {
+      final userId = context.read<AuthProvider>().currentUserId;
+      final loan = await context.read<LoanProvider>().findLoanForTransaction(
+        userId: userId,
+        loanId: txn.loanId,
+        transactionId: txn.id,
+      );
+      if (!context.mounted) return;
+      if (loan == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không tìm thấy khoản vay liên kết với giao dịch này'),
+          ),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => LoanDetailScreen(loan: loan)),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddTransactionScreen(transaction: txn),
       ),
     );
   }

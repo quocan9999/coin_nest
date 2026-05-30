@@ -19,28 +19,21 @@ import '../../utils/formatters.dart';
 class AddTransactionScreen extends StatefulWidget {
   final TransactionModel? transaction;
 
-  const AddTransactionScreen({
-    super.key,
-    this.transaction,
-  });
+  const AddTransactionScreen({super.key, this.transaction});
 
   @override
-  State<AddTransactionScreen> createState() =>
-      _AddTransactionScreenState();
+  State<AddTransactionScreen> createState() => _AddTransactionScreenState();
 }
 
-class _AddTransactionScreenState
-    extends State<AddTransactionScreen>
+class _AddTransactionScreenState extends State<AddTransactionScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   final _formKey = GlobalKey<FormState>();
 
-  final _amountController =
-      TextEditingController();
+  final _amountController = TextEditingController();
 
-  final _noteController =
-      TextEditingController();
+  final _noteController = TextEditingController();
 
   int? _selectedCategoryId;
   int? _selectedAccountId;
@@ -56,60 +49,52 @@ class _AddTransactionScreenState
 
     if (widget.transaction != null) {
       final txn = widget.transaction!;
+      if (txn.isLoanLinked) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _showLoanLinkedMessage();
+          Navigator.pop(context);
+        });
+      }
 
-      String initialAmount =
-          txn.amount.toInt().toString();
+      String initialAmount = txn.amount.toInt().toString();
 
       String formatted = '';
 
       int count = 0;
 
-      for (
-        int i = initialAmount.length - 1;
-        i >= 0;
-        i--
-      ) {
+      for (int i = initialAmount.length - 1; i >= 0; i--) {
         if (count != 0 && count % 3 == 0) {
           formatted = '.$formatted';
         }
 
-        formatted =
-            initialAmount[i] + formatted;
+        formatted = initialAmount[i] + formatted;
 
         count++;
       }
 
       _amountController.text = formatted;
 
-      _noteController.text =
-          txn.note ?? '';
+      _noteController.text = txn.note ?? '';
 
-      _selectedCategoryId =
-          txn.categoryId;
+      _selectedCategoryId = txn.categoryId;
 
-      _selectedAccountId =
-          txn.accountId;
+      _selectedAccountId = txn.accountId;
 
-      _selectedToAccountId =
-          txn.toAccountId;
+      _selectedToAccountId = txn.toAccountId;
 
       _selectedDate = txn.date;
 
       if (txn.type == 'income') {
         _previousTabIndex = 1;
-      } else if (txn.type ==
-          'transfer') {
+      } else if (txn.type == 'transfer') {
         _previousTabIndex = 2;
       }
     } else {
-      final accounts =
-          context
-              .read<AccountProvider>()
-              .accounts;
+      final accounts = context.read<AccountProvider>().accounts;
 
       if (accounts.isNotEmpty) {
-        _selectedAccountId =
-            accounts.first.id;
+        _selectedAccountId = accounts.first.id;
       }
     }
 
@@ -124,12 +109,10 @@ class _AddTransactionScreenState
         return;
       }
 
-      if (_tabController.index !=
-          _previousTabIndex) {
+      if (_tabController.index != _previousTabIndex) {
         setState(() {
           _selectedCategoryId = null;
-          _previousTabIndex =
-              _tabController.index;
+          _previousTabIndex = _tabController.index;
         });
       }
     });
@@ -159,185 +142,128 @@ class _AddTransactionScreenState
     }
   }
 
-  bool get isEditMode =>
-      widget.transaction != null;
+  bool get isEditMode => widget.transaction != null;
+  bool get _isLoanLinkedEdit =>
+      widget.transaction != null && widget.transaction!.isLoanLinked;
 
   // DIALOG XÁC NHẬN
   void _showConfirmDialog({
     required String message,
     required VoidCallback onConfirm,
   }) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     showDialog(
       context: context,
 
-      builder:
-          (context) => AlertDialog(
-            backgroundColor:
-                colorScheme.surface,
+      builder: (context) => AlertDialog(
+        backgroundColor: colorScheme.surface,
 
-            title: const Text(
-              'Thông báo',
+        title: const Text(
+          'Thông báo',
 
-              style: TextStyle(
-                fontWeight:
-                    FontWeight.bold,
-              ),
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+
+        content: Text(message),
+
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+
+            child: Text(
+              'Không',
+
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
-
-            content: Text(message),
-
-            shape: RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(
-                    AppTheme.radiusMd,
-                  ),
-            ),
-
-            actions: [
-              TextButton(
-                onPressed:
-                    () => Navigator.pop(
-                      context,
-                    ),
-
-                child: Text(
-                  'Không',
-
-                  style: TextStyle(
-                    color: colorScheme
-                        .onSurfaceVariant,
-                  ),
-                ),
-              ),
-
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-
-                  onConfirm();
-                },
-
-                child: const Text(
-                  'Có',
-
-                  style: TextStyle(
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
           ),
+
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+
+              onConfirm();
+            },
+
+            child: const Text(
+              'Có',
+
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   // SAVE
   Future<void> _executeSave() async {
-    final userId =
-        context.read<AuthProvider>().currentUserId;
+    if (_isLoanLinkedEdit) {
+      _showLoanLinkedMessage();
+      return;
+    }
 
+    final userId = context.read<AuthProvider>().currentUserId;
     bool success;
 
     if (isEditMode) {
-      success = await context
-          .read<TransactionProvider>()
-          .updateTransaction(
-            txnId:
-                widget.transaction!.id!,
+      success = await context.read<TransactionProvider>().updateTransaction(
+        txnId: widget.transaction!.id!,
 
-            userId: userId,
+        userId: userId,
 
-            accountId:
-                _selectedAccountId!,
+        accountId: _selectedAccountId!,
 
-            toAccountId:
-                _currentType ==
-                        'transfer'
-                    ? _selectedToAccountId
-                    : null,
+        toAccountId: _currentType == 'transfer' ? _selectedToAccountId : null,
 
-            categoryId:
-                _selectedCategoryId,
+        categoryId: _selectedCategoryId,
 
-            type: _currentType,
+        type: _currentType,
 
-            amount:
-                Validators.parseAmount(
-                  _amountController.text,
-                ),
+        amount: Validators.parseAmount(_amountController.text),
 
-            note:
-                _noteController.text
-                        .trim()
-                        .isEmpty
-                    ? null
-                    : _noteController.text
-                        .trim(),
+        note: _noteController.text.trim().isEmpty
+            ? null
+            : _noteController.text.trim(),
 
-            date: _selectedDate,
+        date: _selectedDate,
 
-            time:
-                widget.transaction!
-                        .time ??
-                    Formatters.time(
-                      DateTime.now(),
-                    ),
+        time: widget.transaction!.time ?? Formatters.time(DateTime.now()),
 
-            createdAt:
-                widget
-                    .transaction!
-                    .createdAt,
-          );
+        createdAt: widget.transaction!.createdAt,
+      );
     } else {
-      success = await context
-          .read<TransactionProvider>()
-          .addTransaction(
-            userId: userId,
+      success = await context.read<TransactionProvider>().addTransaction(
+        userId: userId,
 
-            accountId:
-                _selectedAccountId!,
+        accountId: _selectedAccountId!,
 
-            toAccountId:
-                _currentType ==
-                        'transfer'
-                    ? _selectedToAccountId
-                    : null,
+        toAccountId: _currentType == 'transfer' ? _selectedToAccountId : null,
 
-            categoryId:
-                _selectedCategoryId,
+        categoryId: _selectedCategoryId,
 
-            type: _currentType,
+        type: _currentType,
 
-            amount:
-                Validators.parseAmount(
-                  _amountController.text,
-                ),
+        amount: Validators.parseAmount(_amountController.text),
 
-            note:
-                _noteController.text
-                        .trim()
-                        .isEmpty
-                    ? null
-                    : _noteController.text
-                        .trim(),
+        note: _noteController.text.trim().isEmpty
+            ? null
+            : _noteController.text.trim(),
 
-            date: _selectedDate,
+        date: _selectedDate,
 
-            time: Formatters.time(
-              DateTime.now(),
-            ),
-          );
+        time: Formatters.time(DateTime.now()),
+      );
     }
 
     if (!mounted) return;
 
     if (success) {
-      await context
-          .read<AccountProvider>()
-          .loadAccounts(userId);
+      await context.read<AccountProvider>().loadAccounts(userId);
 
       if (mounted) {
         Navigator.pop(context);
@@ -346,21 +272,16 @@ class _AddTransactionScreenState
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!
-        .validate()) {
+    if (_isLoanLinkedEdit) {
+      _showLoanLinkedMessage();
       return;
     }
 
+    if (!_formKey.currentState!.validate()) return;
     if (_selectedAccountId == null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Vui lòng chọn tài khoản',
-          ),
-        ),
-      );
+      ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn tài khoản')));
 
       return;
     }
@@ -379,22 +300,21 @@ class _AddTransactionScreenState
 
   // DELETE
   Future<void> _executeDelete() async {
-    final userId =
-        context.read<AuthProvider>().currentUserId;
+    if (_isLoanLinkedEdit) {
+      _showLoanLinkedMessage();
+      return;
+    }
 
-    final success = await context
-        .read<TransactionProvider>()
-        .deleteTransaction(
-          widget.transaction!.id!,
-          userId,
-        );
+    final userId = context.read<AuthProvider>().currentUserId;
+    final success = await context.read<TransactionProvider>().deleteTransaction(
+      widget.transaction!.id!,
+      userId,
+    );
 
     if (!mounted) return;
 
     if (success) {
-      await context
-          .read<AccountProvider>()
-          .loadAccounts(userId);
+      await context.read<AccountProvider>().loadAccounts(userId);
 
       if (mounted) {
         Navigator.pop(context);
@@ -404,6 +324,10 @@ class _AddTransactionScreenState
 
   Future<void> _delete() async {
     if (!isEditMode) return;
+    if (_isLoanLinkedEdit) {
+      _showLoanLinkedMessage();
+      return;
+    }
 
     _showConfirmDialog(
       message:
@@ -417,56 +341,39 @@ class _AddTransactionScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final colorScheme =
-        theme.colorScheme;
+    final colorScheme = theme.colorScheme;
 
-    final catProv =
-        context.watch<CategoryProvider>();
+    final catProv = context.watch<CategoryProvider>();
 
-    final accProv =
-        context.watch<AccountProvider>();
+    final accProv = context.watch<AccountProvider>();
 
     return Scaffold(
-      backgroundColor:
-          colorScheme.surface,
+      backgroundColor: colorScheme.surface,
 
       appBar: AppBar(
-        backgroundColor:
-            colorScheme.surface,
+        backgroundColor: colorScheme.surface,
 
         elevation: 0,
 
         centerTitle: true,
 
-        title: Text(
-          isEditMode
-              ? 'Sửa giao dịch'
-              : 'Ghi chép giao dịch',
-        ),
+        title: Text(isEditMode ? 'Sửa giao dịch' : 'Ghi chép giao dịch'),
 
         leading: IconButton(
-          icon: const Icon(
-            Icons.close_rounded,
-          ),
+          icon: const Icon(Icons.close_rounded),
 
-          onPressed:
-              () => Navigator.pop(
-                context,
-              ),
+          onPressed: () => Navigator.pop(context),
         ),
 
         bottom: TabBar(
           controller: _tabController,
 
           onTap: (index) {
-            if (_previousTabIndex !=
-                index) {
+            if (_previousTabIndex != index) {
               setState(() {
-                _selectedCategoryId =
-                    null;
+                _selectedCategoryId = null;
 
-                _previousTabIndex =
-                    index;
+                _previousTabIndex = index;
               });
             }
           },
@@ -477,144 +384,92 @@ class _AddTransactionScreenState
             Tab(text: 'Chuyển khoản'),
           ],
 
-          labelColor:
-              AppTheme.primary,
+          labelColor: AppTheme.primary,
 
-          unselectedLabelColor:
-              colorScheme
-                  .onSurfaceVariant,
+          unselectedLabelColor: colorScheme.onSurfaceVariant,
 
-          indicatorColor:
-              AppTheme.primary,
+          indicatorColor: AppTheme.primary,
         ),
       ),
 
       body: SingleChildScrollView(
-        padding:
-            const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
 
         child: Form(
           key: _formKey,
 
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment
-                    .stretch,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
 
             children: [
               // SỐ TIỀN
-              _sectionLabel(
-                context,
-                'SỐ TIỀN',
-              ),
+              _sectionLabel(context, 'SỐ TIỀN'),
 
               const SizedBox(height: 8),
 
               TextFormField(
-                controller:
-                    _amountController,
+                controller: _amountController,
 
-                keyboardType:
-                    TextInputType
-                        .number,
+                keyboardType: TextInputType.number,
 
                 inputFormatters: [
-                  FilteringTextInputFormatter
-                      .digitsOnly,
+                  FilteringTextInputFormatter.digitsOnly,
                   CurrencyInputFormatter(),
                 ],
 
-                validator:
-                    Validators.amount,
+                validator: Validators.amount,
 
-                style: theme
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(
-                      fontWeight:
-                          FontWeight
-                              .w700,
-                    ),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
 
-                decoration:
-                    const InputDecoration(
-                      hintText: '0',
-                      suffixText: 'đ',
-                    ),
+                decoration: const InputDecoration(
+                  hintText: '0',
+                  suffixText: 'đ',
+                ),
               ),
 
               const SizedBox(height: 20),
 
               // CATEGORY
-              if (_currentType !=
-                  'transfer') ...[
-                _sectionLabel(
-                  context,
-                  'HẠNG MỤC',
-                ),
+              if (_currentType != 'transfer') ...[
+                _sectionLabel(context, 'HẠNG MỤC'),
 
-                const SizedBox(
-                  height: 8,
-                ),
+                const SizedBox(height: 8),
 
                 _buildCategoryGrid(
-                  _currentType ==
-                          'expense'
-                      ? catProv
-                          .expenseCategories
-                      : catProv
-                          .incomeCategories,
+                  _currentType == 'expense'
+                      ? catProv.expenseCategories
+                      : catProv.incomeCategories,
                 ),
 
-                const SizedBox(
-                  height: 20,
-                ),
+                const SizedBox(height: 20),
               ],
 
               // ACCOUNT
               _sectionLabel(
                 context,
-                _currentType ==
-                        'transfer'
-                    ? 'TỪ TÀI KHOẢN'
-                    : 'TÀI KHOẢN',
+                _currentType == 'transfer' ? 'TỪ TÀI KHOẢN' : 'TÀI KHOẢN',
               ),
 
               const SizedBox(height: 8),
 
-              _buildAccountDropdown(
-                accProv,
-                isSource: true,
-              ),
+              _buildAccountDropdown(accProv, isSource: true),
 
-              if (_currentType ==
-                  'transfer') ...[
-                const SizedBox(
-                  height: 20,
-                ),
+              if (_currentType == 'transfer') ...[
+                const SizedBox(height: 20),
 
-                _sectionLabel(
-                  context,
-                  'ĐẾN TÀI KHOẢN',
-                ),
+                _sectionLabel(context, 'ĐẾN TÀI KHOẢN'),
 
-                const SizedBox(
-                  height: 8,
-                ),
+                const SizedBox(height: 8),
 
-                _buildAccountDropdown(
-                  accProv,
-                  isSource: false,
-                ),
+                _buildAccountDropdown(accProv, isSource: false),
               ],
 
               const SizedBox(height: 20),
 
               // DATE
-              _sectionLabel(
-                context,
-                'NGÀY',
-              ),
+              _sectionLabel(context, 'NGÀY'),
 
               const SizedBox(height: 8),
 
@@ -622,50 +477,33 @@ class _AddTransactionScreenState
                 onTap: _pickDate,
 
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
 
                   decoration: BoxDecoration(
-                    color: colorScheme
-                        .surfaceContainerHighest,
+                    color: colorScheme.surfaceContainerHighest,
 
-                    borderRadius:
-                        BorderRadius.circular(
-                          AppTheme
-                              .radiusMd,
-                        ),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   ),
 
                   child: Row(
                     children: [
                       Icon(
-                        Icons
-                            .calendar_today_outlined,
+                        Icons.calendar_today_outlined,
 
                         size: 18,
 
-                        color:
-                            colorScheme
-                                .onSurfaceVariant,
+                        color: colorScheme.onSurfaceVariant,
                       ),
 
-                      const SizedBox(
-                        width: 12,
-                      ),
+                      const SizedBox(width: 12),
 
                       Text(
-                        Formatters.date(
-                          _selectedDate,
-                        ),
+                        Formatters.date(_selectedDate),
 
-                        style: TextStyle(
-                          color:
-                              colorScheme
-                                  .onSurface,
-                        ),
+                        style: TextStyle(color: colorScheme.onSurface),
                       ),
                     ],
                   ),
@@ -675,27 +513,20 @@ class _AddTransactionScreenState
               const SizedBox(height: 20),
 
               // NOTE
-              _sectionLabel(
-                context,
-                'GHI CHÚ',
-              ),
+              _sectionLabel(context, 'GHI CHÚ'),
 
               const SizedBox(height: 8),
 
               TextFormField(
-                controller:
-                    _noteController,
+                controller: _noteController,
 
                 maxLines: 2,
 
-                validator:
-                    Validators.note,
+                validator: Validators.note,
 
-                decoration:
-                    const InputDecoration(
-                      hintText:
-                          'Nhập ghi chú (tùy chọn)',
-                    ),
+                decoration: const InputDecoration(
+                  hintText: 'Nhập ghi chú (tùy chọn)',
+                ),
               ),
 
               const SizedBox(height: 28),
@@ -708,47 +539,32 @@ class _AddTransactionScreenState
                       child: SizedBox(
                         height: 52,
 
-                        child:
-                            OutlinedButton(
-                              onPressed:
-                                  _delete,
+                        child: OutlinedButton(
+                          onPressed: _delete,
 
-                              style:
-                                  OutlinedButton.styleFrom(
-                                    side:
-                                        const BorderSide(
-                                          color:
-                                              AppTheme.tertiary,
-                                          width:
-                                              1.5,
-                                        ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(
+                              color: AppTheme.tertiary,
+                              width: 1.5,
+                            ),
 
-                                    backgroundColor:
-                                        colorScheme
-                                            .surface,
+                            backgroundColor: colorScheme.surface,
 
-                                    foregroundColor:
-                                        AppTheme
-                                            .tertiary,
+                            foregroundColor: AppTheme.tertiary,
 
-                                    shape:
-                                        RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(
-                                                AppTheme.radiusFull,
-                                              ),
-                                        ),
-                                  ),
-
-                              child: const Text(
-                                'Xoá',
-
-                                style: TextStyle(
-                                  fontWeight:
-                                      FontWeight.bold,
-                                ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusFull,
                               ),
                             ),
+                          ),
+
+                          child: const Text(
+                            'Xoá',
+
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ),
                     ),
 
@@ -758,26 +574,19 @@ class _AddTransactionScreenState
                       child: SizedBox(
                         height: 52,
 
-                        child:
-                            ElevatedButton(
-                              onPressed:
-                                  _save,
+                        child: ElevatedButton(
+                          onPressed: _save,
 
-                              style:
-                                  ElevatedButton.styleFrom(
-                                    shape:
-                                        RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(
-                                                AppTheme.radiusFull,
-                                              ),
-                                        ),
-                                  ),
-
-                              child: const Text(
-                                'Lưu lại',
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radiusFull,
                               ),
                             ),
+                          ),
+
+                          child: const Text('Lưu lại'),
+                        ),
                       ),
                     ),
                   ],
@@ -786,25 +595,19 @@ class _AddTransactionScreenState
                 SizedBox(
                   height: 52,
 
-                  child:
-                      ElevatedButton(
-                        onPressed: _save,
+                  child: ElevatedButton(
+                    onPressed: _save,
 
-                        style:
-                            ElevatedButton.styleFrom(
-                              shape:
-                                  RoundedRectangleBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(
-                                          AppTheme.radiusFull,
-                                        ),
-                                  ),
-                            ),
-
-                        child: const Text(
-                          'Lưu giao dịch',
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.radiusFull,
                         ),
                       ),
+                    ),
+
+                    child: const Text('Lưu giao dịch'),
+                  ),
                 ),
             ],
           ),
@@ -813,148 +616,91 @@ class _AddTransactionScreenState
     );
   }
 
-  Widget _sectionLabel(
-    BuildContext context,
-    String text,
-  ) {
+  Widget _sectionLabel(BuildContext context, String text) {
     return Text(
       text,
 
-      style: Theme.of(
-        context,
-      ).textTheme.labelMedium?.copyWith(
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
         fontWeight: FontWeight.w600,
         letterSpacing: 0.8,
       ),
     );
   }
 
-  Widget _buildCategoryGrid(
-    List<Category> categories,
-  ) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+  Widget _buildCategoryGrid(List<Category> categories) {
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
 
-      children:
-          categories.map((cat) {
-            final isSelected =
-                _selectedCategoryId ==
-                cat.id;
+      children: categories.map((cat) {
+        final isSelected = _selectedCategoryId == cat.id;
 
-            return GestureDetector(
-              onTap:
-                  () => setState(
-                    () =>
-                        _selectedCategoryId =
-                            isSelected
-                                ? null
-                                : cat.id,
+        return GestureDetector(
+          onTap: () =>
+              setState(() => _selectedCategoryId = isSelected ? null : cat.id),
+
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppTheme.primary
+                  : colorScheme.surfaceContainerLow,
+
+              borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+            ),
+
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+
+              children: [
+                Icon(
+                  CategoryIcons.getIcon(cat.iconName),
+
+                  size: 16,
+
+                  color: isSelected
+                      ? Colors.white
+                      : CategoryIcons.getColor(cat.iconName),
+                ),
+
+                const SizedBox(width: 6),
+
+                Text(
+                  cat.name,
+
+                  style: TextStyle(
+                    fontSize: 12,
+
+                    fontWeight: FontWeight.w500,
+
+                    color: isSelected ? Colors.white : colorScheme.onSurface,
                   ),
-
-              child: AnimatedContainer(
-                duration:
-                    const Duration(
-                      milliseconds: 200,
-                    ),
-
-                padding:
-                    const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-
-                decoration: BoxDecoration(
-                  color:
-                      isSelected
-                          ? AppTheme.primary
-                          : colorScheme
-                              .surfaceContainerLow,
-
-                  borderRadius:
-                      BorderRadius.circular(
-                        AppTheme.radiusFull,
-                      ),
                 ),
-
-                child: Row(
-                  mainAxisSize:
-                      MainAxisSize.min,
-
-                  children: [
-                    Icon(
-                      CategoryIcons.getIcon(
-                        cat.iconName,
-                      ),
-
-                      size: 16,
-
-                      color:
-                          isSelected
-                              ? Colors.white
-                              : CategoryIcons.getColor(
-                                cat.iconName,
-                              ),
-                    ),
-
-                    const SizedBox(
-                      width: 6,
-                    ),
-
-                    Text(
-                      cat.name,
-
-                      style: TextStyle(
-                        fontSize: 12,
-
-                        fontWeight:
-                            FontWeight.w500,
-
-                        color:
-                            isSelected
-                                ? Colors.white
-                                : colorScheme
-                                    .onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildAccountDropdown(
-    AccountProvider prov, {
-    required bool isSource,
-  }) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+  Widget _buildAccountDropdown(AccountProvider prov, {required bool isSource}) {
+    final colorScheme = Theme.of(context).colorScheme;
 
-    final currentValue =
-        isSource
-            ? _selectedAccountId
-            : _selectedToAccountId;
+    final currentValue = isSource ? _selectedAccountId : _selectedToAccountId;
 
     return Container(
-      padding:
-          const EdgeInsets.symmetric(
-            horizontal: 16,
-          ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
 
       decoration: BoxDecoration(
-        color:
-            colorScheme
-                .surfaceContainerHighest,
+        color: colorScheme.surfaceContainerHighest,
 
-        borderRadius:
-            BorderRadius.circular(
-              AppTheme.radiusMd,
-            ),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
 
       child: DropdownButtonHideUnderline(
@@ -963,31 +709,21 @@ class _AddTransactionScreenState
 
           isExpanded: true,
 
-          dropdownColor:
-              colorScheme.surface,
+          dropdownColor: colorScheme.surface,
 
-          hint: const Text(
-            'Chọn tài khoản',
-          ),
+          hint: const Text('Chọn tài khoản'),
 
-          items:
-              prov.accounts
-                  .map(
-                    (a) => DropdownMenuItem(
-                      value: a.id,
-                      child: Text(a.name),
-                    ),
-                  )
-                  .toList(),
+          items: prov.accounts
+              .map((a) => DropdownMenuItem(value: a.id, child: Text(a.name)))
+              .toList(),
 
-          onChanged:
-              (v) => setState(() {
-                if (isSource) {
-                  _selectedAccountId = v;
-                } else {
-                  _selectedToAccountId = v;
-                }
-              }),
+          onChanged: (v) => setState(() {
+            if (isSource) {
+              _selectedAccountId = v;
+            } else {
+              _selectedToAccountId = v;
+            }
+          }),
         ),
       ),
     );
@@ -1001,22 +737,26 @@ class _AddTransactionScreenState
 
       firstDate: DateTime(2020),
 
-      lastDate:
-          DateTime.now().add(
-            const Duration(days: 1),
-          ),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
     );
 
     if (picked != null) {
-      setState(
-        () => _selectedDate = picked,
-      );
+      setState(() => _selectedDate = picked);
     }
+  }
+
+  void _showLoanLinkedMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Giao dịch khoản vay chỉ được chỉnh sửa trong chi tiết khoản vay',
+        ),
+      ),
+    );
   }
 }
 
-class CurrencyInputFormatter
-    extends TextInputFormatter {
+class CurrencyInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
@@ -1026,8 +766,7 @@ class CurrencyInputFormatter
       return newValue.copyWith(text: '');
     }
 
-    String newText = newValue.text
-        .replaceAll(RegExp(r'[^0-9]'), '');
+    String newText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (newText.isEmpty) {
       return newValue.copyWith(text: '');
@@ -1037,17 +776,12 @@ class CurrencyInputFormatter
 
     int count = 0;
 
-    for (
-      int i = newText.length - 1;
-      i >= 0;
-      i--
-    ) {
+    for (int i = newText.length - 1; i >= 0; i--) {
       if (count != 0 && count % 3 == 0) {
         formatted = '.$formatted';
       }
 
-      formatted =
-          newText[i] + formatted;
+      formatted = newText[i] + formatted;
 
       count++;
     }
@@ -1055,10 +789,7 @@ class CurrencyInputFormatter
     return TextEditingValue(
       text: formatted,
 
-      selection:
-          TextSelection.collapsed(
-            offset: formatted.length,
-          ),
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
