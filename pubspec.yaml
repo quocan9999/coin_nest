@@ -29,7 +29,7 @@ dependencies:
     google_sign_in: ^7.2.0
     cloud_functions: ^6.2.0
     firebase_storage: ^13.3.0
-
+    cloud_firestore: ^6.3.0
     #SQLite realtime viewer
     saropa_drift_advisor: ^3.5.1
 
