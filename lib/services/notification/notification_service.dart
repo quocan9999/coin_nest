@@ -16,6 +16,10 @@ class NotificationService {
   static const String reminderChannelDescription =
       'Nhắc ghi chép tài chính và theo dõi vay/cho vay hằng ngày';
 
+  static const Map<String, String> _timezoneAliases = {
+    'Asia/Saigon': 'Asia/Ho_Chi_Minh',
+  };
+
   final FlutterLocalNotificationsPlugin _notifications;
   bool _isInitialized = false;
 
@@ -44,12 +48,21 @@ class NotificationService {
     await initialize();
     if (!_supportsScheduling) return false;
 
-    final androidGranted = await _notifications
+    final androidPlugin = _notifications
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.requestNotificationsPermission();
-    if (androidGranted != null) return androidGranted;
+        >();
+    if (androidPlugin != null) {
+      final notificationsGranted =
+          await androidPlugin.requestNotificationsPermission() ?? true;
+      if (!notificationsGranted) return false;
+
+      final canScheduleExact =
+          await androidPlugin.canScheduleExactNotifications() ?? true;
+      if (canScheduleExact) return true;
+
+      return await androidPlugin.requestExactAlarmsPermission() ?? false;
+    }
 
     final iosGranted = await _notifications
         .resolvePlatformSpecificImplementation<
@@ -93,7 +106,7 @@ class NotificationService {
         iOS: DarwinNotificationDetails(),
         macOS: DarwinNotificationDetails(),
       ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
       payload: payload,
     );
@@ -117,7 +130,10 @@ class NotificationService {
 
     try {
       final timezone = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timezone.identifier));
+      final timezoneIdentifier = _normalizeTimezoneIdentifier(
+        timezone.identifier,
+      );
+      tz.setLocalLocation(tz.getLocation(timezoneIdentifier));
     } on MissingPluginException catch (error, stackTrace) {
       debugPrint('KhÃ´ng thá»ƒ láº¥y timezone cá»¥c bá»™: $error\n$stackTrace');
     } on PlatformException catch (error, stackTrace) {
@@ -127,6 +143,10 @@ class NotificationService {
     } catch (error, stackTrace) {
       debugPrint('Timezone cá»¥c bá»™ khÃ´ng há»£p lá»‡: $error\n$stackTrace');
     }
+  }
+
+  String _normalizeTimezoneIdentifier(String identifier) {
+    return _timezoneAliases[identifier] ?? identifier;
   }
 
   tz.TZDateTime _nextTime({required int hour, required int minute}) {
