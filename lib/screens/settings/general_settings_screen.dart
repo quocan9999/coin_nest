@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/loan.dart';
+import '../../providers/loan_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../services/notification/reminder_coordinator.dart';
 import '../../theme/app_theme.dart';
 import 'support_map_screen.dart';
+
 class GeneralSettingsScreen extends StatelessWidget {
   const GeneralSettingsScreen({super.key});
 
@@ -11,20 +15,15 @@ class GeneralSettingsScreen extends StatelessWidget {
     final settings = context.watch<SettingsProvider>();
 
     return Scaffold(
-      backgroundColor:
-          Theme.of(context)
-              .scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
       appBar: AppBar(
-        backgroundColor:
-            Theme.of(context)
-                .scaffoldBackgroundColor,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
 
         title: const Text('Cài đặt chung'),
 
         leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back_ios_rounded),
+          icon: const Icon(Icons.arrow_back_ios_rounded),
 
           onPressed: () => Navigator.pop(context),
         ),
@@ -35,7 +34,6 @@ class GeneralSettingsScreen extends StatelessWidget {
 
         children: [
           // ================= HIỂN THỊ =================
-
           _sectionTitle(context, 'HIỂN THỊ'),
 
           const SizedBox(height: 8),
@@ -46,60 +44,42 @@ class GeneralSettingsScreen extends StatelessWidget {
               SwitchListTile(
                 title: const Text('Hiện số dư'),
 
-                subtitle: const Text(
-                  'Hiển thị số dư trên trang tổng quan',
-                ),
+                subtitle: const Text('Hiển thị số dư trên trang tổng quan'),
 
                 value: settings.showBalance,
 
-                onChanged:
-                    settings.setShowBalance,
+                onChanged: settings.setShowBalance,
 
-                activeTrackColor:
-                    AppTheme.primary,
+                activeTrackColor: AppTheme.primary,
               ),
 
               const Divider(height: 1),
 
               ListTile(
                 leading: Icon(
-                  settings.isDarkMode
-                      ? Icons.dark_mode
-                      : Icons.light_mode,
+                  settings.isDarkMode ? Icons.dark_mode : Icons.light_mode,
 
                   color: AppTheme.primary,
                 ),
 
-                title:
-                    const Text('Giao diện'),
+                title: const Text('Giao diện'),
 
-                subtitle: Text(
-                  settings.isDarkMode
-                      ? 'Tối'
-                      : 'Sáng',
-                ),
+                subtitle: Text(settings.isDarkMode ? 'Tối' : 'Sáng'),
 
                 trailing: Icon(
                   Icons.chevron_right_rounded,
 
-                  color:
-                      Theme.of(context)
-                          .colorScheme
-                          .outline,
+                  color: Theme.of(context).colorScheme.outline,
                 ),
 
                 onTap: () async {
                   await showModalBottomSheet(
                     context: context,
 
-                    backgroundColor:
-                        Theme.of(context)
-                            .cardColor,
+                    backgroundColor: Theme.of(context).cardColor,
 
-                    shape:
-                        const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.vertical(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
                         top: Radius.circular(20),
                       ),
                     ),
@@ -107,68 +87,41 @@ class GeneralSettingsScreen extends StatelessWidget {
                     builder: (_) {
                       return SafeArea(
                         child: Column(
-                          mainAxisSize:
-                              MainAxisSize.min,
+                          mainAxisSize: MainAxisSize.min,
 
                           children: [
                             ListTile(
-                              leading: const Icon(
-                                Icons.light_mode,
-                              ),
+                              leading: const Icon(Icons.light_mode),
 
-                              title:
-                                  const Text('Sáng'),
+                              title: const Text('Sáng'),
 
-                              trailing:
-                                  !settings.isDarkMode
-                                      ? const Icon(
-                                          Icons.check,
-                                          color:
-                                              Colors.green,
-                                        )
-                                      : null,
+                              trailing: !settings.isDarkMode
+                                  ? const Icon(Icons.check, color: Colors.green)
+                                  : null,
 
                               onTap: () async {
-                                await settings
-                                    .setDarkMode(
-                                  false,
-                                );
+                                await settings.setDarkMode(false);
 
                                 if (context.mounted) {
-                                  Navigator.pop(
-                                    context,
-                                  );
+                                  Navigator.pop(context);
                                 }
                               },
                             ),
 
                             ListTile(
-                              leading: const Icon(
-                                Icons.dark_mode,
-                              ),
+                              leading: const Icon(Icons.dark_mode),
 
-                              title:
-                                  const Text('Tối'),
+                              title: const Text('Tối'),
 
-                              trailing:
-                                  settings.isDarkMode
-                                      ? const Icon(
-                                          Icons.check,
-                                          color:
-                                              Colors.green,
-                                        )
-                                      : null,
+                              trailing: settings.isDarkMode
+                                  ? const Icon(Icons.check, color: Colors.green)
+                                  : null,
 
                               onTap: () async {
-                                await settings
-                                    .setDarkMode(
-                                  true,
-                                );
+                                await settings.setDarkMode(true);
 
                                 if (context.mounted) {
-                                  Navigator.pop(
-                                    context,
-                                  );
+                                  Navigator.pop(context);
                                 }
                               },
                             ),
@@ -185,7 +138,6 @@ class GeneralSettingsScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           // ================= NHẮC NHỞ =================
-
           _sectionTitle(context, 'NHẮC NHỞ'),
 
           const SizedBox(height: 8),
@@ -194,21 +146,52 @@ class GeneralSettingsScreen extends StatelessWidget {
             context,
             children: [
               SwitchListTile(
-                title: const Text(
-                  'Nhắc nhở ghi chép',
-                ),
+                title: const Text('Nhắc nhở ghi chép'),
 
-                subtitle: const Text(
-                  'Nhắc bạn ghi chép mỗi ngày',
-                ),
+                subtitle: const Text('Nhắc bạn ghi chép mỗi ngày'),
 
                 value: settings.dailyReminder,
 
-                onChanged:
-                    settings.setDailyReminder,
+                onChanged: (value) =>
+                    _setDailyReminder(context, settings, value),
 
-                activeTrackColor:
-                    AppTheme.primary,
+                activeTrackColor: AppTheme.primary,
+              ),
+
+              ListTile(
+                leading: const Icon(
+                  Icons.handshake_outlined,
+                  color: AppTheme.primary,
+                ),
+                title: const Text('Nhắc trả nợ / thu nợ'),
+                subtitle: const Text(
+                  'Nhắc khi còn khoản vay hoặc cho vay đang hoạt động',
+                ),
+                trailing: Switch(
+                  value: settings.debtReminder,
+                  activeTrackColor: AppTheme.primary,
+                  onChanged: (value) =>
+                      _setDebtReminder(context, settings, value),
+                ),
+              ),
+
+              ListTile(
+                leading: const Icon(
+                  Icons.schedule_rounded,
+                  color: AppTheme.primary,
+                ),
+                title: const Text('Giờ nhắc'),
+                subtitle: const Text(
+                  'Áp dụng cho nhắc ghi chép và nhắc vay nợ',
+                ),
+                trailing: Text(
+                  settings.reminderTime,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: AppTheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                onTap: () => _pickReminderTime(context, settings),
               ),
             ],
           ),
@@ -216,11 +199,7 @@ class GeneralSettingsScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           // ================= TIỀN TỆ =================
-
-          _sectionTitle(
-            context,
-            'ĐƠN VỊ TIỀN TỆ',
-          ),
+          _sectionTitle(context, 'ĐƠN VỊ TIỀN TỆ'),
 
           const SizedBox(height: 8),
 
@@ -228,15 +207,13 @@ class GeneralSettingsScreen extends StatelessWidget {
             context,
             children: [
               ListTile(
-                title:
-                    const Text('Đơn vị tiền tệ'),
+                title: const Text('Đơn vị tiền tệ'),
 
                 trailing: Text(
                   settings.currency,
 
                   style: const TextStyle(
-                    fontWeight:
-                        FontWeight.w600,
+                    fontWeight: FontWeight.w600,
 
                     color: AppTheme.primary,
                   ),
@@ -250,7 +227,6 @@ class GeneralSettingsScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           // ================= THÔNG TIN =================
-
           _sectionTitle(context, 'THÔNG TIN'),
 
           const SizedBox(height: 8),
@@ -259,17 +235,13 @@ class GeneralSettingsScreen extends StatelessWidget {
             context,
             children: [
               ListTile(
-                title:
-                    const Text('Phiên bản'),
+                title: const Text('Phiên bản'),
 
                 trailing: Text(
                   '1.0.0',
 
                   style: TextStyle(
-                    color:
-                        Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -277,24 +249,20 @@ class GeneralSettingsScreen extends StatelessWidget {
               const Divider(height: 1),
 
               ListTile(
-  title: const Text('Liên hệ hỗ trợ'),
+                title: const Text('Liên hệ hỗ trợ'),
 
-  trailing: Icon(
-    Icons.chevron_right_rounded,
-    color: Theme.of(context)
-        .colorScheme
-        .outline,
-  ),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
 
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const SupportMapScreen(),
-      ),
-    );
-  },
-),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SupportMapScreen()),
+                  );
+                },
+              ),
             ],
           ),
         ],
@@ -302,48 +270,112 @@ class GeneralSettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _sectionTitle(
-    BuildContext context,
-    String title,
-  ) {
+  Widget _sectionTitle(BuildContext context, String title) {
     return Text(
       title,
 
-      style: Theme.of(context)
-          .textTheme
-          .labelMedium
-          ?.copyWith(
-            color:
-                Theme.of(context)
-                    .colorScheme
-                    .onSurfaceVariant,
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
 
-            fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w600,
 
-            letterSpacing: 1,
-          ),
+        letterSpacing: 1,
+      ),
     );
   }
 
-  Widget _settingsCard(
-    BuildContext context, {
-    required List<Widget> children,
-  }) {
+  Widget _settingsCard(BuildContext context, {required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color:
-            Theme.of(context)
-                .cardColor,
+        color: Theme.of(context).cardColor,
 
-        borderRadius:
-            BorderRadius.circular(
-          AppTheme.radiusMd,
-        ),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
 
       clipBehavior: Clip.antiAlias,
 
       child: Column(children: children),
+    );
+  }
+
+  Future<void> _setDailyReminder(
+    BuildContext context,
+    SettingsProvider settings,
+    bool value,
+  ) async {
+    final loans = context.read<LoanProvider>().loans;
+    await settings.setDailyReminder(value);
+    final synced = await _syncReminders(settings, loans);
+    if (!context.mounted) return;
+
+    if (!synced && value) {
+      await settings.setDailyReminder(false);
+      if (!context.mounted) return;
+      _showPermissionMessage(context);
+    }
+  }
+
+  Future<void> _setDebtReminder(
+    BuildContext context,
+    SettingsProvider settings,
+    bool value,
+  ) async {
+    final loans = context.read<LoanProvider>().loans;
+    await settings.setDebtReminder(value);
+    final synced = await _syncReminders(settings, loans);
+    if (!context.mounted) return;
+
+    if (!synced && value) {
+      await settings.setDebtReminder(false);
+      if (!context.mounted) return;
+      _showPermissionMessage(context);
+    }
+  }
+
+  Future<void> _pickReminderTime(
+    BuildContext context,
+    SettingsProvider settings,
+  ) async {
+    final initial = _timeOfDayFrom(settings.reminderTime);
+    final picked = await showTimePicker(context: context, initialTime: initial);
+    if (picked == null || !context.mounted) return;
+
+    final loans = context.read<LoanProvider>().loans;
+    await settings.setReminderTime(_formatTime(picked));
+    final synced = await _syncReminders(settings, loans);
+    if (!context.mounted) return;
+
+    if (!synced && (settings.dailyReminder || settings.debtReminder)) {
+      _showPermissionMessage(context);
+    }
+  }
+
+  Future<bool> _syncReminders(SettingsProvider settings, Iterable<Loan> loans) {
+    return ReminderCoordinator().syncReminders(
+      dailyReminderEnabled: settings.dailyReminder,
+      debtReminderEnabled: settings.debtReminder,
+      reminderTime: settings.reminderTime,
+      loans: loans,
+    );
+  }
+
+  TimeOfDay _timeOfDayFrom(String value) {
+    final parts = value.split(':');
+    final hour = parts.isNotEmpty ? int.tryParse(parts[0]) : null;
+    final minute = parts.length > 1 ? int.tryParse(parts[1]) : null;
+    return TimeOfDay(hour: hour ?? 20, minute: minute ?? 0);
+  }
+
+  String _formatTime(TimeOfDay time) {
+    return '${time.hour.toString().padLeft(2, '0')}:'
+        '${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  void _showPermissionMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Bạn cần cấp quyền thông báo để bật nhắc nhở.'),
+      ),
     );
   }
 }

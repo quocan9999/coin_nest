@@ -4,12 +4,16 @@ import '../database/loan_dao.dart';
 import '../models/loan.dart';
 import '../models/loan_payment.dart';
 import '../providers/transaction_provider.dart';
+import '../providers/settings_provider.dart';
+import '../services/notification/reminder_coordinator.dart';
 import '../utils/security_utils.dart';
 
 class LoanProvider extends ChangeNotifier {
   final _loanDao = LoanDao();
   final _categoryDao = CategoryDao();
+  final _reminderCoordinator = ReminderCoordinator();
   TransactionProvider? _transactionProvider;
+  SettingsProvider? _settingsProvider;
 
   List<Loan> _loans = [];
   Map<String, double> _summary = {'borrowed': 0, 'lent': 0};
@@ -32,6 +36,10 @@ class LoanProvider extends ChangeNotifier {
     _transactionProvider = transactionProvider;
   }
 
+  void setSettingsProvider(SettingsProvider settingsProvider) {
+    _settingsProvider = settingsProvider;
+  }
+
   Future<void> loadLoans(int userId) async {
     _isLoading = true;
     notifyListeners();
@@ -44,6 +52,7 @@ class LoanProvider extends ChangeNotifier {
     }
     _isLoading = false;
     notifyListeners();
+    await _syncDebtReminder();
   }
 
   Future<bool> addLoan({
@@ -270,6 +279,18 @@ class LoanProvider extends ChangeNotifier {
         transactionProvider.loadRecentTransactions(userId),
       ],
     ]);
+  }
+
+  Future<void> _syncDebtReminder() async {
+    final settingsProvider = _settingsProvider;
+    if (settingsProvider == null) return;
+
+    await _reminderCoordinator.syncReminders(
+      dailyReminderEnabled: settingsProvider.dailyReminder,
+      debtReminderEnabled: settingsProvider.debtReminder,
+      reminderTime: settingsProvider.reminderTime,
+      loans: _loans,
+    );
   }
 
   Future<int?> _defaultCategoryIdForInitialTransaction({
