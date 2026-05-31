@@ -3,6 +3,7 @@ class Budget {
   final int? id;
   final int userId;
   final int? categoryId;
+  final int? accountId; // ĐÃ THÊM: Lưu ID tài khoản
   final String name;
   final double amount;
   final String period; // daily, weekly, monthly, yearly, custom
@@ -16,11 +17,13 @@ class Budget {
   final double? spentAmount;
   final String? categoryName;
   final String? categoryIconName;
+  final String? accountName; // ĐÃ THÊM: Lưu tên tài khoản khi query
 
   const Budget({
     this.id,
     required this.userId,
     this.categoryId,
+    this.accountId, // ĐÃ THÊM
     required this.name,
     required this.amount,
     this.period = 'monthly',
@@ -32,6 +35,7 @@ class Budget {
     this.spentAmount,
     this.categoryName,
     this.categoryIconName,
+    this.accountName, // ĐÃ THÊM
   });
 
   factory Budget.fromMap(Map<String, dynamic> map) {
@@ -39,6 +43,7 @@ class Budget {
       id: map['id'] as int?,
       userId: map['user_id'] as int,
       categoryId: map['category_id'] as int?,
+      accountId: map['account_id'] as int?, // ĐÃ THÊM: Lấy dữ liệu từ DB
       name: map['name'] as String,
       amount: (map['amount'] as num).toDouble(),
       period: map['period'] as String? ?? 'monthly',
@@ -52,6 +57,7 @@ class Budget {
       spentAmount: (map['spent_amount'] as num?)?.toDouble(),
       categoryName: map['category_name'] as String?,
       categoryIconName: map['category_icon_name'] as String?,
+      accountName: map['account_name'] as String?, // ĐÃ THÊM
     );
   }
 
@@ -60,6 +66,7 @@ class Budget {
       if (id != null) 'id': id,
       'user_id': userId,
       'category_id': categoryId,
+      'account_id': accountId, // ĐÃ THÊM: Đẩy dữ liệu vào DB
       'name': name,
       'amount': amount,
       'period': period,
@@ -75,6 +82,7 @@ class Budget {
     int? id,
     int? userId,
     int? categoryId,
+    int? accountId, // ĐÃ THÊM
     String? name,
     double? amount,
     String? period,
@@ -89,6 +97,7 @@ class Budget {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       categoryId: categoryId ?? this.categoryId,
+      accountId: accountId ?? this.accountId, // ĐÃ THÊM
       name: name ?? this.name,
       amount: amount ?? this.amount,
       period: period ?? this.period,
@@ -114,5 +123,5 @@ class Budget {
   bool get isExceeded => (spentAmount ?? 0) >= amount;
 
   @override
-  String toString() => 'Budget(id: $id, name: $name, amount: $amount)';
+  String toString() => 'Budget(id: $id, name: $name, amount: $amount, accountId: $accountId)';
 }

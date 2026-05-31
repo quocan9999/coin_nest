@@ -33,12 +33,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadRecent() async {
-    final userId = context.read<AuthProvider>().currentUserId;
+    // 1. Đọc tất cả Provider trước khi có bất kỳ lệnh await nào (tránh lỗi async gap)
+    final authProv = context.read<AuthProvider>();
+    final txnProv = context.read<TransactionProvider>();
+    final accProv = context.read<AccountProvider>();
 
-    await context.read<TransactionProvider>().loadTransactions(userId);
+    final userId = authProv.currentUserId;
+
+    // 2. Dùng biến Provider đã lưu để gọi hàm thay vì gọi lại context
+    // ĐÃ SỬA: Gọi hàm tải 5 giao dịch gần nhất
+    await txnProv.loadRecentTransactions(userId);
+
+    // Vẫn tải danh sách tổng để tính Tổng Thu/Chi
+    await txnProv.loadTransactions(userId);
 
     if (mounted) {
-      await context.read<AccountProvider>().loadAccounts(userId);
+      await accProv.loadAccounts(userId);
     }
   }
 
@@ -238,8 +248,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   children: [
                     Text(
-                      'Giao dịch gần đây',
-
+                      'Ghi chép gần đây',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -270,7 +279,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 const SizedBox(height: 12),
 
-                if (txnProv.transactions.isEmpty)
+                if (txnProv.recentTransactions.isEmpty)
                   Container(
                     padding: const EdgeInsets.all(32),
 
@@ -306,9 +315,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   )
                 else
-                  ...txnProv.transactions
-                      .take(5)
-                      .map((txn) => _buildTransactionTile(context, txn)),
+                  // ĐÃ SỬA: Thêm .toList() vào cuối map để triệt tiêu lỗi gạch đỏ ép kiểu trong hình
+                  ...txnProv.recentTransactions.map(
+                    (txn) => _buildTransactionTile(context, txn),
+                  ),
 
                 const SizedBox(height: 24),
               ],
@@ -380,7 +390,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final iconKey = txn.categoryIconName ?? txn.type;
 
     return GestureDetector(
-      onTap: () => _openTransaction(context, txn),
+      // Thêm tính năng bấm vào giao dịch ở trang chủ để sửa luôn (tùy chọn, giống trang list)
+      onTap: () {
+        _openTransaction(context, txn);
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
 
@@ -502,12 +515,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return;
     }
 
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddTransactionScreen(transaction: txn),
       ),
     );
+    if (!context.mounted) return;
+    await _loadRecent();
   }
 
   double _calculateMonthlyAmount(List transactions, String type) {
