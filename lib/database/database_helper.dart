@@ -262,6 +262,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         category_id INTEGER,
+        account_id INTEGER,
         name TEXT NOT NULL,
         amount REAL NOT NULL CHECK(amount > 0),
         period TEXT NOT NULL CHECK(period IN ('daily','weekly','monthly','yearly','custom')),
@@ -271,7 +272,8 @@ class DatabaseHelper {
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL
       )
     ''');
 
