@@ -30,6 +30,9 @@ dependencies:
     google_sign_in: ^7.2.0
     cloud_functions: ^6.2.0
     firebase_storage: ^13.3.0
+    flutter_local_notifications: ^21.0.0
+    timezone: ^0.11.0
+    flutter_timezone: ^5.1.0
     #SQLite realtime viewer
     saropa_drift_advisor: ^3.5.1
 
