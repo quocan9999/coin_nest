@@ -9,7 +9,9 @@ import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/category_icons.dart';
 import '../loans/loan_detail_screen.dart';
+import '../notifications/notification_center_screen.dart';
 import 'add_transaction_screen.dart';
+import '../../widgets/notification_badge_button.dart';
 
 class TransactionListScreen extends StatefulWidget {
   const TransactionListScreen({super.key});
@@ -87,9 +89,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+          NotificationBadgeButton(
+            onPressed: () => _openNotificationCenter(context),
           ),
         ],
       ),
@@ -463,6 +464,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       return;
     }
 
+    final userId = context.read<AuthProvider>().currentUserId;
+    final accountProvider = context.read<AccountProvider>();
+    final transactionProvider = context.read<TransactionProvider>();
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -470,8 +474,14 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
     );
     if (!context.mounted) return;
-    final userId = context.read<AuthProvider>().currentUserId;
-    await context.read<AccountProvider>().loadAccounts(userId);
-    await context.read<TransactionProvider>().loadTransactions(userId);
+    await accountProvider.loadAccounts(userId);
+    await transactionProvider.loadTransactions(userId);
+  }
+
+  void _openNotificationCenter(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationCenterScreen()),
+    );
   }
 }

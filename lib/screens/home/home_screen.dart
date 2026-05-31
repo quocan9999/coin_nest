@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/backup_alert_provider.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
@@ -50,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (userId == 0) return;
 
+    final backupAlertProv = context.read<BackupAlertProvider>();
     final accountProv = context.read<AccountProvider>();
     final txnProv = context.read<TransactionProvider>();
     final catProv = context.read<CategoryProvider>();
@@ -58,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final now = DateTime.now();
 
     await Future.wait([
+      backupAlertProv.loadForUser(userId),
       accountProv.loadAccounts(userId),
       txnProv.loadTransactions(userId),
       catProv.loadCategories(userId),

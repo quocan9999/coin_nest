@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import '../database/account_dao.dart';
 import '../models/account.dart';
+import 'backup_alert_provider.dart';
 import '../utils/security_utils.dart';
 
 /// Manages the list of user accounts and selected account state.
 class AccountProvider extends ChangeNotifier {
   final _accountDao = AccountDao();
+  BackupAlertProvider? _backupAlertProvider;
 
   List<Account> _accounts = [];
   double _totalBalance = 0;
@@ -14,6 +16,10 @@ class AccountProvider extends ChangeNotifier {
   List<Account> get accounts => _accounts;
   double get totalBalance => _totalBalance;
   bool get isLoading => _isLoading;
+
+  void setBackupAlertProvider(BackupAlertProvider backupAlertProvider) {
+    _backupAlertProvider = backupAlertProvider;
+  }
 
   Future<void> loadAccounts(int userId) async {
     _isLoading = true;
@@ -53,6 +59,7 @@ class AccountProvider extends ChangeNotifier {
         updatedAt: now,
       );
       await _accountDao.insert(account);
+      await _backupAlertProvider?.markChanged(userId, source: 'account');
       await loadAccounts(userId);
       return true;
     } catch (_) {
@@ -67,6 +74,10 @@ class AccountProvider extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
       await _accountDao.update(updated);
+      await _backupAlertProvider?.markChanged(
+        account.userId,
+        source: 'account',
+      );
       await loadAccounts(account.userId);
       return true;
     } catch (_) {
@@ -77,6 +88,7 @@ class AccountProvider extends ChangeNotifier {
   Future<bool> deleteAccount(int accountId, int userId) async {
     try {
       await _accountDao.softDelete(accountId);
+      await _backupAlertProvider?.markChanged(userId, source: 'account');
       await loadAccounts(userId);
       return true;
     } catch (_) {
@@ -84,9 +96,14 @@ class AccountProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> adjustBalance(int accountId, double newBalance, int userId) async {
+  Future<bool> adjustBalance(
+    int accountId,
+    double newBalance,
+    int userId,
+  ) async {
     try {
       await _accountDao.setBalance(accountId, newBalance);
+      await _backupAlertProvider?.markChanged(userId, source: 'account');
       await loadAccounts(userId);
       return true;
     } catch (_) {

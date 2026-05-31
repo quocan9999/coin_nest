@@ -5,6 +5,7 @@ import '../models/loan.dart';
 import '../models/loan_payment.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/settings_provider.dart';
+import 'backup_alert_provider.dart';
 import '../services/notification/reminder_coordinator.dart';
 import '../utils/security_utils.dart';
 
@@ -14,6 +15,7 @@ class LoanProvider extends ChangeNotifier {
   final _reminderCoordinator = ReminderCoordinator();
   TransactionProvider? _transactionProvider;
   SettingsProvider? _settingsProvider;
+  BackupAlertProvider? _backupAlertProvider;
 
   List<Loan> _loans = [];
   Map<String, double> _summary = {'borrowed': 0, 'lent': 0};
@@ -38,6 +40,10 @@ class LoanProvider extends ChangeNotifier {
 
   void setSettingsProvider(SettingsProvider settingsProvider) {
     _settingsProvider = settingsProvider;
+  }
+
+  void setBackupAlertProvider(BackupAlertProvider backupAlertProvider) {
+    _backupAlertProvider = backupAlertProvider;
   }
 
   Future<void> loadLoans(int userId) async {
@@ -100,6 +106,7 @@ class LoanProvider extends ChangeNotifier {
         ),
       );
 
+      await _backupAlertProvider?.markChanged(userId, source: 'loan');
       await _reloadRelatedData(userId);
       _errorMessage = null;
       return true;
@@ -162,6 +169,7 @@ class LoanProvider extends ChangeNotifier {
         ),
       );
 
+      await _backupAlertProvider?.markChanged(userId, source: 'loan');
       await _reloadRelatedData(userId);
       _errorMessage = null;
       return true;
@@ -204,6 +212,7 @@ class LoanProvider extends ChangeNotifier {
         ),
       );
 
+      await _backupAlertProvider?.markChanged(userId, source: 'loan_payment');
       await _reloadRelatedData(userId);
       _errorMessage = null;
       return true;
@@ -235,6 +244,7 @@ class LoanProvider extends ChangeNotifier {
   Future<bool> deleteLoan(int id, int userId) async {
     try {
       await _loanDao.deleteForUserWithRollback(id, userId);
+      await _backupAlertProvider?.markChanged(userId, source: 'loan');
       await _reloadRelatedData(userId);
       _errorMessage = null;
       return true;
