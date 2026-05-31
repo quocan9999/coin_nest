@@ -26,6 +26,7 @@ class BudgetProvider extends ChangeNotifier {
   Future<bool> addBudget({
     required int userId,
     int? categoryId,
+    int? accountId, // ĐÃ THÊM: Nhận accountId từ UI
     required String name,
     required double amount,
     String period = 'monthly',
@@ -37,6 +38,7 @@ class BudgetProvider extends ChangeNotifier {
       final budget = Budget(
         userId: userId,
         categoryId: categoryId,
+        accountId: accountId, // ĐÃ THÊM: Lưu vào model
         name: SecurityUtils.sanitise(name),
         amount: amount,
         period: period,

@@ -278,13 +278,47 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     }
 
     if (!_formKey.currentState!.validate()) return;
+
     if (_selectedAccountId == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn tài khoản')));
-
       return;
     }
+
+    // --- BỔ SUNG CÁC RÀNG BUỘC CHO CHUYỂN KHOẢN ---
+    if (_currentType == 'transfer') {
+      final accProv = context.read<AccountProvider>();
+
+      // Ràng buộc 1: Phải có ít nhất 2 tài khoản trong hệ thống
+      if (accProv.accounts.length < 2) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cần ít nhất 2 tài khoản để thực hiện chuyển khoản'),
+          ),
+        );
+        return;
+      }
+
+      // Ràng buộc 2: Phải chọn tài khoản nhận
+      if (_selectedToAccountId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vui lòng chọn đến tài khoản')),
+        );
+        return;
+      }
+
+      // Ràng buộc 3: Hai tài khoản không được trùng nhau
+      if (_selectedAccountId == _selectedToAccountId) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể chọn hai tài khoản giống nhau'),
+          ),
+        );
+        return;
+      }
+    }
+    // ----------------------------------------------
 
     if (isEditMode) {
       _showConfirmDialog(
@@ -357,7 +391,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
         centerTitle: true,
 
-        title: Text(isEditMode ? 'Sửa giao dịch' : 'Ghi chép giao dịch'),
+        title: Text(isEditMode ? 'Sửa ghi chép' : 'Ghi chép giao dịch'),
 
         leading: IconButton(
           icon: const Icon(Icons.close_rounded),
@@ -605,8 +639,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                         ),
                       ),
                     ),
-
-                    child: const Text('Lưu giao dịch'),
+                    child: const Text('Lưu ghi chép'),
                   ),
                 ),
             ],
