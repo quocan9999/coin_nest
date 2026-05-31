@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -114,8 +115,18 @@ class NotificationService {
       return;
     }
 
-    final timezone = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(timezone.identifier));
+    try {
+      final timezone = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timezone.identifier));
+    } on MissingPluginException catch (error, stackTrace) {
+      debugPrint('KhÃ´ng thá»ƒ láº¥y timezone cá»¥c bá»™: $error\n$stackTrace');
+    } on PlatformException catch (error, stackTrace) {
+      debugPrint(
+        'KhÃ´ng thá»ƒ cáº¥u hÃ¬nh timezone cá»¥c bá»™: $error\n$stackTrace',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Timezone cá»¥c bá»™ khÃ´ng há»£p lá»‡: $error\n$stackTrace');
+    }
   }
 
   tz.TZDateTime _nextTime({required int hour, required int minute}) {
