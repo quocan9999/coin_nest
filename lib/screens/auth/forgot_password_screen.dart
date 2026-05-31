@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
@@ -228,6 +229,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   void _onOtpChanged(int index, String value) {
     final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleaned.length > 1) {
+      final currentDigit = cleaned.characters.first;
+      final nextDigit = cleaned.characters.last;
+      _otpControllers[index].text = currentDigit;
+      _otpControllers[index].selection = TextSelection.collapsed(
+        offset: currentDigit.length,
+      );
+
+      if (index < _otpLength - 1) {
+        _otpControllers[index + 1].text = nextDigit;
+        _otpControllers[index + 1].selection = TextSelection.collapsed(
+          offset: nextDigit.length,
+        );
+        _otpFocusNodes[index + 1].requestFocus();
+      }
+
+      setState(() {});
+      return;
+    }
+
     if (cleaned != value) {
       _otpControllers[index].text = cleaned;
       _otpControllers[index].selection = TextSelection.fromPosition(
@@ -235,11 +256,33 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       );
     }
 
+    if (cleaned.isEmpty && index > 0) {
+      _otpFocusNodes[index - 1].requestFocus();
+    }
+
     if (cleaned.isNotEmpty && index < _otpLength - 1) {
       _otpFocusNodes[index + 1].requestFocus();
     }
 
     setState(() {});
+  }
+
+  KeyEventResult _onOtpKeyEvent(int index, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (event.logicalKey != LogicalKeyboardKey.backspace) {
+      return KeyEventResult.ignored;
+    }
+    if (_otpControllers[index].text.isNotEmpty || index == 0) {
+      return KeyEventResult.ignored;
+    }
+
+    _otpFocusNodes[index - 1].requestFocus();
+    _otpControllers[index - 1].selection = TextSelection.collapsed(
+      offset: _otpControllers[index - 1].text.length,
+    );
+    return KeyEventResult.handled;
   }
 
   void _onOtpFieldSubmitted(int index) {
@@ -250,9 +293,30 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  /// Khi OTP đủ 6 chữ số → chuyển sang bước nhập mật khẩu mới
-  void _handleOtpConfirm() {
+  /// Khi OTP đủ 6 số và đúng --> chuyển sang màn hình đặt lại mật khẩu
+  Future<void> _handleOtpConfirm() async {
     if (!_canSubmitOtp) return;
+
+    final verificationId = _verificationId;
+    if (verificationId == null) return;
+
+    setState(() => _isSubmitting = true);
+    final auth = context.read<AuthProvider>();
+    final isValid = await auth.confirmForgotPasswordOtp(
+      verificationId: verificationId,
+      otpCode: _otpCode,
+    );
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (!isValid) {
+      _showErrorSnackBar(
+        auth.errorMessage ?? 'Mã OTP không hợp lệ hoặc đã hết hạn',
+      );
+      return;
+    }
+
     setState(() => _currentStep = _ForgotStep.newPassword);
   }
 
@@ -582,38 +646,41 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return SizedBox(
       width: 48,
       height: 48,
-      child: TextField(
-        controller: _otpControllers[index],
-        focusNode: _otpFocusNodes[index],
-        enabled: !_isSubmitting,
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        textInputAction: index == _otpLength - 1
-            ? TextInputAction.done
-            : TextInputAction.next,
-        maxLength: 1,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: AppTheme.onSurface,
-        ),
-        decoration: InputDecoration(
-          counterText: '',
-          contentPadding: EdgeInsets.zero,
-          filled: true,
-          fillColor: AppTheme.surfaceContainerHighest,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            borderSide: BorderSide(
-              color: AppTheme.outlineVariant.withAlpha(51),
+      child: Focus(
+        onKeyEvent: (node, event) => _onOtpKeyEvent(index, event),
+        child: TextField(
+          controller: _otpControllers[index],
+          focusNode: _otpFocusNodes[index],
+          enabled: !_isSubmitting,
+          textAlign: TextAlign.center,
+          keyboardType: TextInputType.number,
+          textInputAction: index == _otpLength - 1
+              ? TextInputAction.done
+              : TextInputAction.next,
+          maxLength: 2,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.onSurface,
+          ),
+          decoration: InputDecoration(
+            counterText: '',
+            contentPadding: EdgeInsets.zero,
+            filled: true,
+            fillColor: AppTheme.surfaceContainerHighest,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              borderSide: BorderSide(
+                color: AppTheme.outlineVariant.withAlpha(51),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              borderSide: const BorderSide(color: AppTheme.primary, width: 2),
             ),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            borderSide: const BorderSide(color: AppTheme.primary, width: 2),
-          ),
+          onChanged: (value) => _onOtpChanged(index, value),
+          onSubmitted: (_) => _onOtpFieldSubmitted(index),
         ),
-        onChanged: (value) => _onOtpChanged(index, value),
-        onSubmitted: (_) => _onOtpFieldSubmitted(index),
       ),
     );
   }

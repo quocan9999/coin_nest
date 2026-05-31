@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -27,6 +28,31 @@ class DatabaseHelper {
     return _database!;
   }
 
+  @visibleForTesting
+  Future<void> useDatabaseForTesting(Database database) async {
+    // Chỉ dùng trong test: các DAO đang đi qua singleton DatabaseHelper,
+    // nên test cần trỏ singleton này sang DB in-memory thay vì DB thật.
+    final existing = _database;
+    if (existing != null && existing.isOpen && existing != database) {
+      await existing.close();
+    }
+    _database = database;
+  }
+
+  @visibleForTesting
+  Future<void> createSchemaForTesting(DatabaseExecutor db) async {
+    // Chỉ dùng trong test khi tự mở DB in-memory; runtime vẫn đi qua onCreate.
+    await _onConfigure(db);
+    await _createAllTables(db);
+    await _createIndexes(db);
+  }
+
+  @visibleForTesting
+  Future<void> resetForTesting() async {
+    // Dọn singleton sau mỗi test để test sau không dùng nhầm DB cũ.
+    await close();
+  }
+
   Future<Database> _initDatabase() async {
     final path = await _databasePathByName(AppConstants.dbName);
 
@@ -39,7 +65,7 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> _onConfigure(Database db) async {
+  Future<void> _onConfigure(DatabaseExecutor db) async {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 

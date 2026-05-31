@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/loan.dart';
 import '../../models/loan_payment.dart';
+import '../../providers/account_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
+import 'add_edit_loan_screen.dart';
 import 'payment_screen.dart';
 
 class LoanDetailScreen extends StatefulWidget {
@@ -36,26 +38,38 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
   Future<void> _refreshLoan() async {
     final userId = context.read<AuthProvider>().currentUserId;
     final provider = context.read<LoanProvider>();
+
     await provider.loadLoans(userId);
+
     final updated = provider.loans
         .where((loan) => loan.id == _loan.id)
         .toList();
+
     if (!mounted) return;
+
     setState(() {
-      if (updated.isNotEmpty) _loan = updated.first;
+      if (updated.isNotEmpty) {
+        _loan = updated.first;
+      }
       _paymentsFuture = _loadPayments();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final color = _loan.type == 'borrow'
         ? AppTheme.tertiary
         : AppTheme.loanColor;
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+        centerTitle: true,
         title: const Text('Chi tiết khoản vay'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded),
@@ -63,110 +77,119 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.edit_outlined, color: AppTheme.primary),
+            onPressed: _openEditLoan,
+          ),
+          IconButton(
             icon: const Icon(Icons.delete_outline, color: AppTheme.tertiary),
             onPressed: () => _confirmDelete(context),
           ),
         ],
       ),
+
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppTheme.spacing10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // CARD THÔNG TIN
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppTheme.spacing12),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceContainerLowest,
+                color: colorScheme.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(AppTheme.radiusLg),
               ),
               child: Column(
                 children: [
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: AppTheme.spacing4,
+                    runSpacing: AppTheme.spacing4,
                     alignment: WrapAlignment.center,
                     children: [
                       _chip(_loan.type == 'borrow' ? 'Vay' : 'Cho vay', color),
                       _statusBadge(context),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppTheme.spacing6),
                   Text(
                     _loan.personName,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppTheme.spacing8),
                   Text(
                     'Tổng ${Formatters.currency(_loan.amount)}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppTheme.spacing2),
                   Text(
                     Formatters.currency(_loan.remainingAmount),
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: color,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.spacing4),
                   Text('còn lại', style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppTheme.spacing8),
                   LinearProgressIndicator(
                     value: (_loan.paidPercentage / 100).clamp(0, 1),
-                    backgroundColor: AppTheme.outlineVariant.withAlpha(51),
+                    backgroundColor: AppTheme.surfaceContainerHigh,
                     valueColor: AlwaysStoppedAnimation(color),
                     borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                    minHeight: 8,
+                    minHeight: AppTheme.spacing4,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.spacing4),
                   Text(
                     '${Formatters.percent(_loan.paidPercentage)} đã trả',
-                    style: Theme.of(context).textTheme.labelMedium,
+                    style: theme.textTheme.labelMedium,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.spacing8),
             if (!_loan.isPaid)
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: AppTheme.spacing24 + AppTheme.spacing2,
                 child: ElevatedButton.icon(
                   onPressed: _openPayment,
                   icon: const Icon(Icons.payments_outlined),
                   label: Text(_loan.type == 'borrow' ? 'Thanh toán' : 'Thu nợ'),
                 ),
               ),
-            if (!_loan.isPaid) const SizedBox(height: 16),
+            if (!_loan.isPaid) const SizedBox(height: AppTheme.spacing8),
             _detailRow(
               context,
               'Ngày bắt đầu',
               Formatters.date(_loan.startDate),
             ),
+
             if (_loan.dueDate != null)
               _detailRow(context, 'Hạn trả', Formatters.date(_loan.dueDate!)),
+
             if (_loan.interestRate > 0)
               _detailRow(context, 'Lãi suất', '${_loan.interestRate}%/năm'),
+
             if (_loan.accountName != null)
               _detailRow(context, 'Tài khoản', _loan.accountName!),
             if (_loan.note != null && _loan.note!.isNotEmpty)
               _detailRow(context, 'Ghi chú', _loan.note!),
             _detailRow(context, 'Trạng thái', _statusText),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppTheme.spacing12),
             Text(
               'LỊCH SỬ THANH TOÁN',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppTheme.outline,
+                color: colorScheme.outline,
                 letterSpacing: 1.1,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppTheme.spacing6),
             _paymentHistory(),
           ],
         ),
@@ -182,9 +205,12 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
 
   Widget _chip(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacing6,
+        vertical: AppTheme.spacing2,
+      ),
       decoration: BoxDecoration(
-        color: color.withAlpha(20),
+        color: AppTheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppTheme.radiusSm),
       ),
       child: Text(
@@ -198,10 +224,14 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
     final color = _loan.isPaid
         ? AppTheme.secondary
         : (_loan.isOverdue ? AppTheme.tertiary : AppTheme.primary);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacing6,
+        vertical: AppTheme.spacing2,
+      ),
       decoration: BoxDecoration(
-        color: color.withAlpha(20),
+        color: AppTheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppTheme.radiusSm),
       ),
       child: Text(
@@ -215,37 +245,43 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
     return FutureBuilder<List<LoanPayment>>(
       future: _paymentsFuture,
       builder: (context, snapshot) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(AppTheme.spacing8),
               child: CircularProgressIndicator(),
             ),
           );
         }
+
         final payments = snapshot.data ?? [];
+
         if (payments.isEmpty) {
           return Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppTheme.spacing8),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceContainerLowest,
+              color: colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
             child: Text(
               'Chưa có thanh toán nào',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.onSurfaceVariant,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           );
         }
+
         return Column(
           children: payments
               .map(
                 (payment) => Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(14),
+                  margin: const EdgeInsets.only(bottom: AppTheme.spacing4),
+                  padding: const EdgeInsets.all(AppTheme.spacing8),
                   decoration: BoxDecoration(
                     color: AppTheme.surfaceContainerLowest,
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
@@ -253,21 +289,21 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                   child: Row(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: AppTheme.spacing20,
+                        height: AppTheme.spacing20,
                         decoration: BoxDecoration(
-                          color: AppTheme.primary.withAlpha(18),
+                          color: AppTheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(
                             AppTheme.radiusFull,
                           ),
                         ),
                         child: const Icon(
                           Icons.receipt_long_outlined,
-                          size: 20,
+                          size: AppTheme.spacing10,
                           color: AppTheme.primary,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppTheme.spacing6),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,7 +313,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                               style: Theme.of(context).textTheme.titleSmall
                                   ?.copyWith(fontWeight: FontWeight.w700),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: AppTheme.spacing2 / 2),
                             Text(
                               Formatters.date(payment.paymentDate),
                               style: Theme.of(context).textTheme.bodySmall
@@ -285,7 +321,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                             ),
                             if (payment.note != null &&
                                 payment.note!.isNotEmpty) ...[
-                              const SizedBox(height: 2),
+                              const SizedBox(height: AppTheme.spacing2 / 2),
                               Text(
                                 payment.note!,
                                 style: Theme.of(context).textTheme.bodySmall,
@@ -305,24 +341,28 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
   }
 
   Widget _detailRow(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppTheme.spacing4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
+
           Flexible(
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -334,6 +374,14 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
     final changed = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => PaymentScreen(loan: _loan)),
+    );
+    if (changed == true) await _refreshLoan();
+  }
+
+  Future<void> _openEditLoan() async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => AddEditLoanScreen(loan: _loan)),
     );
     if (changed == true) await _refreshLoan();
   }
@@ -353,6 +401,9 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
             onPressed: () async {
               final userId = context.read<AuthProvider>().currentUserId;
               await context.read<LoanProvider>().deleteLoan(_loan.id!, userId);
+              if (context.mounted) {
+                await context.read<AccountProvider>().loadAccounts(userId);
+              }
               if (ctx.mounted) Navigator.pop(ctx);
               if (context.mounted) Navigator.pop(context, true);
             },

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../database/transaction_dao.dart';
+import '../models/transaction_model.dart';
 
 /// Computes report data for charts and analytics.
 class ReportProvider extends ChangeNotifier {
@@ -13,6 +14,9 @@ class ReportProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _incomeByAccount = [];
   List<Map<String, dynamic>> _dailyExpense = [];
   List<Map<String, dynamic>> _dailyIncome = [];
+  List<Map<String, dynamic>> _hourlyExpense = [];
+  List<Map<String, dynamic>> _hourlyIncome = [];
+  List<TransactionModel> _dailyExpenseTransactions = [];
   List<Map<String, dynamic>> _monthlyExpense = [];
   List<Map<String, dynamic>> _monthlyIncome = [];
   bool _isLoading = false;
@@ -27,6 +31,10 @@ class ReportProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get incomeByAccount => _incomeByAccount;
   List<Map<String, dynamic>> get dailyExpense => _dailyExpense;
   List<Map<String, dynamic>> get dailyIncome => _dailyIncome;
+  List<Map<String, dynamic>> get hourlyExpense => _hourlyExpense;
+  List<Map<String, dynamic>> get hourlyIncome => _hourlyIncome;
+  List<TransactionModel> get dailyExpenseTransactions =>
+      _dailyExpenseTransactions;
   List<Map<String, dynamic>> get monthlyExpense => _monthlyExpense;
   List<Map<String, dynamic>> get monthlyIncome => _monthlyIncome;
   bool get isLoading => _isLoading;
@@ -44,6 +52,7 @@ class ReportProvider extends ChangeNotifier {
 
       final start = startDate.toIso8601String().split('T').first;
       final end = endDate.toIso8601String().split('T').first;
+      final isSingleDay = start == end;
 
       _totalIncome = await _txnDao.totalIncome(userId, start, end);
       _totalExpense = await _txnDao.totalExpense(userId, start, end);
@@ -53,6 +62,20 @@ class ReportProvider extends ChangeNotifier {
       _incomeByAccount = await _txnDao.incomeByAccount(userId, start, end);
       _dailyExpense = await _txnDao.dailyTotals(userId, start, end, 'expense');
       _dailyIncome = await _txnDao.dailyTotals(userId, start, end, 'income');
+      if (isSingleDay) {
+        _hourlyExpense = await _txnDao.hourlyTotals(userId, start, 'expense');
+        _hourlyIncome = await _txnDao.hourlyTotals(userId, start, 'income');
+        _dailyExpenseTransactions = await _txnDao.getByUser(
+          userId,
+          startDate: start,
+          endDate: end,
+          type: 'expense',
+        );
+      } else {
+        _hourlyExpense = [];
+        _hourlyIncome = [];
+        _dailyExpenseTransactions = [];
+      }
     } catch (e, st) {
       debugPrint('ReportProvider error: $e\n$st');
       _hasError = true;
@@ -71,6 +94,9 @@ class ReportProvider extends ChangeNotifier {
     // Screens that require monthly/day data should keep local snapshots.
     _dailyExpense = [];
     _dailyIncome = [];
+    _hourlyExpense = [];
+    _hourlyIncome = [];
+    _dailyExpenseTransactions = [];
     _expenseByCategory = [];
     _incomeByCategory = [];
     notifyListeners();
