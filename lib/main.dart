@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'providers/auth_provider.dart';
+import 'providers/backup_alert_provider.dart';
 import 'providers/backup_provider.dart';
 import 'providers/account_provider.dart';
 import 'providers/transaction_provider.dart';
@@ -70,25 +71,59 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => AuthProvider(authService: authService),
         ),
-        ChangeNotifierProvider(create: (_) => BackupProvider()),
-        ChangeNotifierProvider(create: (_) => AccountProvider()),
-        ChangeNotifierProvider(create: (_) => TransactionProvider()),
-        ChangeNotifierProvider(create: (_) => CategoryProvider()),
+        ChangeNotifierProvider(create: (_) => BackupAlertProvider()),
+        ChangeNotifierProxyProvider<BackupAlertProvider, BackupProvider>(
+          create: (_) => BackupProvider(),
+          update: (_, backupAlertProvider, backupProvider) =>
+              (backupProvider ?? BackupProvider())
+                ..setBackupAlertProvider(backupAlertProvider),
+        ),
+        ChangeNotifierProxyProvider<BackupAlertProvider, AccountProvider>(
+          create: (_) => AccountProvider(),
+          update: (_, backupAlertProvider, accountProvider) =>
+              (accountProvider ?? AccountProvider())
+                ..setBackupAlertProvider(backupAlertProvider),
+        ),
+        ChangeNotifierProxyProvider<BackupAlertProvider, TransactionProvider>(
+          create: (_) => TransactionProvider(),
+          update: (_, backupAlertProvider, transactionProvider) =>
+              (transactionProvider ?? TransactionProvider())
+                ..setBackupAlertProvider(backupAlertProvider),
+        ),
+        ChangeNotifierProxyProvider<BackupAlertProvider, CategoryProvider>(
+          create: (_) => CategoryProvider(),
+          update: (_, backupAlertProvider, categoryProvider) =>
+              (categoryProvider ?? CategoryProvider())
+                ..setBackupAlertProvider(backupAlertProvider),
+        ),
         ChangeNotifierProvider(
           create: (_) => SettingsProvider()..loadSettings(),
         ),
-        ChangeNotifierProxyProvider2<
+        ChangeNotifierProxyProvider3<
           TransactionProvider,
           SettingsProvider,
+          BackupAlertProvider,
           LoanProvider
         >(
           create: (_) => LoanProvider(),
-          update: (_, transactionProvider, settingsProvider, loanProvider) =>
-              (loanProvider ?? LoanProvider())
+          update:
+              (
+                _,
+                transactionProvider,
+                settingsProvider,
+                backupAlertProvider,
+                loanProvider,
+              ) => (loanProvider ?? LoanProvider())
                 ..setTransactionProvider(transactionProvider)
-                ..setSettingsProvider(settingsProvider),
+                ..setSettingsProvider(settingsProvider)
+                ..setBackupAlertProvider(backupAlertProvider),
         ),
-        ChangeNotifierProvider(create: (_) => BudgetProvider()),
+        ChangeNotifierProxyProvider<BackupAlertProvider, BudgetProvider>(
+          create: (_) => BudgetProvider(),
+          update: (_, backupAlertProvider, budgetProvider) =>
+              (budgetProvider ?? BudgetProvider())
+                ..setBackupAlertProvider(backupAlertProvider),
+        ),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
       ],
       child: const CoinNestApp(),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'backup_alert_provider.dart';
 import '../database/transaction_dao.dart';
 import '../models/transaction_model.dart';
 import '../utils/security_utils.dart';
@@ -6,24 +7,26 @@ import '../utils/security_utils.dart';
 /// Manages transaction listing, filtering, and CRUD.
 class TransactionProvider extends ChangeNotifier {
   final _txnDao = TransactionDao();
+  BackupAlertProvider? _backupAlertProvider;
 
   List<TransactionModel> _transactions = [];
   // --- BỔ SUNG: Kênh dữ liệu riêng cho Trang chủ ---
-  List<TransactionModel> _recentTransactions = []; 
+  List<TransactionModel> _recentTransactions = [];
   bool _isLoading = false;
-  
+
   String? _filterType;
   int? _filterCategoryId;
-  
+
   // -- BỘ LỌC MỚI --
   int? _filterAccountId; // null = Tất cả tài khoản
-  String _timeFilter = 'all'; // 'all', 'today', 'this_month', 'last_month', 'custom'
+  String _timeFilter =
+      'all'; // 'all', 'today', 'this_month', 'last_month', 'custom'
   DateTimeRange? _customDateRange;
   String _searchQuery = ''; // Tìm kiếm văn bản trực tiếp
 
   List<TransactionModel> get transactions => _transactions;
   // --- BỔ SUNG: Getter lấy 5 giao dịch gần nhất ---
-  List<TransactionModel> get recentTransactions => _recentTransactions; 
+  List<TransactionModel> get recentTransactions => _recentTransactions;
   bool get isLoading => _isLoading;
 
   int? get filterAccountId => _filterAccountId;
@@ -31,10 +34,16 @@ class TransactionProvider extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   DateTimeRange? get customDateRange => _customDateRange;
 
+  void setBackupAlertProvider(BackupAlertProvider backupAlertProvider) {
+    _backupAlertProvider = backupAlertProvider;
+  }
+
   // HÀM CHUẨN HÓA: Loại bỏ dấu tiếng Việt để tìm kiếm linh hoạt
   String _normalizeString(String text) {
-    const withDia = 'áàảãạâấầẩẫậăắằẳẵặđéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵ';
-    const withoutDia = 'aaaaaaaaaaaaaaaaadeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyy';
+    const withDia =
+        'áàảãạâấầẩẫậăắằẳẵặđéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵ';
+    const withoutDia =
+        'aaaaaaaaaaaaaaaaadeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyy';
     String result = text.toLowerCase();
     for (int i = 0; i < withDia.length; i++) {
       result = result.replaceAll(withDia[i], withoutDia[i]);
@@ -51,8 +60,10 @@ class TransactionProvider extends ChangeNotifier {
       // 1. Lọc theo Thanh tìm kiếm (Tìm trong Ghi chú HOẶC Tên hạng mục)
       if (query.isNotEmpty) {
         final note = _normalizeString(txn.note ?? '');
-        final catName = _normalizeString(txn.categoryName ?? _getTypeLabel(txn.type));
-        
+        final catName = _normalizeString(
+          txn.categoryName ?? _getTypeLabel(txn.type),
+        );
+
         // Nếu cả ghi chú và hạng mục đều không chứa từ khóa -> Bỏ qua giao dịch này
         if (!note.contains(query) && !catName.contains(query)) {
           continue;
@@ -68,10 +79,14 @@ class TransactionProvider extends ChangeNotifier {
 
   String _getTypeLabel(String type) {
     switch (type) {
-      case 'expense': return 'Chi tiêu';
-      case 'income': return 'Thu nhập';
-      case 'transfer': return 'Chuyển khoản';
-      default: return type;
+      case 'expense':
+        return 'Chi tiêu';
+      case 'income':
+        return 'Thu nhập';
+      case 'transfer':
+        return 'Chuyển khoản';
+      default:
+        return type;
     }
   }
 
@@ -88,7 +103,7 @@ class TransactionProvider extends ChangeNotifier {
     if (diff == 1) {
       return 'HÔM QUA';
     }
-    
+
     // Nếu cũ hơn hôm qua, trả về định dạng DD/MM/YYYY
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
   }
@@ -110,16 +125,35 @@ class TransactionProvider extends ChangeNotifier {
           endStr = today.toIso8601String().split('T').first;
           break;
         case 'this_month':
-          startStr = DateTime(now.year, now.month, 1).toIso8601String().split('T').first;
-          endStr = DateTime(now.year, now.month + 1, 0).toIso8601String().split('T').first;
+          startStr = DateTime(
+            now.year,
+            now.month,
+            1,
+          ).toIso8601String().split('T').first;
+          endStr = DateTime(
+            now.year,
+            now.month + 1,
+            0,
+          ).toIso8601String().split('T').first;
           break;
         case 'last_month':
-          startStr = DateTime(now.year, now.month - 1, 1).toIso8601String().split('T').first;
-          endStr = DateTime(now.year, now.month, 0).toIso8601String().split('T').first;
+          startStr = DateTime(
+            now.year,
+            now.month - 1,
+            1,
+          ).toIso8601String().split('T').first;
+          endStr = DateTime(
+            now.year,
+            now.month,
+            0,
+          ).toIso8601String().split('T').first;
           break;
         case 'custom':
           if (_customDateRange != null) {
-            startStr = _customDateRange!.start.toIso8601String().split('T').first;
+            startStr = _customDateRange!.start
+                .toIso8601String()
+                .split('T')
+                .first;
             endStr = _customDateRange!.end.toIso8601String().split('T').first;
           }
           break;
@@ -137,7 +171,7 @@ class TransactionProvider extends ChangeNotifier {
         type: _filterType,
         categoryId: _filterCategoryId,
         accountId: _filterAccountId,
-        searchQuery: null, 
+        searchQuery: null,
       );
     } catch (_) {
       _transactions = [];
@@ -160,36 +194,67 @@ class TransactionProvider extends ChangeNotifier {
   // ─── CRUD Functions ──────────────────────────────────────────
 
   Future<bool> addTransaction({
-    required int userId, required int accountId, int? toAccountId,
-    int? categoryId, required String type, required double amount,
-    String? note, required DateTime date, String? time, int? loanId,
+    required int userId,
+    required int accountId,
+    int? toAccountId,
+    int? categoryId,
+    required String type,
+    required double amount,
+    String? note,
+    required DateTime date,
+    String? time,
+    int? loanId,
   }) async {
     final txnId = await addTransactionAndReturnId(
-      userId: userId, accountId: accountId, toAccountId: toAccountId,
-      categoryId: categoryId, type: type, amount: amount,
-      note: note, date: date, time: time, loanId: loanId,
+      userId: userId,
+      accountId: accountId,
+      toAccountId: toAccountId,
+      categoryId: categoryId,
+      type: type,
+      amount: amount,
+      note: note,
+      date: date,
+      time: time,
+      loanId: loanId,
     );
     return txnId != null;
   }
 
   Future<int?> addTransactionAndReturnId({
-    required int userId, required int accountId, int? toAccountId,
-    int? categoryId, required String type, required double amount,
-    String? note, required DateTime date, String? time, int? loanId,
+    required int userId,
+    required int accountId,
+    int? toAccountId,
+    int? categoryId,
+    required String type,
+    required double amount,
+    String? note,
+    required DateTime date,
+    String? time,
+    int? loanId,
   }) async {
     try {
       final now = DateTime.now();
       final txn = TransactionModel(
-        userId: userId, accountId: accountId, toAccountId: toAccountId,
-        categoryId: categoryId, type: type, amount: amount,
+        userId: userId,
+        accountId: accountId,
+        toAccountId: toAccountId,
+        categoryId: categoryId,
+        type: type,
+        amount: amount,
         note: note != null ? SecurityUtils.sanitise(note) : null,
-        date: date, time: time, loanId: loanId,
-        createdAt: now, updatedAt: now,
+        date: date,
+        time: time,
+        loanId: loanId,
+        createdAt: now,
+        updatedAt: now,
       );
 
       final txnId = await _txnDao.insertWithBalance(txn);
+      await _backupAlertProvider?.markChanged(userId, source: 'transaction');
       await loadTransactions(userId);
-      await loadRecentTransactions(userId); // <--- VÁ LỖI: Cập nhật danh sách gần đây tức thì
+      await loadRecentTransactions(
+        userId,
+      ); // <--- VÁ LỖI: Cập nhật danh sách gần đây tức thì
       return txnId;
     } catch (_) {
       return null;
@@ -197,10 +262,18 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   Future<bool> updateTransaction({
-    required int txnId, required int userId, required int accountId,
-    int? toAccountId, int? categoryId, required String type,
-    required double amount, String? note, required DateTime date,
-    String? time, int? loanId, required DateTime createdAt,
+    required int txnId,
+    required int userId,
+    required int accountId,
+    int? toAccountId,
+    int? categoryId,
+    required String type,
+    required double amount,
+    String? note,
+    required DateTime date,
+    String? time,
+    int? loanId,
+    required DateTime createdAt,
   }) async {
     try {
       final oldTxn = await _txnDao.findById(txnId);
@@ -214,16 +287,27 @@ class TransactionProvider extends ChangeNotifier {
 
       final now = DateTime.now();
       final txn = TransactionModel(
-        id: txnId, userId: userId, accountId: accountId,
-        toAccountId: toAccountId, categoryId: categoryId, type: type,
-        amount: amount, note: note != null ? SecurityUtils.sanitise(note) : null,
-        date: date, time: time, loanId: loanId,
-        createdAt: createdAt, updatedAt: now,
+        id: txnId,
+        userId: userId,
+        accountId: accountId,
+        toAccountId: toAccountId,
+        categoryId: categoryId,
+        type: type,
+        amount: amount,
+        note: note != null ? SecurityUtils.sanitise(note) : null,
+        date: date,
+        time: time,
+        loanId: loanId,
+        createdAt: createdAt,
+        updatedAt: now,
       );
 
       await _txnDao.updateWithBalance(txn);
+      await _backupAlertProvider?.markChanged(userId, source: 'transaction');
       await loadTransactions(userId);
-      await loadRecentTransactions(userId); // <--- VÁ LỖI: Cập nhật danh sách gần đây tức thì
+      await loadRecentTransactions(
+        userId,
+      ); // <--- VÁ LỖI: Cập nhật danh sách gần đây tức thì
       return true;
     } catch (_) {
       return false;
@@ -238,8 +322,11 @@ class TransactionProvider extends ChangeNotifier {
       }
 
       await _txnDao.deleteWithBalance(txnId);
+      await _backupAlertProvider?.markChanged(userId, source: 'transaction');
       await loadTransactions(userId);
-      await loadRecentTransactions(userId); // <--- VÁ LỖI: Cập nhật danh sách gần đây tức thì
+      await loadRecentTransactions(
+        userId,
+      ); // <--- VÁ LỖI: Cập nhật danh sách gần đây tức thì
       return true;
     } catch (_) {
       return false;
@@ -264,18 +351,18 @@ class TransactionProvider extends ChangeNotifier {
 
   void setFilterAccount(int? accountId) {
     _filterAccountId = accountId;
-    notifyListeners(); 
+    notifyListeners();
   }
 
   void setTimeFilter(String filter, {DateTimeRange? customRange}) {
     _timeFilter = filter;
     _customDateRange = customRange;
-    notifyListeners(); 
+    notifyListeners();
   }
 
   void setSearchQuery(String query) {
     _searchQuery = query;
-    notifyListeners(); 
+    notifyListeners();
   }
 
   void clearFilters() {
