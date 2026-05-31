@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/loan_provider.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../models/transaction_model.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/category_icons.dart';
+import '../loans/loan_detail_screen.dart';
 import 'add_transaction_screen.dart';
 
 class TransactionListScreen extends StatefulWidget {
@@ -22,14 +25,14 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      
+
       final userId = context.read<AuthProvider>().currentUserId;
       final txnProv = context.read<TransactionProvider>();
-      
+
       // --- VÁ LỖI: Trả toàn bộ bộ lọc về trạng thái ban đầu ---
-      txnProv.clearFilters(); 
+      txnProv.clearFilters();
       _searchController.clear(); // Xóa chữ trong thanh tìm kiếm
-      
+
       // Sau khi reset, mới tiến hành nạp danh sách giao dịch
       context.read<AccountProvider>().loadAccounts(userId);
       txnProv.loadTransactions(userId);
@@ -60,7 +63,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     // Chỉ lắng nghe sự thay đổi, logic nạp đã được cô lập trong initState
     final txnProv = context.watch<TransactionProvider>();
     final accountProv = context.watch<AccountProvider>();
-    
+
     final grouped = txnProv.groupedByDate;
 
     return Scaffold(
@@ -120,7 +123,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               children: [
                 Expanded(child: _buildTimeDropdown(context, txnProv)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildAccountDropdown(context, txnProv, accountProv)),
+                Expanded(
+                  child: _buildAccountDropdown(context, txnProv, accountProv),
+                ),
               ],
             ),
           ),
@@ -137,17 +142,17 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          txnProv.searchQuery.isNotEmpty 
-                            ? Icons.search_off 
-                            : Icons.receipt_long_outlined,
+                          txnProv.searchQuery.isNotEmpty
+                              ? Icons.search_off
+                              : Icons.receipt_long_outlined,
                           size: 56,
                           color: AppTheme.outlineVariant,
                         ),
                         const SizedBox(height: 12),
                         Text(
                           txnProv.searchQuery.isNotEmpty
-                            ? 'Không tìm thấy kết quả phù hợp'
-                            : 'Chưa có ghi chép nào',
+                              ? 'Không tìm thấy kết quả phù hợp'
+                              : 'Chưa có ghi chép nào',
                           style: TextStyle(color: AppTheme.onSurfaceVariant),
                         ),
                       ],
@@ -220,25 +225,39 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 value: txnProv.timeFilter,
                 isExpanded: true,
                 icon: const Icon(Icons.keyboard_arrow_down, size: 16),
-                style: TextStyle(fontSize: 13, color: AppTheme.onSurface, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
                 items: [
                   const DropdownMenuItem(value: 'all', child: Text('Tất cả')),
-                  const DropdownMenuItem(value: 'today', child: Text('Hôm nay')),
-                  const DropdownMenuItem(value: 'this_month', child: Text('Tháng này')),
-                  const DropdownMenuItem(value: 'last_month', child: Text('Tháng trước')),
+                  const DropdownMenuItem(
+                    value: 'today',
+                    child: Text('Hôm nay'),
+                  ),
+                  const DropdownMenuItem(
+                    value: 'this_month',
+                    child: Text('Tháng này'),
+                  ),
+                  const DropdownMenuItem(
+                    value: 'last_month',
+                    child: Text('Tháng trước'),
+                  ),
                   DropdownMenuItem(
-                    value: 'custom', 
+                    value: 'custom',
                     child: Text(
-                      txnProv.timeFilter == 'custom' && txnProv.customDateRange != null
-                        ? '${txnProv.customDateRange!.start.day}/${txnProv.customDateRange!.start.month} - ${txnProv.customDateRange!.end.day}/${txnProv.customDateRange!.end.month}'
-                        : 'Tùy chọn...'
-                    )
+                      txnProv.timeFilter == 'custom' &&
+                              txnProv.customDateRange != null
+                          ? '${txnProv.customDateRange!.start.day}/${txnProv.customDateRange!.start.month} - ${txnProv.customDateRange!.end.day}/${txnProv.customDateRange!.end.month}'
+                          : 'Tùy chọn...',
+                    ),
                   ),
                 ],
                 onChanged: (val) async {
                   if (val == null) return;
                   final userId = context.read<AuthProvider>().currentUserId;
-                  
+
                   if (val == 'custom') {
                     final range = await showDateRangePicker(
                       context: context,
@@ -247,7 +266,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       builder: (context, child) {
                         return Theme(
                           data: Theme.of(context).copyWith(
-                            colorScheme: const ColorScheme.light(primary: AppTheme.primary),
+                            colorScheme: const ColorScheme.light(
+                              primary: AppTheme.primary,
+                            ),
                           ),
                           child: child!,
                         );
@@ -272,7 +293,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   }
 
   // Widget Tùy chỉnh: Dropdown lọc Tài khoản
-  Widget _buildAccountDropdown(BuildContext context, TransactionProvider txnProv, AccountProvider accProv) {
+  Widget _buildAccountDropdown(
+    BuildContext context,
+    TransactionProvider txnProv,
+    AccountProvider accProv,
+  ) {
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -282,7 +307,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.account_balance_wallet_outlined, size: 16, color: AppTheme.primary),
+          const Icon(
+            Icons.account_balance_wallet_outlined,
+            size: 16,
+            color: AppTheme.primary,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: DropdownButtonHideUnderline(
@@ -290,16 +319,22 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 value: txnProv.filterAccountId,
                 isExpanded: true,
                 icon: const Icon(Icons.keyboard_arrow_down, size: 16),
-                style: TextStyle(fontSize: 13, color: AppTheme.onSurface, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
                 items: [
                   const DropdownMenuItem<int?>(
                     value: null,
                     child: Text('Tất cả ví', overflow: TextOverflow.ellipsis),
                   ),
-                  ...accProv.accounts.map((a) => DropdownMenuItem<int?>(
-                        value: a.id,
-                        child: Text(a.name, overflow: TextOverflow.ellipsis),
-                      )),
+                  ...accProv.accounts.map(
+                    (a) => DropdownMenuItem<int?>(
+                      value: a.id,
+                      child: Text(a.name, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
                 ],
                 onChanged: (val) {
                   final userId = context.read<AuthProvider>().currentUserId;
@@ -314,12 +349,13 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
-  Widget _buildTxnTile(BuildContext context, dynamic txn) {
-    final isExpense = txn.type == 'expense';
-    final color = isExpense
+  Widget _buildTxnTile(BuildContext context, TransactionModel txn) {
+    final color = txn.isNegative
         ? AppTheme.tertiary
-        : (txn.type == 'income' ? AppTheme.secondary : AppTheme.primary);
-    final sign = isExpense ? '- ' : (txn.type == 'income' ? '+ ' : '');
+        : (txn.type == 'transfer' ? AppTheme.primary : AppTheme.secondary);
+    final sign = txn.isNegative
+        ? '- '
+        : (txn.type == 'transfer' || txn.type == 'balance_adjust' ? '' : '+ ');
     final iconKey = txn.categoryIconName ?? txn.type;
 
     final noteStr = (txn.note != null && txn.note!.toString().trim().isNotEmpty)
@@ -328,17 +364,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AddTransactionScreen(transaction: txn),
-          ),
-        ).then((_) {
-          // --- VÁ LỖI: Buộc tải lại số dư tài khoản sau khi sửa/xoá giao dịch ---
-          if (!context.mounted) return;
-          final userId = context.read<AuthProvider>().currentUserId;
-          context.read<AccountProvider>().loadAccounts(userId);
-        });
+        _openTransaction(context, txn);
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -405,5 +431,47 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openTransaction(
+    BuildContext context,
+    TransactionModel txn,
+  ) async {
+    if (txn.isLoanLinked) {
+      final userId = context.read<AuthProvider>().currentUserId;
+      final loan = await context.read<LoanProvider>().findLoanForTransaction(
+        userId: userId,
+        loanId: txn.loanId,
+        transactionId: txn.id,
+      );
+      if (!context.mounted) return;
+      if (loan == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Không tìm thấy khoản vay liên kết với giao dịch này',
+            ),
+          ),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => LoanDetailScreen(loan: loan)),
+      );
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddTransactionScreen(transaction: txn),
+      ),
+    );
+    if (!context.mounted) return;
+    final userId = context.read<AuthProvider>().currentUserId;
+    await context.read<AccountProvider>().loadAccounts(userId);
+    await context.read<TransactionProvider>().loadTransactions(userId);
   }
 }

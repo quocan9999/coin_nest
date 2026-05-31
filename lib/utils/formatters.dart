@@ -18,6 +18,10 @@ class Formatters {
     return '${_currencyFormat.format(amount)}${AppConstants.currencySymbol}';
   }
 
+  static String currencyVnd(double amount) {
+    return '${_currencyFormat.format(amount).trim()} VNĐ';
+  }
+
   /// Format [amount] with sign prefix: `+ 12.500.000đ` / `- 8.200.000đ`.
   static String signedCurrency(double amount) {
     final sign = amount >= 0 ? '+ ' : '- ';
@@ -89,6 +93,5 @@ class Formatters {
   static String percent(double value) => '${value.toStringAsFixed(0)}%';
 
   /// Format a percentage with 1 decimal: `48.5%`.
-  static String percentDecimal(double value) =>
-      '${value.toStringAsFixed(1)}%';
+  static String percentDecimal(double value) => '${value.toStringAsFixed(1)}%';
 }

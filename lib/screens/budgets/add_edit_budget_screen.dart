@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+import '../../models/budget.dart';
+import '../../providers/account_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/budget_provider.dart';
 import '../../providers/category_provider.dart';
-import '../../providers/account_provider.dart'; 
-import '../../models/budget.dart'; // Bổ sung Model để nhận dữ liệu truyền vào
 import '../../theme/app_theme.dart';
+import '../../utils/formatters.dart';
 import '../../utils/validators.dart';
-import '../../utils/formatters.dart'; 
 
 class AddEditBudgetScreen extends StatefulWidget {
-  final Budget? budget; // Thêm biến nhận dữ liệu
+  final Budget? budget;
 
   const AddEditBudgetScreen({super.key, this.budget});
-  
+
   @override
   State<AddEditBudgetScreen> createState() => _AddEditBudgetScreenState();
 }
@@ -23,13 +24,16 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
-  
+
   int? _categoryId;
   int? _accountId;
   String _period = 'monthly';
-  DateTime _startDate = DateTime.now(); 
-  DateTime? _endDate; 
+  DateTime _startDate = DateTime.now();
+  DateTime? _endDate;
 
+  // NOTE: none/quarterly đang được giữ để resolve conflict theo tính năng hiện tại.
+  // DB chưa chấp nhận hai giá trị này trong CHECK constraint của bảng budgets.
+  // Người sửa tiếp cần đồng bộ AppConstants, DatabaseHelper, BudgetDao và BudgetListScreen.
   final Map<String, String> _periodOptions = {
     'none': 'Không lặp lại',
     'daily': 'Theo ngày',
@@ -39,35 +43,25 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
     'yearly': 'Theo năm',
   };
 
-  bool get isEditMode => widget.budget != null; // Kiểm tra xem đang ở chế độ Thêm hay Sửa
+  bool get isEditMode => widget.budget != null;
 
   @override
   void initState() {
     super.initState();
-    
+    _loadAccounts();
+
     if (isEditMode) {
-      // Đổ dữ liệu cũ vào các ô nhập nếu là chế độ Sửa
-      final b = widget.budget!;
-      _nameController.text = b.name;
-      
-      String initialAmount = b.amount.toInt().toString();
-      String formatted = '';
-      int count = 0;
-      for (int i = initialAmount.length - 1; i >= 0; i--) {
-        if (count != 0 && count % 3 == 0) formatted = '.$formatted';
-        formatted = initialAmount[i] + formatted;
-        count++;
-      }
-      _amountController.text = formatted;
-      
-      _categoryId = b.categoryId;
-      _accountId = b.accountId;
-      _period = b.period;
-      _startDate = b.startDate;
-      _endDate = b.endDate;
+      final budget = widget.budget!;
+      _nameController.text = budget.name;
+      _amountController.text = _formatAmountForInput(budget.amount);
+      _categoryId = budget.categoryId;
+      _accountId = budget.accountId;
+      _period = budget.period;
+      _startDate = budget.startDate;
+      _endDate = budget.endDate;
     } else {
-      // Khởi tạo tài khoản mặc định nếu là Thêm mới
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _accountId != null) return;
         final accounts = context.read<AccountProvider>().accounts;
         if (accounts.isNotEmpty) {
           setState(() => _accountId = accounts.first.id);
@@ -76,77 +70,121 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
     }
   }
 
-  @override
-  void dispose() { 
-    _nameController.dispose(); 
-    _amountController.dispose(); 
-    super.dispose(); 
+  Future<void> _loadAccounts() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final userId = context.read<AuthProvider>().currentUserId;
+      await context.read<AccountProvider>().loadAccounts(userId);
+      if (!mounted || isEditMode || _accountId != null) return;
+      final accounts = context.read<AccountProvider>().accounts;
+      if (accounts.isNotEmpty) {
+        setState(() => _accountId = accounts.first.id);
+      }
+    });
   }
 
-  // --- HÀM HIỂN THỊ HỘP THOẠI XÁC NHẬN ---
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  String _formatAmountForInput(double amount) {
+    final digits = amount.toInt().toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      final reverseIndex = digits.length - i;
+      buffer.write(digits[i]);
+      if (reverseIndex > 1 && reverseIndex % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+    return buffer.toString();
+  }
+
   void _showConfirmDialog({
     required String message,
     required VoidCallback onConfirm,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Thông báo', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          'Thông báo',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: colorScheme.onSurface,
+          ),
+        ),
         content: Text(message),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Không', style: TextStyle(color: AppTheme.onSurfaceVariant)),
+            child: Text(
+              'Không',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // Đóng hộp thoại
-              onConfirm(); // Thực thi hành động
+              Navigator.pop(context);
+              onConfirm();
             },
-            child: const Text('Có', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Có',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // --- LOGIC LƯU HẠN MỨC ---
   Future<void> _executeSave() async {
     final userId = context.read<AuthProvider>().currentUserId;
-    bool success;
+    final amount = Validators.parseAmount(_amountController.text);
+    final now = DateTime.now();
+    final budgetProvider = context.read<BudgetProvider>();
 
-    if (isEditMode) {
-      final updatedBudget = Budget(
-        id: widget.budget!.id,
-        userId: userId,
-        categoryId: _categoryId,
-        accountId: _accountId,
-        name: _nameController.text.trim(),
-        amount: Validators.parseAmount(_amountController.text),
-        period: _period,
-        startDate: _startDate,
-        endDate: _endDate,
-        isActive: widget.budget!.isActive,
-        createdAt: widget.budget!.createdAt,
-        updatedAt: DateTime.now(),
-      );
-      success = await context.read<BudgetProvider>().updateBudget(updatedBudget);
-    } else {
-      success = await context.read<BudgetProvider>().addBudget(
-        userId: userId, 
-        categoryId: _categoryId, 
-        accountId: _accountId,
-        name: _nameController.text.trim(),
-        amount: Validators.parseAmount(_amountController.text), 
-        period: _period,
-        startDate: _startDate,
-        endDate: _endDate,
-      );
-    }
-    
+    final success = isEditMode
+        ? await budgetProvider.updateBudget(
+            Budget(
+              id: widget.budget!.id,
+              userId: userId,
+              categoryId: _categoryId,
+              accountId: _accountId,
+              name: _nameController.text.trim(),
+              amount: amount,
+              period: _period,
+              startDate: _startDate,
+              endDate: _endDate,
+              isActive: widget.budget!.isActive,
+              createdAt: widget.budget!.createdAt,
+              updatedAt: now,
+            ),
+          )
+        : await budgetProvider.addBudget(
+            userId: userId,
+            categoryId: _categoryId,
+            accountId: _accountId,
+            name: _nameController.text.trim(),
+            amount: amount,
+            period: _period,
+            startDate: _startDate,
+            endDate: _endDate,
+          );
+
     if (!mounted) return;
-    if (success) Navigator.pop(context);
+    if (success) {
+      Navigator.pop(context);
+    }
   }
 
   Future<void> _save() async {
@@ -154,21 +192,33 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
 
     if (_accountId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn tài khoản áp dụng hạn mức'))
+        const SnackBar(
+          content: Text('Vui lòng chọn tài khoản áp dụng hạn mức'),
+        ),
       );
       return;
     }
 
-    if (_endDate != null && _endDate!.isBefore(DateTime(_startDate.year, _startDate.month, _startDate.day))) {
+    final startDay = DateTime(
+      _startDate.year,
+      _startDate.month,
+      _startDate.day,
+    );
+    if (_endDate != null && _endDate!.isBefore(startDay)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ngày kết thúc không được trước ngày bắt đầu'))
+        const SnackBar(
+          content: Text('Ngày kết thúc không được trước ngày bắt đầu'),
+        ),
       );
       return;
     }
 
+    // NOTE: Nếu _period là none hoặc quarterly, luồng lưu vẫn có thể lỗi SQLite
+    // cho tới khi DB/DAO được đồng bộ theo note bàn giao sau conflict.
     if (isEditMode) {
       _showConfirmDialog(
-        message: 'Chú ý! Dữ liệu bị thay đổi sẽ không thể khôi phục lại được. Bạn có muốn tiếp tục?',
+        message:
+            'Chú ý! Dữ liệu bị thay đổi sẽ không thể khôi phục lại được. Bạn có muốn tiếp tục?',
         onConfirm: _executeSave,
       );
     } else {
@@ -176,19 +226,24 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
     }
   }
 
-  // --- LOGIC XOÁ HẠN MỨC ---
   Future<void> _executeDelete() async {
     final userId = context.read<AuthProvider>().currentUserId;
-    final success = await context.read<BudgetProvider>().deleteBudget(widget.budget!.id!, userId);
-    
+    final success = await context.read<BudgetProvider>().deleteBudget(
+      widget.budget!.id!,
+      userId,
+    );
+
     if (!mounted) return;
-    if (success) Navigator.pop(context);
+    if (success) {
+      Navigator.pop(context);
+    }
   }
 
-  Future<void> _delete() async {
+  void _delete() {
     if (!isEditMode) return;
     _showConfirmDialog(
-      message: 'Chú ý! Dữ liệu bị xoá sẽ không thể khôi phục lại được. Bạn có muốn tiếp tục?',
+      message:
+          'Chú ý! Dữ liệu bị xoá sẽ không thể khôi phục lại được. Bạn có muốn tiếp tục?',
       onConfirm: _executeDelete,
     );
   }
@@ -200,21 +255,21 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
-    if (picked != null) {
-      setState(() {
-        _startDate = picked;
-        if (_endDate != null && _endDate!.isBefore(_startDate)) {
-          _endDate = null; 
-        }
-      });
-    }
+    if (picked == null) return;
+
+    setState(() {
+      _startDate = picked;
+      if (_endDate != null && _endDate!.isBefore(_startDate)) {
+        _endDate = null;
+      }
+    });
   }
 
   Future<void> _pickEndDate() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: _endDate ?? _startDate,
-      firstDate: _startDate, 
+      firstDate: _startDate,
       lastDate: DateTime(2100),
     );
     if (picked != null) {
@@ -224,216 +279,326 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final categories = context.watch<CategoryProvider>().expenseCategories;
     final accounts = context.watch<AccountProvider>().accounts;
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: Text(isEditMode ? 'Sửa hạn mức' : 'Thêm hạn mức'), 
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_rounded), onPressed: () => Navigator.pop(context))
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(isEditMode ? 'Sửa hạn mức' : 'Thêm hạn mức'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppTheme.spacing10),
         child: Form(
-          key: _formKey, 
+          key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch, 
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              
-              // 1. NHẬP SỐ TIỀN
               _label('SỐ TIỀN'),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppTheme.spacing4),
               TextFormField(
-                controller: _amountController, 
-                keyboardType: TextInputType.number, 
+                controller: _amountController,
+                keyboardType: TextInputType.number,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
-                  CurrencyInputFormatter(), 
+                  CurrencyInputFormatter(),
                 ],
-                validator: Validators.amount, 
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-                decoration: const InputDecoration(hintText: '0', suffixText: 'đ')
+                validator: Validators.amount,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
+                decoration: const InputDecoration(
+                  hintText: '0',
+                  suffixText: 'đ',
+                ),
               ),
-              const SizedBox(height: 20),
-
-              // 2. TÊN HẠN MỨC
+              const SizedBox(height: AppTheme.spacing10),
               _label('TÊN HẠN MỨC'),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppTheme.spacing4),
               TextFormField(
-                controller: _nameController, 
-                validator: (v) => Validators.entityName(v, 'Tên'), 
-                decoration: const InputDecoration(hintText: 'VD: Ăn uống tháng này')
+                controller: _nameController,
+                validator: (value) => Validators.entityName(value, 'Tên'),
+                decoration: const InputDecoration(
+                  hintText: 'VD: Ăn uống tháng này',
+                ),
               ),
-              const SizedBox(height: 20),
-
-              // 3. HẠNG MỤC
+              const SizedBox(height: AppTheme.spacing10),
               _label('HẠNG MỤC (TÙY CHỌN)'),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(color: AppTheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int?>(
-                    value: _categoryId, 
-                    isExpanded: true, 
-                    hint: const Text('Tất cả hạng mục'),
-                    items: [
-                      const DropdownMenuItem<int?>(value: null, child: Text('Tất cả hạng mục')),
-                      ...categories.map((c) => DropdownMenuItem<int?>(value: c.id, child: Text(c.name)))
-                    ],
-                    onChanged: (v) => setState(() => _categoryId = v)
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // 4. TÀI KHOẢN
+              const SizedBox(height: AppTheme.spacing4),
+              _buildCategoryDropdown(categories, colorScheme),
+              const SizedBox(height: AppTheme.spacing10),
               _label('TÀI KHOẢN'),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(color: AppTheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int?>(
-                    value: _accountId, 
-                    isExpanded: true, 
-                    hint: const Text('Chọn tài khoản'),
-                    items: accounts.map((a) => DropdownMenuItem<int?>(value: a.id, child: Text(a.name))).toList(),
-                    onChanged: (v) => setState(() => _accountId = v)
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // 5. CHU KỲ
+              const SizedBox(height: AppTheme.spacing4),
+              _buildAccountDropdown(accounts, colorScheme),
+              const SizedBox(height: AppTheme.spacing10),
               _label('CHU KỲ'),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(color: AppTheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _period, 
-                    isExpanded: true, 
-                    items: _periodOptions.entries.map((e) => DropdownMenuItem<String>(value: e.key, child: Text(e.value))).toList(),
-                    onChanged: (v) => setState(() => _period = v!)
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // 6. NGÀY BẮT ĐẦU
+              const SizedBox(height: AppTheme.spacing4),
+              _buildPeriodDropdown(colorScheme),
+              const SizedBox(height: AppTheme.spacing10),
               _label('NGÀY BẮT ĐẦU'),
-              const SizedBox(height: 8),
-              GestureDetector(
+              const SizedBox(height: AppTheme.spacing4),
+              _buildDateTile(
+                icon: Icons.calendar_today_outlined,
+                text: Formatters.date(_startDate),
+                colorScheme: colorScheme,
                 onTap: _pickStartDate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(color: AppTheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-                  child: Row(children: [
-                    const Icon(Icons.calendar_today_outlined, size: 18, color: AppTheme.onSurfaceVariant),
-                    const SizedBox(width: 12),
-                    Text(Formatters.date(_startDate)),
-                  ]),
-                ),
               ),
-              const SizedBox(height: 20),
-
-              // 7. NGÀY KẾT THÚC
+              const SizedBox(height: AppTheme.spacing10),
               _label('NGÀY KẾT THÚC'),
-              const SizedBox(height: 8),
-              GestureDetector(
+              const SizedBox(height: AppTheme.spacing4),
+              _buildDateTile(
+                icon: Icons.event_busy_outlined,
+                text: _endDate != null
+                    ? Formatters.date(_endDate!)
+                    : 'Không xác định',
+                colorScheme: colorScheme,
                 onTap: _pickEndDate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(color: AppTheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.event_busy_outlined, size: 18, color: AppTheme.onSurfaceVariant),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _endDate != null ? Formatters.date(_endDate!) : 'Không xác định',
-                          style: TextStyle(color: _endDate != null ? AppTheme.onSurface : AppTheme.onSurfaceVariant),
-                        ),
+                trailing: _endDate == null
+                    ? null
+                    : IconButton(
+                        icon: Icon(Icons.close, color: colorScheme.tertiary),
+                        onPressed: () => setState(() => _endDate = null),
                       ),
-                      if (_endDate != null)
-                        GestureDetector(
-                          onTap: () => setState(() => _endDate = null),
-                          child: const Icon(Icons.close, size: 20, color: AppTheme.tertiary),
-                        ),
-                    ],
-                  ),
-                ),
               ),
-              const SizedBox(height: 28),
-
-              // 8. CỤM NÚT LƯU HOẶC LƯU/XÓA
-              if (isEditMode)
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 52,
-                        child: OutlinedButton(
-                          onPressed: _delete,
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppTheme.tertiary, width: 1.5),
-                            backgroundColor: Colors.white,
-                            foregroundColor: AppTheme.tertiary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
-                          ),
-                          child: const Text('Xoá', style: TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SizedBox(
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: _save,
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
-                          ),
-                          child: const Text('Lưu lại'),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              else
-                SizedBox(
-                  height: 52, 
-                  child: ElevatedButton(onPressed: _save, child: const Text('Lưu hạn mức'))
-                ),
-                
-              const SizedBox(height: 20),
-            ]
-          )
+              const SizedBox(height: AppTheme.spacing12),
+              _buildActions(colorScheme),
+              const SizedBox(height: AppTheme.spacing10),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _label(String t) => Text(t, style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600, letterSpacing: 0.8));
+  Widget _buildCategoryDropdown(
+    List<dynamic> categories,
+    ColorScheme colorScheme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int?>(
+          value: _categoryId,
+          isExpanded: true,
+          dropdownColor: colorScheme.surface,
+          hint: const Text('Tất cả hạng mục'),
+          items: [
+            const DropdownMenuItem<int?>(
+              value: null,
+              child: Text('Tất cả hạng mục'),
+            ),
+            ...categories.map(
+              (category) => DropdownMenuItem<int?>(
+                value: category.id,
+                child: Text(category.name),
+              ),
+            ),
+          ],
+          onChanged: (value) => setState(() => _categoryId = value),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountDropdown(
+    List<dynamic> accounts,
+    ColorScheme colorScheme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int?>(
+          value: _accountId,
+          isExpanded: true,
+          dropdownColor: colorScheme.surface,
+          hint: const Text('Chọn tài khoản'),
+          items: accounts
+              .map(
+                (account) => DropdownMenuItem<int?>(
+                  value: account.id,
+                  child: Text(account.name),
+                ),
+              )
+              .toList(),
+          onChanged: (value) => setState(() => _accountId = value),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPeriodDropdown(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _period,
+          isExpanded: true,
+          dropdownColor: colorScheme.surface,
+          items: _periodOptions.entries
+              .map(
+                (entry) => DropdownMenuItem<String>(
+                  value: entry.key,
+                  child: Text(entry.value),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _period = value);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateTile({
+    required IconData icon,
+    required String text,
+    required ColorScheme colorScheme,
+    required VoidCallback onTap,
+    Widget? trailing,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacing8,
+          vertical: AppTheme.spacing6,
+        ),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
+            const SizedBox(width: AppTheme.spacing6),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: _endDate != null || text != 'Không xác định'
+                      ? colorScheme.onSurface
+                      : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            ?trailing,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActions(ColorScheme colorScheme) {
+    if (!isEditMode) {
+      return SizedBox(
+        height: 52,
+        child: ElevatedButton(
+          onPressed: _save,
+          child: const Text('Lưu hạn mức'),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 52,
+            child: OutlinedButton(
+              onPressed: _delete,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colorScheme.tertiary,
+                side: BorderSide(color: colorScheme.tertiary, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                ),
+              ),
+              child: const Text(
+                'Xoá',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppTheme.spacing6),
+        Expanded(
+          child: SizedBox(
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _save,
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                ),
+              ),
+              child: const Text('Lưu lại'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _label(String text) {
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.8,
+      ),
+    );
+  }
 }
 
-// Lớp định dạng tiền tệ
 class CurrencyInputFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    if (newValue.text.isEmpty) return newValue.copyWith(text: '');
-    String newText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (newText.isEmpty) return newValue.copyWith(text: '');
-    String formatted = '';
-    int count = 0;
-    for (int i = newText.length - 1; i >= 0; i--) {
-      if (count != 0 && count % 3 == 0) formatted = '.$formatted';
-      formatted = newText[i] + formatted;
-      count++;
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
     }
+
+    final digitsOnly = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitsOnly.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    final buffer = StringBuffer();
+    for (var i = 0; i < digitsOnly.length; i++) {
+      final reverseIndex = digitsOnly.length - i;
+      buffer.write(digitsOnly[i]);
+      if (reverseIndex > 1 && reverseIndex % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+
+    final formatted = buffer.toString();
     return TextEditingValue(
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),
