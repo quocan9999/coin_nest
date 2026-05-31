@@ -265,7 +265,10 @@ class LoanProvider extends ChangeNotifier {
     final transactionProvider = _transactionProvider;
     await Future.wait([
       loadLoans(userId),
-      if (transactionProvider != null) transactionProvider.loadTransactions(userId),
+      if (transactionProvider != null) ...[
+        transactionProvider.loadTransactions(userId),
+        transactionProvider.loadRecentTransactions(userId),
+      ],
     ]);
   }
 

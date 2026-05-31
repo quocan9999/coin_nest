@@ -14,8 +14,7 @@ void main() {
   setUp(() async {
     fixture = await openFfiDebtDatabaseFixture(initialBalance: 1000);
     transactionProvider = TransactionProvider();
-    loanProvider = LoanProvider()
-      ..setTransactionProvider(transactionProvider);
+    loanProvider = LoanProvider()..setTransactionProvider(transactionProvider);
   });
 
   tearDown(() async {
@@ -39,26 +38,30 @@ void main() {
   });
 
   // Tạo khoản vay hợp lệ phải gán category khởi tạo và reload cả loan/transaction.
-  test('thêm khoản vay gán danh mục mặc định và tải lại dữ liệu liên quan', () async {
-    final success = await loanProvider.addLoan(
-      userId: fixture.userId,
-      type: 'borrow',
-      personName: 'Alice',
-      amount: 500,
-      startDate: DateTime.now(),
-      accountId: fixture.accountId,
-    );
+  test(
+    'thêm khoản vay gán danh mục mặc định và tải lại dữ liệu liên quan',
+    () async {
+      final success = await loanProvider.addLoan(
+        userId: fixture.userId,
+        type: 'borrow',
+        personName: 'Alice',
+        amount: 500,
+        startDate: DateTime.now(),
+        accountId: fixture.accountId,
+      );
 
-    expect(success, isTrue);
-    expect(loanProvider.loans, hasLength(1));
-    expect(loanProvider.summary['borrowed'], 500);
-    expect(transactionProvider.transactions, hasLength(1));
-    expect(
-      transactionProvider.transactions.single.categoryId,
-      fixture.borrowInitialCategoryId,
-    );
-    expect(await fixture.accountBalance(), 1500);
-  });
+      expect(success, isTrue);
+      expect(loanProvider.loans, hasLength(1));
+      expect(loanProvider.summary['borrowed'], 500);
+      expect(transactionProvider.transactions, hasLength(1));
+      expect(transactionProvider.recentTransactions, hasLength(1));
+      expect(
+        transactionProvider.transactions.single.categoryId,
+        fixture.borrowInitialCategoryId,
+      );
+      expect(await fixture.accountBalance(), 1500);
+    },
+  );
 
   // Trả nợ qua provider phải dùng category chi tiền và phản ánh dư nợ mới.
   test('ghi nhận trả nợ gán danh mục thanh toán và tải lại dữ liệu', () async {
@@ -83,7 +86,9 @@ void main() {
     expect(success, isTrue);
     expect(loanProvider.loans.single.remainingAmount, 300);
     expect(transactionProvider.transactions, hasLength(2));
+    expect(transactionProvider.recentTransactions, hasLength(2));
     expect(transactionProvider.transactions.first.type, 'expense');
+    expect(transactionProvider.recentTransactions.first.type, 'expense');
     expect(
       transactionProvider.transactions.first.categoryId,
       fixture.borrowPaymentCategoryId,
@@ -197,55 +202,58 @@ void main() {
   });
 
   // Các điều kiện thanh toán sai tài khoản/thời gian đều không được tạo lịch sử.
-  test('thanh toán từ chối tài khoản không hợp lệ và ngày ngoài phạm vi', () async {
-    final startDate = DateTime.now().subtract(const Duration(days: 2));
-    await loanProvider.addLoan(
-      userId: fixture.userId,
-      type: 'borrow',
-      personName: 'Alice',
-      amount: 500,
-      startDate: startDate,
-      accountId: fixture.accountId,
-    );
-    final loanId = loanProvider.loans.single.id!;
-
-    expect(
-      await loanProvider.recordPayment(
-        loanId,
-        100,
-        fixture.userId,
-        paymentDate: DateTime.now(),
-        accountId: -1,
-      ),
-      isFalse,
-    );
-    expect(loanProvider.errorMessage, contains('Invalid account'));
-
-    expect(
-      await loanProvider.recordPayment(
-        loanId,
-        100,
-        fixture.userId,
-        paymentDate: startDate.subtract(const Duration(days: 1)),
+  test(
+    'thanh toán từ chối tài khoản không hợp lệ và ngày ngoài phạm vi',
+    () async {
+      final startDate = DateTime.now().subtract(const Duration(days: 2));
+      await loanProvider.addLoan(
+        userId: fixture.userId,
+        type: 'borrow',
+        personName: 'Alice',
+        amount: 500,
+        startDate: startDate,
         accountId: fixture.accountId,
-      ),
-      isFalse,
-    );
-    expect(loanProvider.errorMessage, contains('before loan start'));
+      );
+      final loanId = loanProvider.loans.single.id!;
 
-    expect(
-      await loanProvider.recordPayment(
-        loanId,
-        100,
-        fixture.userId,
-        paymentDate: DateTime.now().add(const Duration(days: 1)),
-        accountId: fixture.accountId,
-      ),
-      isFalse,
-    );
-    expect(loanProvider.errorMessage, contains('future'));
-    expect(await fixture.paymentCount(), 0);
-  });
+      expect(
+        await loanProvider.recordPayment(
+          loanId,
+          100,
+          fixture.userId,
+          paymentDate: DateTime.now(),
+          accountId: -1,
+        ),
+        isFalse,
+      );
+      expect(loanProvider.errorMessage, contains('Invalid account'));
+
+      expect(
+        await loanProvider.recordPayment(
+          loanId,
+          100,
+          fixture.userId,
+          paymentDate: startDate.subtract(const Duration(days: 1)),
+          accountId: fixture.accountId,
+        ),
+        isFalse,
+      );
+      expect(loanProvider.errorMessage, contains('before loan start'));
+
+      expect(
+        await loanProvider.recordPayment(
+          loanId,
+          100,
+          fixture.userId,
+          paymentDate: DateTime.now().add(const Duration(days: 1)),
+          accountId: fixture.accountId,
+        ),
+        isFalse,
+      );
+      expect(loanProvider.errorMessage, contains('future'));
+      expect(await fixture.paymentCount(), 0);
+    },
+  );
 
   // Khoản đã paid không được nhận thêm payment dù số tiền rất nhỏ.
   test('thanh toán từ chối khoản đã được trả hết', () async {
@@ -331,16 +339,14 @@ void main() {
       (await loanProvider.findLoanForTransaction(
         userId: fixture.userId,
         loanId: loan.id,
-      ))
-          ?.id,
+      ))?.id,
       loan.id,
     );
     expect(
       (await loanProvider.findLoanForTransaction(
         userId: fixture.userId,
         transactionId: transactionId,
-      ))
-          ?.id,
+      ))?.id,
       loan.id,
     );
     expect(
