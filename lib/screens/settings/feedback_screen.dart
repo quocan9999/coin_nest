@@ -24,6 +24,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   int _rating = 5;
 
+  bool _isSubmitting = false;
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -32,31 +34,52 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) {
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     final userId = context.read<AuthProvider>().currentUserId;
 
-    await FirebaseFirestore.instance.collection('feedbacks').add({
-      'user_id': userId,
-      'type': _type,
-      'title': _titleController.text.trim(),
-      'content': _contentController.text.trim(),
-      'rating': _rating,
-      'created_at': Timestamp.now(),
-    });
+    setState(() => _isSubmitting = true);
 
-    if (!mounted) return;
+    try {
+      await FirebaseFirestore.instance.collection('feedbacks').add({
+        'user_id': userId,
+        'type': _type,
+        'title': _titleController.text.trim(),
+        'content': _contentController.text.trim(),
+        'rating': _rating,
+        'created_at': Timestamp.now(),
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cảm ơn bạn đã góp ý!'),
-        backgroundColor: AppTheme.secondary,
-      ),
-    );
+      if (!mounted) return;
 
-    Navigator.pop(context);
+      setState(() => _isSubmitting = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cảm ơn bạn đã góp ý!'),
+          backgroundColor: AppTheme.secondary,
+        ),
+      );
+
+      Navigator.pop(context);
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() => _isSubmitting = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể gửi góp ý. Vui lòng thử lại sau.'),
+          backgroundColor: AppTheme.tertiary,
+        ),
+      );
+    }
   }
 
   @override
@@ -207,9 +230,15 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 height: 52,
 
                 child: ElevatedButton(
-                  onPressed: _submit,
+                  onPressed: _isSubmitting ? null : _submit,
 
-                  child: const Text('Gửi góp ý'),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Gửi góp ý'),
                 ),
               ),
             ],
