@@ -32,6 +32,23 @@ class BackupRestoreResult {
   final Map<String, int> recordCounts;
 }
 
+enum BackupDataError {
+  checksum,
+  unsupportedFormat,
+  missingTable,
+  invalidReference,
+}
+
+class BackupDataException implements Exception {
+  const BackupDataException(this.error, this.message);
+
+  final BackupDataError error;
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class BackupDao {
   BackupDao({DatabaseHelper? databaseHelper})
     : _databaseHelper = databaseHelper ?? DatabaseHelper.instance;
@@ -72,11 +89,17 @@ class BackupDao {
         .convert(utf8.encode(jsonEncode(payload)))
         .toString();
     if (actualSha256 != expectedSha256) {
-      throw StateError('Backup checksum khong hop le');
+      throw const BackupDataException(
+        BackupDataError.checksum,
+        'Backup checksum không hợp lệ',
+      );
     }
 
     if (payload['formatVersion'] != formatVersion) {
-      throw StateError('Dinh dang backup khong duoc ho tro');
+      throw const BackupDataException(
+        BackupDataError.unsupportedFormat,
+        'Định dạng backup không được hỗ trợ',
+      );
     }
 
     final tables = <String>[
@@ -89,7 +112,10 @@ class BackupDao {
     ];
     for (final table in tables) {
       if (payload[table] is! List) {
-        throw StateError('Backup thieu bang $table');
+        throw BackupDataException(
+          BackupDataError.missingTable,
+          'Backup thiếu bảng $table',
+        );
       }
     }
 
@@ -153,7 +179,10 @@ class BackupDao {
 
       final violations = await txn.rawQuery('PRAGMA foreign_key_check');
       if (violations.isNotEmpty) {
-        throw StateError('Backup tao lien ket du lieu khong hop le');
+        throw const BackupDataException(
+          BackupDataError.invalidReference,
+          'Backup tạo liên kết dữ liệu không hợp lệ',
+        );
       }
     });
 
@@ -360,7 +389,10 @@ class BackupDao {
 
   int _requiredRemap(Map<int, int> ids, int? oldId) {
     if (oldId == null || !ids.containsKey(oldId)) {
-      throw StateError('Backup tham chieu id bat buoc khong hop le');
+      throw const BackupDataException(
+        BackupDataError.invalidReference,
+        'Backup tham chiếu id bắt buộc không hợp lệ',
+      );
     }
     return ids[oldId]!;
   }

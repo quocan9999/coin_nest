@@ -50,16 +50,18 @@ class CloudBackupDownload {
 }
 
 class CloudBackupService {
-  CloudBackupService({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  CloudBackupService({
+    FirebaseFirestore? firestore,
+    CloudBackupDocumentStore? store,
+  }) : _store =
+           store ?? FirestoreCloudBackupDocumentStore(firestore: firestore);
 
   static const int _chunkSize = 400000;
 
-  final FirebaseFirestore _firestore;
+  final CloudBackupDocumentStore _store;
 
   Future<CloudBackupMetadata?> getCurrentMetadata(String uid) async {
-    final doc = await _snapshotDoc(uid).get();
-    final data = doc.data();
+    final data = await _store.getMetadata(uid);
     if (data == null) return null;
     return CloudBackupMetadata.fromMap(data);
   }
@@ -70,31 +72,21 @@ class CloudBackupService {
   }) async {
     final chunks = _chunk(snapshot.payloadJson);
     final createdAt = DateTime.now().toUtc();
-    final snapshotDoc = _snapshotDoc(uid);
-    final chunksCollection = snapshotDoc.collection('chunks');
 
-    await _deleteExistingChunks(chunksCollection);
-
-    final batch = _firestore.batch();
-    batch.set(snapshotDoc, {
-      'formatVersion': snapshot.formatVersion,
-      'sourceDbVersion': snapshot.sourceDbVersion,
-      'appVersion': snapshot.appVersion,
-      'ownerUid': uid,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'payloadSha256': snapshot.payloadSha256,
-      'chunkCount': chunks.length,
-      'recordCounts': snapshot.recordCounts,
-    });
-
-    for (var index = 0; index < chunks.length; index++) {
-      batch.set(chunksCollection.doc(index.toString().padLeft(6, '0')), {
-        'index': index,
-        'data': chunks[index],
-      });
-    }
-
-    await batch.commit();
+    await _store.replaceSnapshot(
+      uid: uid,
+      metadata: {
+        'formatVersion': snapshot.formatVersion,
+        'sourceDbVersion': snapshot.sourceDbVersion,
+        'appVersion': snapshot.appVersion,
+        'ownerUid': uid,
+        'createdAt': Timestamp.fromDate(createdAt),
+        'payloadSha256': snapshot.payloadSha256,
+        'chunkCount': chunks.length,
+        'recordCounts': snapshot.recordCounts,
+      },
+      chunks: chunks,
+    );
     return CloudBackupMetadata(
       ownerUid: uid,
       createdAt: createdAt,
@@ -108,27 +100,133 @@ class CloudBackupService {
   }
 
   Future<CloudBackupDownload?> downloadCurrent(String uid) async {
-    final snapshotDoc = _snapshotDoc(uid);
-    final doc = await snapshotDoc.get();
-    final data = doc.data();
+    final data = await _store.getMetadata(uid);
     if (data == null) return null;
 
     final metadata = CloudBackupMetadata.fromMap(data);
-    final chunksQuery = await snapshotDoc
-        .collection('chunks')
-        .orderBy('index')
-        .get();
-    if (chunksQuery.docs.length != metadata.chunkCount) {
-      throw StateError('Backup tren cloud thieu du lieu');
+    final chunks = await _store.getChunks(uid);
+    if (chunks.length != metadata.chunkCount) {
+      throw const CloudBackupException(
+        CloudBackupError.incompleteSnapshot,
+        'Bản sao lưu trên cloud chưa đầy đủ',
+      );
     }
 
-    final payloadJson = chunksQuery.docs
-        .map((doc) => doc.data()['data'] as String)
-        .join();
+    final payloadJson = chunks.map((chunk) => chunk.data).join();
     return CloudBackupDownload(
       metadata: metadata,
       payload: jsonDecode(payloadJson) as Map<String, dynamic>,
     );
+  }
+
+  Future<void> deleteCurrent(String uid) {
+    return _store.deleteSnapshot(uid);
+  }
+
+  List<String> _chunk(String value) {
+    if (value.isEmpty) return [''];
+
+    final chunks = <String>[];
+    for (var start = 0; start < value.length; start += _chunkSize) {
+      final end = start + _chunkSize > value.length
+          ? value.length
+          : start + _chunkSize;
+      chunks.add(value.substring(start, end));
+    }
+    return chunks;
+  }
+}
+
+enum CloudBackupError { incompleteSnapshot }
+
+class CloudBackupException implements Exception {
+  const CloudBackupException(this.error, this.message);
+
+  final CloudBackupError error;
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+class CloudBackupChunk {
+  const CloudBackupChunk({required this.index, required this.data});
+
+  final int index;
+  final String data;
+}
+
+abstract class CloudBackupDocumentStore {
+  Future<Map<String, dynamic>?> getMetadata(String uid);
+
+  Future<List<CloudBackupChunk>> getChunks(String uid);
+
+  Future<void> replaceSnapshot({
+    required String uid,
+    required Map<String, dynamic> metadata,
+    required List<String> chunks,
+  });
+
+  Future<void> deleteSnapshot(String uid);
+}
+
+class FirestoreCloudBackupDocumentStore implements CloudBackupDocumentStore {
+  FirestoreCloudBackupDocumentStore({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  final FirebaseFirestore _firestore;
+
+  @override
+  Future<Map<String, dynamic>?> getMetadata(String uid) async {
+    final doc = await _snapshotDoc(uid).get();
+    return doc.data();
+  }
+
+  @override
+  Future<List<CloudBackupChunk>> getChunks(String uid) async {
+    final chunksQuery = await _snapshotDoc(
+      uid,
+    ).collection('chunks').orderBy('index').get();
+
+    return chunksQuery.docs
+        .map(
+          (doc) => CloudBackupChunk(
+            index: doc.data()['index'] as int,
+            data: doc.data()['data'] as String,
+          ),
+        )
+        .toList();
+  }
+
+  @override
+  Future<void> replaceSnapshot({
+    required String uid,
+    required Map<String, dynamic> metadata,
+    required List<String> chunks,
+  }) async {
+    final snapshotDoc = _snapshotDoc(uid);
+    final chunksCollection = snapshotDoc.collection('chunks');
+
+    await _deleteExistingChunks(chunksCollection);
+
+    final batch = _firestore.batch();
+    batch.set(snapshotDoc, metadata);
+
+    for (var index = 0; index < chunks.length; index++) {
+      batch.set(chunksCollection.doc(index.toString().padLeft(6, '0')), {
+        'index': index,
+        'data': chunks[index],
+      });
+    }
+
+    await batch.commit();
+  }
+
+  @override
+  Future<void> deleteSnapshot(String uid) async {
+    final snapshotDoc = _snapshotDoc(uid);
+    await _deleteExistingChunks(snapshotDoc.collection('chunks'));
+    await snapshotDoc.delete();
   }
 
   DocumentReference<Map<String, dynamic>> _snapshotDoc(String uid) {
@@ -151,18 +249,5 @@ class CloudBackupService {
       await batch.commit();
       query = await chunksCollection.limit(500).get();
     }
-  }
-
-  List<String> _chunk(String value) {
-    if (value.isEmpty) return [''];
-
-    final chunks = <String>[];
-    for (var start = 0; start < value.length; start += _chunkSize) {
-      final end = start + _chunkSize > value.length
-          ? value.length
-          : start + _chunkSize;
-      chunks.add(value.substring(start, end));
-    }
-    return chunks;
   }
 }
