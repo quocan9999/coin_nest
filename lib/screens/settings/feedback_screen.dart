@@ -2,28 +2,23 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/constants.dart';
 import '../../utils/validators.dart';
-import '../../database/database_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
 
   @override
-  State<FeedbackScreen> createState() =>
-      _FeedbackScreenState();
+  State<FeedbackScreen> createState() => _FeedbackScreenState();
 }
 
-class _FeedbackScreenState
-    extends State<FeedbackScreen> {
-  final _formKey =
-      GlobalKey<FormState>();
+class _FeedbackScreenState extends State<FeedbackScreen> {
+  final _formKey = GlobalKey<FormState>();
 
-  final _titleController =
-      TextEditingController();
+  final _titleController = TextEditingController();
 
-  final _contentController =
-      TextEditingController();
+  final _contentController = TextEditingController();
 
   String _type = 'improvement';
 
@@ -37,37 +32,27 @@ class _FeedbackScreenState
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!
-        .validate()) {
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final userId =
-        context
-            .read<AuthProvider>()
-            .currentUserId;
+    final userId = context.read<AuthProvider>().currentUserId;
 
-   await FirebaseFirestore.instance
-    .collection('feedbacks')
-    .add({
-  'user_id': userId,
-  'type': _type,
-  'title': _titleController.text.trim(),
-  'content': _contentController.text.trim(),
-  'rating': _rating,
-  'created_at': Timestamp.now(),
-});
+    await FirebaseFirestore.instance.collection('feedbacks').add({
+      'user_id': userId,
+      'type': _type,
+      'title': _titleController.text.trim(),
+      'content': _contentController.text.trim(),
+      'rating': _rating,
+      'created_at': Timestamp.now(),
+    });
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'Cảm ơn bạn đã góp ý!',
-        ),
-        backgroundColor:
-            AppTheme.secondary,
+        content: Text('Cảm ơn bạn đã góp ý!'),
+        backgroundColor: AppTheme.secondary,
       ),
     );
 
@@ -79,36 +64,28 @@ class _FeedbackScreenState
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor:
-          theme.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       appBar: AppBar(
-        backgroundColor:
-            theme.scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
 
         title: const Text('Góp ý'),
 
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_rounded,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_rounded),
 
-          onPressed: () =>
-              Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
 
       body: SingleChildScrollView(
-        padding:
-            const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
 
         child: Form(
           key: _formKey,
 
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment
-                    .stretch,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
 
             children: [
               _label('LOẠI GÓP Ý'),
@@ -119,39 +96,23 @@ class _FeedbackScreenState
                 spacing: 8,
                 runSpacing: 8,
 
-                children: AppConstants
-                    .feedbackTypeLabels
-                    .entries
-                    .map((e) {
-                  final sel =
-                      _type == e.key;
+                children: AppConstants.feedbackTypeLabels.entries.map((e) {
+                  final sel = _type == e.key;
 
                   return GestureDetector(
-                    onTap:
-                        () => setState(
-                      () => _type = e.key,
-                    ),
+                    onTap: () => setState(() => _type = e.key),
 
                     child: Container(
-                      padding:
-    const EdgeInsets.symmetric(
-  horizontal: 16,
-  vertical: 8,
-),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
 
-                      decoration:
-                          BoxDecoration(
-                        color:
-                            sel
-                                ? AppTheme
-                                    .primary
-                                : theme
-                                    .cardColor,
+                      decoration: BoxDecoration(
+                        color: sel ? AppTheme.primary : theme.cardColor,
 
-                        borderRadius:
-                            BorderRadius.circular(
-                          AppTheme
-                              .radiusFull,
+                        borderRadius: BorderRadius.circular(
+                          AppTheme.radiusFull,
                         ),
                       ),
 
@@ -161,20 +122,11 @@ class _FeedbackScreenState
                         style: TextStyle(
                           fontSize: 13,
 
-                          color:
-                              sel
-                                  ? Colors
-                                      .white
-                                  : theme
-                                      .colorScheme
-                                      .onSurface,
+                          color: sel
+                              ? Colors.white
+                              : theme.colorScheme.onSurface,
 
-                          fontWeight:
-                              sel
-                                  ? FontWeight
-                                      .w600
-                                  : FontWeight
-                                      .w400,
+                          fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
                         ),
                       ),
                     ),
@@ -189,21 +141,12 @@ class _FeedbackScreenState
               const SizedBox(height: 8),
 
               TextFormField(
-                controller:
-                    _titleController,
+                controller: _titleController,
 
-                validator:
-                    (v) =>
-                        Validators
-                            .entityName(
-                  v,
-                  'Tiêu đề',
-                ),
+                validator: (v) => Validators.entityName(v, 'Tiêu đề'),
 
-                decoration:
-                    const InputDecoration(
-                  hintText:
-                      'VD: Cải thiện tốc độ',
+                decoration: const InputDecoration(
+                  hintText: 'VD: Cải thiện tốc độ',
                 ),
               ),
 
@@ -214,22 +157,14 @@ class _FeedbackScreenState
               const SizedBox(height: 8),
 
               TextFormField(
-                controller:
-                    _contentController,
+                controller: _contentController,
 
                 maxLines: 4,
 
-                validator:
-                    (v) =>
-                        Validators.required(
-                  v,
-                  'Nội dung',
-                ),
+                validator: (v) => Validators.required(v, 'Nội dung'),
 
-                decoration:
-                    const InputDecoration(
-                  hintText:
-                      'Chia sẻ ý kiến của bạn...',
+                decoration: const InputDecoration(
+                  hintText: 'Chia sẻ ý kiến của bạn...',
                 ),
               ),
 
@@ -240,41 +175,26 @@ class _FeedbackScreenState
               const SizedBox(height: 8),
 
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
 
                 children: List.generate(
                   5,
                   (i) => GestureDetector(
-                    onTap:
-                        () => setState(
-                      () => _rating = i + 1,
-                    ),
+                    onTap: () => setState(() => _rating = i + 1),
 
                     child: Padding(
-                      padding:
-                          const EdgeInsets
-                              .symmetric(
-                        horizontal: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
 
                       child: Icon(
                         i < _rating
-                            ? Icons
-                                .star_rounded
-                            : Icons
-                                .star_outline_rounded,
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
 
                         size: 36,
 
-                        color:
-                            i < _rating
-                                ? const Color(
-                                  0xFFFFA726,
-                                )
-                                : theme
-                                    .colorScheme
-                                    .outlineVariant,
+                        color: i < _rating
+                            ? const Color(0xFFFFA726)
+                            : theme.colorScheme.outlineVariant,
                       ),
                     ),
                   ),
@@ -289,9 +209,7 @@ class _FeedbackScreenState
                 child: ElevatedButton(
                   onPressed: _submit,
 
-                  child: const Text(
-                    'Gửi góp ý',
-                  ),
+                  child: const Text('Gửi góp ý'),
                 ),
               ),
             ],
@@ -305,19 +223,13 @@ class _FeedbackScreenState
     return Text(
       t,
 
-      style: Theme.of(context)
-          .textTheme
-          .labelMedium
-          ?.copyWith(
-            fontWeight:
-                FontWeight.w600,
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        fontWeight: FontWeight.w600,
 
-            letterSpacing: 0.8,
+        letterSpacing: 0.8,
 
-            color: Theme.of(context)
-                .colorScheme
-                .onSurfaceVariant,
-          ),
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
     );
   }
 }
