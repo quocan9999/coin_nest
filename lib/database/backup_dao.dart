@@ -141,6 +141,7 @@ class BackupDao {
         rows: _rows(payload['budgets']),
         userId: userId,
         categoryIds: categoryIds,
+        accountIds: accountIds,
       );
 
       await _restoreLoanTransactionLinks(
@@ -315,6 +316,7 @@ class BackupDao {
     required List<Map<String, dynamic>> rows,
     required int userId,
     required Map<int, int> categoryIds,
+    required Map<int, int> accountIds,
   }) async {
     for (final row in rows) {
       final insertRow = Map<String, dynamic>.from(row)
@@ -323,6 +325,10 @@ class BackupDao {
         ..['category_id'] = _nullableRemap(
           categoryIds,
           row['category_id'] as int?,
+        )
+        ..['account_id'] = _nullableRemap(
+          accountIds,
+          row['account_id'] as int?,
         );
       await txn.insert('budgets', insertRow);
     }
