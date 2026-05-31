@@ -53,7 +53,9 @@ class AppConstants {
   static const String prefLanguage = 'language';
   static const String prefShowBalance = 'show_balance';
   static const String prefDailyReminder = 'daily_reminder';
+  static const String prefDebtReminder = 'debt_reminder';
   static const String prefReminderTime = 'reminder_time';
+  static const String defaultReminderTime = '20:00';
 
   // ─── Secure Storage Keys ───────────────────────────────────────
   static const String secureSessionToken = 'session_token';
