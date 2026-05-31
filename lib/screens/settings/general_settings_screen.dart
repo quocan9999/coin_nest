@@ -159,10 +159,6 @@ class GeneralSettingsScreen extends StatelessWidget {
               ),
 
               ListTile(
-                leading: const Icon(
-                  Icons.handshake_outlined,
-                  color: AppTheme.primary,
-                ),
                 title: const Text('Nhắc trả nợ / thu nợ'),
                 subtitle: const Text(
                   'Nhắc khi còn khoản vay hoặc cho vay đang hoạt động',
@@ -176,10 +172,6 @@ class GeneralSettingsScreen extends StatelessWidget {
               ),
 
               ListTile(
-                leading: const Icon(
-                  Icons.schedule_rounded,
-                  color: AppTheme.primary,
-                ),
                 title: const Text('Giờ nhắc'),
                 subtitle: const Text(
                   'Áp dụng cho nhắc ghi chép và nhắc vay nợ',
