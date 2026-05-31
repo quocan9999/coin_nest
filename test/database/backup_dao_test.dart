@@ -104,6 +104,8 @@ void main() {
     expect(transactions.single['loan_id'], loans.single['id']);
     expect(payments.single['loan_id'], loans.single['id']);
     expect(payments.single['transaction_id'], transactions.single['id']);
+    expect(budgets.single['account_id'], accounts.single['id']);
+    expect(budgets.single['account_id'], isNot(oldAccountId));
     expect(
       budgets.single['category_id'],
       isNot(fixture.borrowInitialCategoryId),
@@ -211,6 +213,7 @@ Future<void> _insertLinkedFinancialData(DebtDatabaseFixture fixture) async {
   await fixture.db.insert('budgets', {
     'user_id': fixture.userId,
     'category_id': fixture.borrowInitialCategoryId,
+    'account_id': fixture.accountId,
     'name': 'Debt Budget',
     'amount': 1000,
     'period': 'monthly',
