@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'providers/auth_provider.dart';
+import 'providers/backup_provider.dart';
 import 'providers/account_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/category_provider.dart';
@@ -69,6 +70,7 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => AuthProvider(authService: authService),
         ),
+        ChangeNotifierProvider(create: (_) => BackupProvider()),
         ChangeNotifierProvider(create: (_) => AccountProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
