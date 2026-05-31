@@ -30,7 +30,7 @@ class NotificationService {
     const darwinSettings = DarwinInitializationSettings();
 
     await _notifications.initialize(
-      const InitializationSettings(
+      settings: const InitializationSettings(
         android: androidSettings,
         iOS: darwinSettings,
         macOS: darwinSettings,

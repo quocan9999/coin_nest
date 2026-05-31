@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
+import '../../providers/loan_provider.dart';
 import '../../providers/report_provider.dart';
 import '../../theme/app_theme.dart';
 
@@ -52,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final accountProv = context.read<AccountProvider>();
     final txnProv = context.read<TransactionProvider>();
     final catProv = context.read<CategoryProvider>();
+    final loanProv = context.read<LoanProvider>();
     final reportProv = context.read<ReportProvider>();
     final now = DateTime.now();
 
@@ -59,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
       accountProv.loadAccounts(userId),
       txnProv.loadTransactions(userId),
       catProv.loadCategories(userId),
+      loanProv.loadLoans(userId),
       reportProv.loadReport(
         userId,
         from: DateTime(now.year, now.month, 1),

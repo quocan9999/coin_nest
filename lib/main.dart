@@ -74,15 +74,22 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AccountProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
-        ChangeNotifierProxyProvider<TransactionProvider, LoanProvider>(
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider()..loadSettings(),
+        ),
+        ChangeNotifierProxyProvider2<
+          TransactionProvider,
+          SettingsProvider,
+          LoanProvider
+        >(
           create: (_) => LoanProvider(),
-          update: (_, transactionProvider, loanProvider) =>
+          update: (_, transactionProvider, settingsProvider, loanProvider) =>
               (loanProvider ?? LoanProvider())
-                ..setTransactionProvider(transactionProvider),
+                ..setTransactionProvider(transactionProvider)
+                ..setSettingsProvider(settingsProvider),
         ),
         ChangeNotifierProvider(create: (_) => BudgetProvider()),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
       child: const CoinNestApp(),
     ),
