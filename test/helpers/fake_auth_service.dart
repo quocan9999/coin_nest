@@ -60,6 +60,14 @@ class FakeAuthService implements AuthService {
   }
 
   @override
+  Future<bool> confirmForgotPasswordOtp(
+    String verificationId,
+    String code,
+  ) async {
+    return true;
+  }
+
+  @override
   Future<String?> checkAccountProvider(String email) async {
     return 'password';
   }
