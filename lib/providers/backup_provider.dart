@@ -6,6 +6,7 @@ import 'package:sqflite/sqflite.dart';
 import '../database/backup_dao.dart';
 import '../models/user.dart';
 import '../services/backup/cloud_backup_service.dart';
+import 'backup_alert_provider.dart';
 
 class BackupProvider extends ChangeNotifier {
   BackupProvider({
@@ -19,6 +20,7 @@ class BackupProvider extends ChangeNotifier {
   final BackupDao _backupDao;
   final CloudBackupService _cloudBackupService;
   final firebase_auth.FirebaseAuth _firebaseAuth;
+  BackupAlertProvider? _backupAlertProvider;
 
   CloudBackupMetadata? _metadata;
   bool _isLoading = false;
@@ -27,6 +29,10 @@ class BackupProvider extends ChangeNotifier {
   CloudBackupMetadata? get metadata => _metadata;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  void setBackupAlertProvider(BackupAlertProvider backupAlertProvider) {
+    _backupAlertProvider = backupAlertProvider;
+  }
 
   Future<void> loadMetadata(User? currentUser) async {
     final uid = _validatedUid(currentUser);
@@ -55,6 +61,7 @@ class BackupProvider extends ChangeNotifier {
         uid: uid,
         snapshot: snapshot,
       );
+      await _backupAlertProvider?.clearPending(userId);
       _errorMessage = null;
       return true;
     } catch (e) {
@@ -86,6 +93,7 @@ class BackupProvider extends ChangeNotifier {
         expectedSha256: download.metadata.payloadSha256,
       );
       _metadata = download.metadata;
+      await _backupAlertProvider?.clearPending(userId);
       _errorMessage = null;
       return true;
     } catch (e) {

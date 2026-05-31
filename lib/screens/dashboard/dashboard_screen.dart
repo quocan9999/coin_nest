@@ -10,8 +10,10 @@ import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/category_icons.dart';
 import '../loans/loan_detail_screen.dart';
+import '../notifications/notification_center_screen.dart';
 import '../transactions/transaction_list_screen.dart';
 import '../transactions/add_transaction_screen.dart';
+import '../../widgets/notification_badge_button.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -128,10 +130,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     const Spacer(),
 
-                    IconButton(
-                      icon: const Icon(Icons.notifications_outlined),
-
-                      onPressed: () {},
+                    NotificationBadgeButton(
+                      onPressed: () => _openNotificationCenter(context),
                     ),
                   ],
                 ),
@@ -523,6 +523,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     if (!context.mounted) return;
     await _loadRecent();
+  }
+
+  void _openNotificationCenter(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationCenterScreen()),
+    );
   }
 
   double _calculateMonthlyAmount(List transactions, String type) {
