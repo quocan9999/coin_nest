@@ -113,6 +113,82 @@ void main() {
     expect(await fixture.db.rawQuery('PRAGMA foreign_key_check'), isEmpty);
   });
 
+  test('restore remap nhieu account, transfer va budget', () async {
+    final secondAccountId = await fixture.insertAccount(
+      name: 'Savings',
+      balance: 2500,
+    );
+    await _insertLinkedFinancialData(fixture);
+    await fixture.db.insert('transactions', {
+      'user_id': fixture.userId,
+      'account_id': fixture.accountId,
+      'to_account_id': secondAccountId,
+      'category_id': null,
+      'type': 'transfer',
+      'amount': 300,
+      'note': 'backup transfer',
+      'date': '2026-05-12',
+      'time': '09:00',
+      'loan_id': null,
+      'created_at': _now,
+      'updated_at': _now,
+    });
+    await fixture.db.insert('budgets', {
+      'user_id': fixture.userId,
+      'category_id': fixture.lendInitialCategoryId,
+      'account_id': secondAccountId,
+      'name': 'Savings Budget',
+      'amount': 2000,
+      'period': 'monthly',
+      'start_date': '2026-05-01',
+      'end_date': '2026-05-31',
+      'is_active': 1,
+      'created_at': _now,
+      'updated_at': _now,
+    });
+
+    final snapshot = await backupDao.createSnapshot(fixture.userId);
+    await fixture.insertAccount(name: 'Temp Account', balance: 1);
+
+    final result = await backupDao.restoreSnapshot(
+      userId: fixture.userId,
+      payload: snapshot.payload,
+      expectedSha256: snapshot.payloadSha256,
+    );
+
+    final accounts = await fixture.db.query(
+      'accounts',
+      where: 'user_id = ?',
+      whereArgs: [fixture.userId],
+      orderBy: 'id ASC',
+    );
+    final transfer = (await fixture.db.query(
+      'transactions',
+      where: 'user_id = ? AND type = ?',
+      whereArgs: [fixture.userId, 'transfer'],
+    )).single;
+    final budgets = await fixture.db.query(
+      'budgets',
+      where: 'user_id = ?',
+      whereArgs: [fixture.userId],
+      orderBy: 'id ASC',
+    );
+
+    expect(result.recordCounts['accounts'], 2);
+    expect(result.recordCounts['transactions'], 2);
+    expect(result.recordCounts['budgets'], 2);
+    expect(accounts, hasLength(2));
+    expect(transfer['account_id'], isNot(fixture.accountId));
+    expect(transfer['to_account_id'], isNot(secondAccountId));
+    expect(transfer['account_id'], accounts.first['id']);
+    expect(transfer['to_account_id'], accounts.last['id']);
+    expect(budgets.map((row) => row['account_id']).toSet(), {
+      accounts.first['id'],
+      accounts.last['id'],
+    });
+    expect(await fixture.db.rawQuery('PRAGMA foreign_key_check'), isEmpty);
+  });
+
   test('restore rollback khi checksum khong hop le', () async {
     await _insertLinkedFinancialData(fixture);
     final snapshot = await backupDao.createSnapshot(fixture.userId);
@@ -123,7 +199,7 @@ void main() {
         payload: snapshot.payload,
         expectedSha256: 'invalid',
       ),
-      throwsStateError,
+      throwsA(isA<BackupDataException>()),
     );
 
     expect(await fixture.transactionCount(), 1);
@@ -153,7 +229,7 @@ void main() {
         payload: invalidSnapshot.payload,
         expectedSha256: expectedSha256,
       ),
-      throwsStateError,
+      throwsA(isA<BackupDataException>()),
     );
 
     expect(await fixture.transactionCount(), 1);
