@@ -26,3 +26,10 @@ Timestamp: 2026-06-01 00:00:00 +07:00
 - Thêm `NotificationBadgeButton` dùng chung cho icon chuông có badge.
 - Thêm `NotificationCenterScreen` hiển thị trạng thái thông báo và nút điều hướng tới `Sao lưu & Phục hồi`.
 - Thay icon chuông no-op ở màn Tổng quan và Giao dịch bằng badge mở màn thông báo.
+
+## Phase 4 - Test và validation
+
+- Thêm test persist settings nhắc nhở và giờ nhắc mặc định.
+- Thêm test `ReminderCoordinator` cho nhắc ghi chép, nhắc vay nợ, trạng thái không có khoản active và từ chối quyền.
+- Thêm test `BackupAlertProvider` cho tăng/reset count theo user và badge `99+`.
+- Thêm widget test cho `NotificationBadgeButton` khi có/không có thay đổi chưa sao lưu.

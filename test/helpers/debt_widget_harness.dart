@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coin_nest/providers/account_provider.dart';
 import 'package:coin_nest/providers/auth_provider.dart';
+import 'package:coin_nest/providers/backup_alert_provider.dart';
 import 'package:coin_nest/providers/loan_provider.dart';
 import 'package:coin_nest/providers/transaction_provider.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +48,7 @@ Future<DebtWidgetHarness> pumpDebtWidgetWithFixture(
 
   late AuthProvider authProvider;
   late AccountProvider accountProvider;
+  late BackupAlertProvider backupAlertProvider;
   late TransactionProvider transactionProvider;
   late LoanProvider loanProvider;
 
@@ -54,9 +56,7 @@ Future<DebtWidgetHarness> pumpDebtWidgetWithFixture(
     tester,
     'harness: tạo provider và tải dữ liệu cơ sở dữ liệu ban đầu',
     () async {
-      authProvider = AuthProvider(
-        authService: FakeAuthService(fixture.user),
-      );
+      authProvider = AuthProvider(authService: FakeAuthService(fixture.user));
       await authProvider.login(
         identifier: fixture.user.email ?? 'debt-test@example.com',
         password: 'password',
@@ -64,6 +64,9 @@ Future<DebtWidgetHarness> pumpDebtWidgetWithFixture(
 
       accountProvider = AccountProvider();
       await accountProvider.loadAccounts(fixture.userId);
+
+      backupAlertProvider = BackupAlertProvider();
+      await backupAlertProvider.loadForUser(fixture.userId);
 
       transactionProvider = TransactionProvider();
       await transactionProvider.loadTransactions(fixture.userId);
@@ -80,6 +83,9 @@ Future<DebtWidgetHarness> pumpDebtWidgetWithFixture(
       providers: [
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider<AccountProvider>.value(value: accountProvider),
+        ChangeNotifierProvider<BackupAlertProvider>.value(
+          value: backupAlertProvider,
+        ),
         ChangeNotifierProvider<TransactionProvider>.value(
           value: transactionProvider,
         ),
@@ -94,9 +100,9 @@ Future<DebtWidgetHarness> pumpDebtWidgetWithFixture(
   await pumpDebtFrames(tester);
   debugDebtStep('harness: mở màn mục tiêu trên route nền ổn định');
   unawaited(
-    Navigator.of(tester.element(find.byKey(_debtHostKey))).push<void>(
-      MaterialPageRoute<void>(builder: (_) => child),
-    ),
+    Navigator.of(
+      tester.element(find.byKey(_debtHostKey)),
+    ).push<void>(MaterialPageRoute<void>(builder: (_) => child)),
   );
   await pumpDebtFrames(tester);
   debugDebtStep('harness: cây widget đã sẵn sàng');
@@ -116,9 +122,7 @@ class _DebtTestRouteHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: SizedBox(key: _debtHostKey),
-    );
+    return const Scaffold(body: SizedBox(key: _debtHostKey));
   }
 }
 
