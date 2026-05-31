@@ -69,8 +69,20 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
                     'Tải bản sao lưu cloud và ghi đè accounts, categories, transactions, loans, loan payments và budgets cục bộ.',
                 buttonLabel: 'Khôi phục',
                 isLoading: backupProvider.isLoading,
-                isPrimary: false,
+                style: _ActionPanelStyle.secondary,
                 onPressed: () => _confirmRestore(context),
+              ),
+              const SizedBox(height: AppTheme.spacing8),
+              _ActionPanel(
+                icon: Icons.delete_outline_rounded,
+                iconColor: AppTheme.tertiary,
+                title: 'Xóa bản sao lưu cloud',
+                description:
+                    'Xóa bản sao lưu hiện tại trên Firestore. Dữ liệu tài chính trên thiết bị vẫn được giữ nguyên.',
+                buttonLabel: 'Xóa bản sao lưu cloud',
+                isLoading: backupProvider.isLoading,
+                style: _ActionPanelStyle.danger,
+                onPressed: () => _confirmDeleteBackup(context),
               ),
               if (backupProvider.errorMessage != null) ...[
                 const SizedBox(height: AppTheme.spacing8),
@@ -85,14 +97,15 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
 
   Future<void> _backupNow(BuildContext context) async {
     final authProvider = context.read<AuthProvider>();
-    final success = await context.read<BackupProvider>().backupNow(
-      authProvider.currentUser,
-    );
+    final backupProvider = context.read<BackupProvider>();
+    final success = await backupProvider.backupNow(authProvider.currentUser);
     if (!context.mounted) return;
 
     _showSnackBar(
       context,
-      success ? 'Đã sao lưu dữ liệu lên Firestore' : 'Sao lưu thất bại',
+      success
+          ? 'Đã sao lưu dữ liệu lên Firestore.'
+          : backupProvider.errorMessage ?? 'Sao lưu thất bại.',
     );
   }
 
@@ -120,7 +133,8 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
     if (confirmed != true || !context.mounted) return;
 
     final authProvider = context.read<AuthProvider>();
-    final success = await context.read<BackupProvider>().restoreCurrent(
+    final backupProvider = context.read<BackupProvider>();
+    final success = await backupProvider.restoreCurrent(
       authProvider.currentUser,
     );
 
@@ -132,7 +146,51 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
     if (!context.mounted) return;
     _showSnackBar(
       context,
-      success ? 'Đã khôi phục dữ liệu từ Firestore' : 'Khôi phục thất bại',
+      success
+          ? 'Đã khôi phục dữ liệu từ Firestore.'
+          : backupProvider.errorMessage ?? 'Khôi phục thất bại.',
+    );
+  }
+
+  Future<void> _confirmDeleteBackup(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xóa bản sao lưu cloud?'),
+        content: const Text(
+          'Thao tác này chỉ xóa bản sao lưu trên cloud. Dữ liệu trên thiết bị vẫn được giữ.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.tertiary,
+              foregroundColor: AppTheme.onTertiary,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final backupProvider = context.read<BackupProvider>();
+    final success = await backupProvider.deleteCurrentBackup(
+      authProvider.currentUser,
+    );
+    if (!context.mounted) return;
+
+    _showSnackBar(
+      context,
+      success
+          ? 'Đã xóa bản sao lưu cloud.'
+          : backupProvider.errorMessage ?? 'Xóa bản sao lưu thất bại.',
     );
   }
 
@@ -167,9 +225,7 @@ class _StatusPanel extends StatelessWidget {
     final dateText = createdAt == null
         ? 'Chưa có bản sao lưu'
         : DateFormat('dd/MM/yyyy HH:mm').format(createdAt);
-    final countText = metadata == null
-        ? '0 bản ghi'
-        : '${metadata.recordCounts.values.fold<int>(0, (sum, count) => sum + count)} bản ghi';
+    final countText = '${_totalRecords(metadata?.recordCounts)} bản ghi';
 
     return Container(
       width: double.infinity,
@@ -203,11 +259,83 @@ class _StatusPanel extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (metadata != null) ...[
+            const SizedBox(height: AppTheme.spacing8),
+            _RecordCountsGrid(recordCounts: metadata.recordCounts),
+          ],
         ],
       ),
     );
   }
+
+  int _totalRecords(Map<String, int>? recordCounts) {
+    if (recordCounts == null) return 0;
+    return recordCounts.values.fold<int>(0, (sum, count) => sum + count);
+  }
 }
+
+class _RecordCountsGrid extends StatelessWidget {
+  const _RecordCountsGrid({required this.recordCounts});
+
+  final Map<String, int> recordCounts;
+
+  static const _labels = <String, String>{
+    'accounts': 'Tài khoản',
+    'categories': 'Danh mục',
+    'transactions': 'Giao dịch',
+    'loans': 'Khoản vay',
+    'loan_payments': 'Lịch sử trả nợ',
+    'budgets': 'Ngân sách',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AppTheme.spacing6,
+      runSpacing: AppTheme.spacing6,
+      children: _labels.entries
+          .map(
+            (entry) => _RecordCountChip(
+              label: entry.value,
+              count: recordCounts[entry.key] ?? 0,
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _RecordCountChip extends StatelessWidget {
+  const _RecordCountChip({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacing6,
+        vertical: AppTheme.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Text(
+        '$label: $count',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+enum _ActionPanelStyle { primary, secondary, danger }
 
 class _ActionPanel extends StatelessWidget {
   const _ActionPanel({
@@ -218,7 +346,7 @@ class _ActionPanel extends StatelessWidget {
     required this.buttonLabel,
     required this.isLoading,
     required this.onPressed,
-    this.isPrimary = true,
+    this.style = _ActionPanelStyle.primary,
   });
 
   final IconData icon;
@@ -227,7 +355,7 @@ class _ActionPanel extends StatelessWidget {
   final String description;
   final String buttonLabel;
   final bool isLoading;
-  final bool isPrimary;
+  final _ActionPanelStyle style;
   final VoidCallback onPressed;
 
   @override
@@ -267,28 +395,31 @@ class _ActionPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppTheme.spacing8),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: isPrimary
-                ? ElevatedButton(
-                    onPressed: isLoading ? null : onPressed,
-                    child: _ButtonContent(
-                      isLoading: isLoading,
-                      label: buttonLabel,
-                    ),
-                  )
-                : OutlinedButton(
-                    onPressed: isLoading ? null : onPressed,
-                    child: _ButtonContent(
-                      isLoading: isLoading,
-                      label: buttonLabel,
-                    ),
-                  ),
-          ),
+          SizedBox(width: double.infinity, height: 44, child: _buildButton()),
         ],
       ),
     );
+  }
+
+  Widget _buildButton() {
+    final onPressedValue = isLoading ? null : onPressed;
+    final child = _ButtonContent(isLoading: isLoading, label: buttonLabel);
+
+    switch (style) {
+      case _ActionPanelStyle.primary:
+        return ElevatedButton(onPressed: onPressedValue, child: child);
+      case _ActionPanelStyle.secondary:
+        return OutlinedButton(onPressed: onPressedValue, child: child);
+      case _ActionPanelStyle.danger:
+        return FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.tertiary,
+            foregroundColor: AppTheme.onTertiary,
+          ),
+          onPressed: onPressedValue,
+          child: child,
+        );
+    }
   }
 }
 

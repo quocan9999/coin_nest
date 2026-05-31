@@ -24,3 +24,28 @@ Timestamp: 2026-05-30 18:01:31 +07:00
 - Không bump `AppConstants.dbVersion` vì không đổi SQLite schema.
 - Không dùng Firebase Storage hoặc Cloud Functions cho backup/restore.
 - Không xóa `firebase_storage` vì nằm ngoài phạm vi cleanup của task này.
+## 2026-05-31 - Backup hardening
+
+### Phase 1 - Xóa bản sao lưu cloud
+
+- Thêm luồng xóa `snapshots/current` và toàn bộ `chunks` trong `CloudBackupService`.
+- Thêm thao tác `deleteCurrentBackup` trong `BackupProvider`.
+- Thêm nút `Xóa bản sao lưu cloud` và dialog xác nhận nêu rõ dữ liệu local không bị ảnh hưởng.
+
+### Phase 2 - Chuẩn hóa lỗi
+
+- Chuyển lỗi backup/restore sang thông báo tiếng Việt có dấu, không hiển thị lỗi kỹ thuật thô cho người dùng.
+- Phân biệt lỗi chưa đăng nhập, Firebase user không khớp, thiếu backup, thiếu chunk, checksum sai và lỗi Firestore.
+- Snackbar trong màn `Sao lưu & Phục hồi` dùng thông báo từ provider khi thao tác thất bại.
+
+### Phase 3 - Chi tiết metadata
+
+- Hiển thị tổng số bản ghi và số lượng theo từng nhóm dữ liệu tài chính từ `metadata.recordCounts`.
+- Giữ trạng thái rỗng rõ ràng: `Chưa có bản sao lưu` và `0 bản ghi`.
+- Không thêm field Firestore mới.
+
+### Phase 4 - Mở rộng test
+
+- Bổ sung test restore cho remap khóa ngoại budget, transfer, loan và loan payment.
+- Bổ sung test cloud chunks cho upload nhiều chunk, thiếu chunk và upload mới thay thế chunk cũ.
+- Không đổi `BackupDao.formatVersion` vì payload schema không đổi.
