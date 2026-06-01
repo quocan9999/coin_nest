@@ -716,6 +716,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           _amountFocusNode.unfocus();
         }
         break;
+      case _AmountKeyboardKeyType.spacer:
+        break;
     }
   }
 
@@ -1182,7 +1184,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 class _AmountKeyboard extends StatelessWidget {
   static const double _keyHeight = AppTheme.spacing24;
   static const double _keyGap = AppTheme.spacing4;
-  static const double _doneButtonHeight = (_keyHeight * 2) + _keyGap;
 
   final VoidCallback onScanReceipt;
   final ValueChanged<_AmountKeyboardKey> onKeyPressed;
@@ -1219,8 +1220,8 @@ class _AmountKeyboard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppTheme.spacing6),
-          // Vùng bottomNavigationBar không cấp chiều cao vô hạn ổn định cho Expanded
-          // theo trục dọc, nên keypad dùng chiều cao cố định để tránh lỗi layout.
+          // Keypad dùng từng hàng 4 cột cao cố định để các phím luôn thẳng cột
+          // trong bottomNavigationBar và tránh lỗi ràng buộc chiều cao vô hạn.
           _keyboardRow(context, [
             _AmountKeyboardKey.clear(),
             _AmountKeyboardKey.operator('÷'),
@@ -1239,38 +1240,18 @@ class _AmountKeyboard extends StatelessWidget {
             _AmountKeyboardKey.digit('6'),
             _AmountKeyboardKey.operator('+'),
           ]),
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _keyboardRow(context, [
-                      _AmountKeyboardKey.digit('1'),
-                      _AmountKeyboardKey.digit('2'),
-                      _AmountKeyboardKey.digit('3'),
-                    ]),
-                    _keyboardRow(context, [
-                      _AmountKeyboardKey.digit('0'),
-                      _AmountKeyboardKey.digit('000'),
-                      _AmountKeyboardKey.backspace(),
-                    ], addBottomGap: false),
-                  ],
-                ),
-              ),
-              const SizedBox(width: _keyGap),
-              SizedBox(
-                width: _keyHeight,
-                height: _doneButtonHeight,
-                child: _keyboardButton(
-                  context,
-                  _AmountKeyboardKey.done(shouldEvaluate ? '=' : 'Xong'),
-                  height: _doneButtonHeight,
-                ),
-              ),
-            ],
-          ),
+          _keyboardRow(context, [
+            _AmountKeyboardKey.digit('1'),
+            _AmountKeyboardKey.digit('2'),
+            _AmountKeyboardKey.digit('3'),
+            _AmountKeyboardKey.spacer(),
+          ]),
+          _keyboardRow(context, [
+            _AmountKeyboardKey.digit('0'),
+            _AmountKeyboardKey.digit('000'),
+            _AmountKeyboardKey.backspace(),
+            _AmountKeyboardKey.done(shouldEvaluate ? '=' : 'Xong'),
+          ], addBottomGap: false),
         ],
       ),
     );
@@ -1286,7 +1267,11 @@ class _AmountKeyboard extends StatelessWidget {
       child: Row(
         children: [
           for (var index = 0; index < keys.length; index++) ...[
-            Expanded(child: _keyboardButton(context, keys[index])),
+            Expanded(
+              child: keys[index].type == _AmountKeyboardKeyType.spacer
+                  ? const SizedBox(height: _keyHeight)
+                  : _keyboardButton(context, keys[index]),
+            ),
             if (index != keys.length - 1) const SizedBox(width: _keyGap),
           ],
         ],
@@ -1390,9 +1375,17 @@ class _AmountKeyboardKey {
       label: label,
     );
   }
+
+  factory _AmountKeyboardKey.spacer() {
+    return const _AmountKeyboardKey._(
+      type: _AmountKeyboardKeyType.spacer,
+      value: '',
+      label: '',
+    );
+  }
 }
 
-enum _AmountKeyboardKeyType { digit, operator, clear, backspace, done }
+enum _AmountKeyboardKeyType { digit, operator, clear, backspace, done, spacer }
 
 enum _ReceiptScanAction { apply, rescan, dismiss }
 
