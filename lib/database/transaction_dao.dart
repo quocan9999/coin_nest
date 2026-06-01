@@ -212,6 +212,28 @@ class TransactionDao {
     return TransactionModel.fromMap(result.first);
   }
 
+  Future<bool> existsSimilarAutoRecord(TransactionModel txn) async {
+    final db = await _dbHelper.database;
+    final date = txn.date.toIso8601String().split('T').first;
+    final result = await db.query(
+      'transactions',
+      columns: ['id'],
+      where:
+          'user_id = ? AND account_id = ? AND type = ? AND amount = ? '
+          'AND date = ? AND COALESCE(note, "") = COALESCE(?, "")',
+      whereArgs: [
+        txn.userId,
+        txn.accountId,
+        txn.type,
+        txn.amount,
+        date,
+        txn.note,
+      ],
+      limit: 1,
+    );
+    return result.isNotEmpty;
+  }
+
   /// Delete a transaction and reverse its balance impact.
   Future<void> deleteWithBalance(int txnId) async {
     final db = await _dbHelper.database;
@@ -427,8 +449,8 @@ class TransactionDao {
     final types = type == 'income'
         ? "('income', 'loan')"
         : type == 'expense'
-            ? "('expense', 'lend')"
-            : "('$type')";
+        ? "('expense', 'lend')"
+        : "('$type')";
     return db.rawQuery(
       '''
       SELECT date, COALESCE(SUM(amount), 0) as total, COUNT(*) as count
@@ -450,8 +472,8 @@ class TransactionDao {
     final types = type == 'income'
         ? "('income', 'loan')"
         : type == 'expense'
-            ? "('expense', 'lend')"
-            : "('$type')";
+        ? "('expense', 'lend')"
+        : "('$type')";
     return db.rawQuery(
       '''
       SELECT strftime('%m', date) as month, COALESCE(SUM(amount), 0) as total
