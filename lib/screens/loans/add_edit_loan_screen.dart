@@ -10,8 +10,9 @@ import '../../utils/validators.dart';
 
 class AddEditLoanScreen extends StatefulWidget {
   final Loan? loan;
+  final String? initialType;
 
-  const AddEditLoanScreen({super.key, this.loan});
+  const AddEditLoanScreen({super.key, this.loan, this.initialType});
 
   @override
   State<AddEditLoanScreen> createState() => _AddEditLoanScreenState();
@@ -54,6 +55,9 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
       _dueDate = loan.dueDate;
       _accountId = loan.accountId;
     } else {
+      if (widget.initialType == 'borrow' || widget.initialType == 'lend') {
+        _type = widget.initialType!;
+      }
       final accounts = context.read<AccountProvider>().accounts;
       if (accounts.isNotEmpty) _accountId = accounts.first.id;
     }
