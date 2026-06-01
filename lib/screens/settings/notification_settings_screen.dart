@@ -60,20 +60,25 @@ class _NotificationSettingsScreenState
     final accountProvider = context.watch<AccountProvider>();
     final accounts = accountProvider.accounts;
     final theme = Theme.of(context);
+    final colors = AppTheme.colors(context);
+    final colorScheme = theme.colorScheme;
     final isSupported = NotificationRecordService.isSupported;
     final canChooseAccounts =
         isSupported && settings.autoNotificationRecord && accounts.isNotEmpty;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(title: const Text('Ghi chép từ thông báo')),
+      appBar: AppBar(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        title: const Text('Ghi chép từ thông báo'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppTheme.spacing10),
         children: [
           Container(
             padding: const EdgeInsets.all(AppTheme.spacing10),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceContainerLowest,
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(AppTheme.radiusLg),
             ),
             child: Column(
@@ -83,10 +88,11 @@ class _NotificationSettingsScreenState
                   contentPadding: EdgeInsets.zero,
                   value: settings.autoNotificationRecord && isSupported,
                   onChanged: isSupported ? _handleToggle : null,
-                  activeThumbColor: AppTheme.primary,
+                  activeThumbColor: colorScheme.primary,
                   title: Text(
                     'Tự động ghi chép',
                     style: theme.textTheme.titleMedium?.copyWith(
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -94,6 +100,9 @@ class _NotificationSettingsScreenState
                     isSupported
                         ? 'Nhận diện thông báo biến động số dư và tạo giao dịch tương ứng.'
                         : 'Tính năng này chỉ hỗ trợ Android.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
                 if (settings.autoNotificationRecord && isSupported) ...[
@@ -125,12 +134,14 @@ class _NotificationSettingsScreenState
           Container(
             padding: const EdgeInsets.all(AppTheme.spacing10),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceContainerLow,
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
             ),
             child: Text(
               'CoinNest chỉ tạo giao dịch khi thông báo có cấu trúc DG/ND của ngân hàng. Các thông báo trùng nội dung sẽ được bỏ qua để tránh ghi sai số dư.',
-              style: theme.textTheme.bodySmall,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+              ),
             ),
           ),
         ],
@@ -156,6 +167,8 @@ class _AccountDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = AppTheme.colors(context);
     final validValue =
         value != null && accounts.any((account) => account.id == value);
 
@@ -164,22 +177,34 @@ class _AccountDropdown extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(
-            context,
-          ).textTheme.labelLarge?.copyWith(color: AppTheme.onSurfaceVariant),
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: AppTheme.spacing4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing8),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceContainerHigh,
+            color: colors.input,
             borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<int?>(
               isExpanded: true,
+              dropdownColor: colors.card,
+              iconEnabledColor: colors.textSecondary,
+              iconDisabledColor: colors.textDisabled,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: enabled ? colors.textPrimary : colors.textDisabled,
+              ),
               value: validValue ? value : null,
-              hint: const Text('Chọn tài khoản'),
+              hint: Text(
+                'Chọn tài khoản',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.textDisabled,
+                ),
+              ),
               items: [
                 const DropdownMenuItem<int?>(
                   child: Text('Tự chọn tài khoản đầu tiên'),
