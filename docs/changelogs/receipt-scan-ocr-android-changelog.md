@@ -43,6 +43,21 @@ Validation:
 - `flutter analyze`: pass.
 - `flutter test test/services/receipt_ocr_parser_test.dart`: pass.
 
+## 2026-06-01 - Phase 6
+
+- Reset bỏ commit lỗi `5ff3cec` vì layout dùng `Expanded` theo trục dọc trong `bottomNavigationBar` gây `BoxConstraints forces an infinite height`.
+- Làm lại nút phải của bàn phím bằng chiều cao cố định để tránh lỗi `RenderBox was not laid out`.
+- Gộp hai nút `Xong` thành một nút lớn ở cạnh phải bàn phím custom.
+- Khi số tiền có biểu thức `+`, `-`, `×`, `÷`, nút lớn đổi từ `Xong` sang `=`.
+- Bấm `=` chỉ tính kết quả và giữ bàn phím mở; sau khi tính xong nút đổi lại thành `Xong`.
+- Bấm `Xong` mới đóng bàn phím custom.
+
+Validation:
+
+- `dart format lib/screens/transactions/add_transaction_screen.dart`: pass.
+- `flutter analyze`: pass.
+- `flutter test test/services/receipt_ocr_parser_test.dart`: pass.
+
 ## 2026-06-01 - Phase 4
 
 - Rà lại comment tiếng Việt ở các khối quan trọng: OCR heuristic, camera lifecycle, lỗi camera Genymotion, quyền thư viện Android và logic không ghi đè ghi chú.
