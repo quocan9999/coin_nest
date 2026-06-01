@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../models/loan.dart';
 import '../../providers/loan_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -13,164 +14,67 @@ class GeneralSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-
+        backgroundColor: theme.scaffoldBackgroundColor,
         title: const Text('Cài đặt chung'),
-
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded),
-
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: ListView(
         padding: const EdgeInsets.all(20),
-
         children: [
-          // ================= HIỂN THỊ =================
           _sectionTitle(context, 'HIỂN THỊ'),
-
           const SizedBox(height: 8),
-
           _settingsCard(
             context,
             children: [
               SwitchListTile(
                 title: const Text('Hiện số dư'),
-
                 subtitle: const Text('Hiển thị số dư trên trang tổng quan'),
-
                 value: settings.showBalance,
-
                 onChanged: settings.setShowBalance,
-
-                activeTrackColor: AppTheme.primary,
               ),
-
-              const Divider(height: 1),
-
-              ListTile(
-                leading: Icon(
+              SwitchListTile(
+                secondary: Icon(
                   settings.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-
-                  color: AppTheme.primary,
+                  color: colorScheme.primary,
                 ),
-
-                title: const Text('Giao diện'),
-
-                subtitle: Text(settings.isDarkMode ? 'Tối' : 'Sáng'),
-
-                trailing: Icon(
-                  Icons.chevron_right_rounded,
-
-                  color: Theme.of(context).colorScheme.outline,
-                ),
-
-                onTap: () async {
-                  await showModalBottomSheet(
-                    context: context,
-
-                    backgroundColor: Theme.of(context).cardColor,
-
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(20),
-                      ),
-                    ),
-
-                    builder: (_) {
-                      return SafeArea(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.light_mode),
-
-                              title: const Text('Sáng'),
-
-                              trailing: !settings.isDarkMode
-                                  ? const Icon(Icons.check, color: Colors.green)
-                                  : null,
-
-                              onTap: () async {
-                                await settings.setDarkMode(false);
-
-                                if (context.mounted) {
-                                  Navigator.pop(context);
-                                }
-                              },
-                            ),
-
-                            ListTile(
-                              leading: const Icon(Icons.dark_mode),
-
-                              title: const Text('Tối'),
-
-                              trailing: settings.isDarkMode
-                                  ? const Icon(Icons.check, color: Colors.green)
-                                  : null,
-
-                              onTap: () async {
-                                await settings.setDarkMode(true);
-
-                                if (context.mounted) {
-                                  Navigator.pop(context);
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
+                title: const Text('Giao diện tối'),
+                subtitle: const Text('Bật chế độ nền tối'),
+                value: settings.isDarkMode,
+                onChanged: settings.setDarkMode,
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
-          // ================= NHẮC NHỞ =================
           _sectionTitle(context, 'NHẮC NHỞ'),
-
           const SizedBox(height: 8),
-
           _settingsCard(
             context,
             children: [
               SwitchListTile(
                 title: const Text('Nhắc nhở ghi chép'),
-
                 subtitle: const Text('Nhắc bạn ghi chép mỗi ngày'),
-
                 value: settings.dailyReminder,
-
                 onChanged: (value) =>
                     _setDailyReminder(context, settings, value),
-
-                activeTrackColor: AppTheme.primary,
               ),
-
-              ListTile(
+              SwitchListTile(
                 title: const Text('Nhắc trả nợ / thu nợ'),
                 subtitle: const Text(
                   'Nhắc khi còn khoản vay hoặc cho vay đang hoạt động',
                 ),
-                trailing: Switch(
-                  value: settings.debtReminder,
-                  activeTrackColor: AppTheme.primary,
-                  onChanged: (value) =>
-                      _setDebtReminder(context, settings, value),
-                ),
+                value: settings.debtReminder,
+                onChanged: (value) =>
+                    _setDebtReminder(context, settings, value),
               ),
-
               ListTile(
                 title: const Text('Giờ nhắc'),
                 subtitle: const Text(
@@ -178,8 +82,8 @@ class GeneralSettingsScreen extends StatelessWidget {
                 ),
                 trailing: Text(
                   settings.reminderTime,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppTheme.primary,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colorScheme.primary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -187,67 +91,44 @@ class GeneralSettingsScreen extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
-          // ================= TIỀN TỆ =================
           _sectionTitle(context, 'ĐƠN VỊ TIỀN TỆ'),
-
           const SizedBox(height: 8),
-
           _settingsCard(
             context,
             children: [
               ListTile(
                 title: const Text('Đơn vị tiền tệ'),
-
                 trailing: Text(
                   settings.currency,
-
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
-
-                    color: AppTheme.primary,
+                    color: colorScheme.primary,
                   ),
                 ),
-
                 onTap: () {},
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
-          // ================= THÔNG TIN =================
           _sectionTitle(context, 'THÔNG TIN'),
-
           const SizedBox(height: 8),
-
           _settingsCard(
             context,
             children: [
               ListTile(
                 title: const Text('Phiên bản'),
-
                 trailing: Text(
                   '1.0.0',
-
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
                 ),
               ),
-
-              const Divider(height: 1),
-
               ListTile(
                 title: const Text('Liên hệ hỗ trợ'),
-
                 trailing: Icon(
                   Icons.chevron_right_rounded,
-                  color: Theme.of(context).colorScheme.outline,
+                  color: colorScheme.outline,
                 ),
-
                 onTap: () {
                   Navigator.push(
                     context,
@@ -263,15 +144,14 @@ class GeneralSettingsScreen extends StatelessWidget {
   }
 
   Widget _sectionTitle(BuildContext context, String title) {
+    final theme = Theme.of(context);
+
     return Text(
       title,
-
-      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-
+      style: theme.textTheme.labelMedium?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
         fontWeight: FontWeight.w600,
-
-        letterSpacing: 1,
+        letterSpacing: 0,
       ),
     );
   }
@@ -280,12 +160,9 @@ class GeneralSettingsScreen extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
-
       clipBehavior: Clip.antiAlias,
-
       child: Column(children: children),
     );
   }

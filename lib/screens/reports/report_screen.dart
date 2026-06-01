@@ -20,80 +20,57 @@ class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
 
   @override
-  State<ReportScreen> createState() =>
-      _ReportScreenState();
+  State<ReportScreen> createState() => _ReportScreenState();
 }
 
-class _ReportScreenState
-    extends State<ReportScreen> {
+class _ReportScreenState extends State<ReportScreen> {
   @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
 
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (!mounted) return;
-    _loadPreviewData();
-  });
-}
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadPreviewData();
+    });
+  }
 
   Future<void> _loadPreviewData() async {
     if (!mounted) return;
 
-    final userId =
-        context.read<AuthProvider>().currentUserId;
+    final userId = context.read<AuthProvider>().currentUserId;
 
     if (userId == 0) return;
 
     final now = DateTime.now();
 
     await Future.wait([
-      context
-          .read<AccountProvider>()
-          .loadAccounts(userId),
+      context.read<AccountProvider>().loadAccounts(userId),
 
-      context
-          .read<LoanProvider>()
-          .loadLoans(userId),
+      context.read<LoanProvider>().loadLoans(userId),
 
-      context
-          .read<ReportProvider>()
-          .loadReport(
-            userId,
+      context.read<ReportProvider>().loadReport(
+        userId,
 
-            from: DateTime(
-              now.year,
-              now.month,
-              1,
-            ),
+        from: DateTime(now.year, now.month, 1),
 
-            to: DateTime(
-              now.year,
-              now.month + 1,
-              0,
-            ),
-          ),
+        to: DateTime(now.year, now.month + 1, 0),
+      ),
     ]);
 
     if (!mounted) return;
   }
 
-  Widget _buildSkeletonBar({
-    double width = 120,
-    double height = 12,
-  }) {
-    final colorScheme =
-        Theme.of(context).colorScheme;
+  Widget _buildSkeletonBar({double width = 120, double height = 12}) {
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: width,
       height: height,
 
       decoration: BoxDecoration(
-        color:
-            colorScheme.surfaceContainerHigh,
+        color: colorScheme.surfaceContainerHigh,
 
-        borderRadius:
-            BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(6),
       ),
     );
   }
@@ -102,66 +79,34 @@ void initState() {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final colorScheme =
-        theme.colorScheme;
+    final colorScheme = theme.colorScheme;
 
-    final accountProv =
-        context.watch<AccountProvider>();
+    final accountProv = context.watch<AccountProvider>();
 
-    final loanProv =
-        context.watch<LoanProvider>();
+    final loanProv = context.watch<LoanProvider>();
 
-    final reportProv =
-        context.watch<ReportProvider>();
+    final reportProv = context.watch<ReportProvider>();
 
-    final totalAccountBalance =
-        accountProv.accounts
-            .where(
-              (a) => a.isIncludedInTotal,
-            )
-            .fold<double>(
-              0,
-              (s, a) => s + a.balance,
-            );
+    final totalAccountBalance = accountProv.accounts
+        .where((a) => a.isIncludedInTotal)
+        .fold<double>(0, (s, a) => s + a.balance);
 
-    final totalBorrowedRemaining =
-        loanProv.loans
-            .where(
-              (l) =>
-                  l.type == 'borrow' &&
-                  l.status != 'paid',
-            )
-            .fold<double>(
-              0,
-              (s, l) =>
-                  s + l.remainingAmount,
-            );
+    final totalBorrowedRemaining = loanProv.loans
+        .where((l) => l.type == 'borrow' && l.status != 'paid')
+        .fold<double>(0, (s, l) => s + l.remainingAmount);
 
-    final totalLentRemaining =
-        loanProv.loans
-            .where(
-              (l) =>
-                  l.type == 'lend' &&
-                  l.status != 'paid',
-            )
-            .fold<double>(
-              0,
-              (s, l) =>
-                  s + l.remainingAmount,
-            );
+    final totalLentRemaining = loanProv.loans
+        .where((l) => l.type == 'lend' && l.status != 'paid')
+        .fold<double>(0, (s, l) => s + l.remainingAmount);
 
     final netWorth =
-        totalAccountBalance +
-        totalLentRemaining -
-        totalBorrowedRemaining;
+        totalAccountBalance + totalLentRemaining - totalBorrowedRemaining;
 
     return Scaffold(
-      backgroundColor:
-          colorScheme.surface,
+      backgroundColor: colorScheme.surface,
 
       appBar: AppBar(
-        backgroundColor:
-            colorScheme.surface,
+        backgroundColor: colorScheme.surface,
 
         elevation: 0,
 
@@ -170,94 +115,61 @@ void initState() {
         title: Text(
           'Báo cáo',
 
-          style: theme
-              .textTheme
-              .titleLarge
-              ?.copyWith(
-                fontWeight:
-                    FontWeight.w700,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
 
-                color:
-                    AppTheme.primary,
-              ),
+            color: colorScheme.primary,
+          ),
         ),
       ),
 
       body: RefreshIndicator(
-        color: AppTheme.primary,
+        color: colorScheme.primary,
 
         onRefresh: _loadPreviewData,
 
         child: ListView(
-          physics:
-              const AlwaysScrollableScrollPhysics(),
+          physics: const AlwaysScrollableScrollPhysics(),
 
-          padding:
-              const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
-              ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
 
           children: [
             // TÀI CHÍNH
             _buildMenuCard(
               context: context,
 
-              icon:
-                  Icons
-                      .account_balance_wallet_rounded,
+              icon: Icons.account_balance_wallet_rounded,
 
-              iconBgColor:
-                  AppTheme.primaryContainer,
+              iconBgColor: AppTheme.primaryContainer,
 
-              iconColor:
-                  AppTheme.primary,
+              iconColor: colorScheme.primary,
 
-              title:
-                  'Tài chính hiện tại',
+              title: 'Tài chính hiện tại',
 
-              subtitle:
-                  'Tổng quan tài sản và khoản nợ',
+              subtitle: 'Tổng quan tài sản và khoản nợ',
 
-              previewKey:
-                  'finance_${netWorth.toStringAsFixed(0)}',
+              previewKey: 'finance_${netWorth.toStringAsFixed(0)}',
 
-              preview:
-                  accountProv.isLoading ||
-                          loanProv.isLoading
-                      ? _buildSkeletonBar(
-                        width: 100,
-                        height: 12,
-                      )
-                      : Text(
-                        'Tài sản ròng: ${Formatters.currency(netWorth)}',
+              preview: accountProv.isLoading || loanProv.isLoading
+                  ? _buildSkeletonBar(width: 100, height: 12)
+                  : Text(
+                      'Tài sản ròng: ${Formatters.currency(netWorth)}',
 
-                        style: theme
-                            .textTheme
-                            .labelMedium
-                            ?.copyWith(
-                              fontWeight:
-                                  FontWeight
-                                      .w600,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
 
-                              color:
-                                  netWorth >=
-                                          0
-                                      ? AppTheme
-                                          .secondary
-                                      : AppTheme
-                                          .tertiary,
-                            ),
+                        color: netWorth >= 0
+                            ? AppTheme.secondary
+                            : AppTheme.tertiary,
                       ),
+                    ),
 
               onTap: () {
                 Navigator.push(
                   context,
 
                   MaterialPageRoute(
-                    builder:
-                        (_) =>
-                            const CurrentFinanceScreen(),
+                    builder: (_) => const CurrentFinanceScreen(),
                   ),
                 ).then((_) {
                   if (mounted) {
@@ -271,81 +183,58 @@ void initState() {
             _buildMenuCard(
               context: context,
 
-              icon:
-                  Icons.bar_chart_rounded,
+              icon: Icons.bar_chart_rounded,
 
-              iconBgColor:
-                  AppTheme.secondaryContainer,
+              iconBgColor: AppTheme.secondaryContainer,
 
-              iconColor:
-                  AppTheme.secondary,
+              iconColor: AppTheme.secondary,
 
-              title:
-                  'Tình hình thu chi',
+              title: 'Tình hình thu chi',
 
-              subtitle:
-                  'Phân tích thu nhập và chi tiêu',
+              subtitle: 'Phân tích thu nhập và chi tiêu',
 
               previewKey:
                   'inex_${reportProv.totalIncome}_${reportProv.totalExpense}',
 
-              preview:
-                  reportProv.isLoading
-                      ? _buildSkeletonBar()
-                      : Wrap(
-                        spacing: 6,
-                        runSpacing: 2,
+              preview: reportProv.isLoading
+                  ? _buildSkeletonBar()
+                  : Wrap(
+                      spacing: 6,
+                      runSpacing: 2,
 
-                        children: [
-                          Text(
-                            '↑ ${Formatters.currency(reportProv.totalIncome)}',
+                      children: [
+                        Text(
+                          '↑ ${Formatters.currency(reportProv.totalIncome)}',
 
-                            style: theme
-                                .textTheme
-                                .labelMedium
-                                ?.copyWith(
-                                  color:
-                                      AppTheme
-                                          .secondary,
-                                ),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: AppTheme.secondary,
                           ),
+                        ),
 
-                          Text(
-                            '↓ ${Formatters.currency(reportProv.totalExpense)}',
+                        Text(
+                          '↓ ${Formatters.currency(reportProv.totalExpense)}',
 
-                            style: theme
-                                .textTheme
-                                .labelMedium
-                                ?.copyWith(
-                                  color:
-                                      AppTheme
-                                          .tertiary,
-                                ),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: AppTheme.tertiary,
                           ),
+                        ),
 
-                          Text(
-                            '(tháng này)',
+                        Text(
+                          '(tháng này)',
 
-                            style: theme
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color:
-                                      colorScheme
-                                          .onSurfaceVariant,
-                                ),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
 
               onTap: () {
                 Navigator.push(
                   context,
 
                   MaterialPageRoute(
-                    builder:
-                        (_) =>
-                            const IncomeExpenseScreen(),
+                    builder: (_) => const IncomeExpenseScreen(),
                   ),
                 ).then((_) {
                   if (mounted) {
@@ -359,68 +248,44 @@ void initState() {
             _buildMenuCard(
               context: context,
 
-              icon:
-                  Icons.pie_chart_rounded,
+              icon: Icons.pie_chart_rounded,
 
-              iconBgColor:
-                  AppTheme
-                      .tertiaryContainer,
+              iconBgColor: AppTheme.tertiaryContainer,
 
-              iconColor:
-                  AppTheme.tertiary,
+              iconColor: AppTheme.tertiary,
 
-              title:
-                  'Phân tích chi tiêu',
+              title: 'Phân tích chi tiêu',
 
-              subtitle:
-                  'Chi tiết chi tiêu theo hạng mục',
+              subtitle: 'Chi tiết chi tiêu theo hạng mục',
 
-              previewKey:
-                  'exp_${reportProv.totalExpense}',
+              previewKey: 'exp_${reportProv.totalExpense}',
 
-              preview:
-                  reportProv.isLoading
-                      ? _buildSkeletonBar()
-                      : reportProv
-                              .totalExpense >
-                          0
-                      ? Text(
-                        'Tháng này: ${Formatters.currency(reportProv.totalExpense)}',
+              preview: reportProv.isLoading
+                  ? _buildSkeletonBar()
+                  : reportProv.totalExpense > 0
+                  ? Text(
+                      'Tháng này: ${Formatters.currency(reportProv.totalExpense)}',
 
-                        style: theme
-                            .textTheme
-                            .labelMedium
-                            ?.copyWith(
-                              fontWeight:
-                                  FontWeight
-                                      .w600,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
 
-                              color:
-                                  AppTheme
-                                      .tertiary,
-                            ),
-                      )
-                      : Text(
-                        'Chưa có chi tiêu tháng này',
-
-                        style: theme
-                            .textTheme
-                            .labelMedium
-                            ?.copyWith(
-                              color:
-                                  colorScheme
-                                      .onSurfaceVariant,
-                            ),
+                        color: AppTheme.tertiary,
                       ),
+                    )
+                  : Text(
+                      'Chưa có chi tiêu tháng này',
+
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
 
               onTap: () {
                 Navigator.push(
                   context,
 
                   MaterialPageRoute(
-                    builder:
-                        (_) =>
-                            const ExpenseAnalysisScreen(),
+                    builder: (_) => const ExpenseAnalysisScreen(),
                   ),
                 ).then((_) {
                   if (mounted) {
@@ -434,71 +299,44 @@ void initState() {
             _buildMenuCard(
               context: context,
 
-              icon:
-                  Icons.show_chart_rounded,
+              icon: Icons.show_chart_rounded,
 
-              iconBgColor:
-                  const Color(
-                    0xFFC8E6C9,
-                  ),
+              iconBgColor: const Color(0xFFC8E6C9),
 
-              iconColor:
-                  const Color(
-                    0xFF2E7D32,
-                  ),
+              iconColor: const Color(0xFF2E7D32),
 
-              title:
-                  'Phân tích thu',
+              title: 'Phân tích thu',
 
-              subtitle:
-                  'Chi tiết thu nhập theo hạng mục',
+              subtitle: 'Chi tiết thu nhập theo hạng mục',
 
-              previewKey:
-                  'inc_${reportProv.totalIncome}',
+              previewKey: 'inc_${reportProv.totalIncome}',
 
-              preview:
-                  reportProv.isLoading
-                      ? _buildSkeletonBar()
-                      : reportProv
-                              .totalIncome >
-                          0
-                      ? Text(
-                        'Tháng này: ${Formatters.currency(reportProv.totalIncome)}',
+              preview: reportProv.isLoading
+                  ? _buildSkeletonBar()
+                  : reportProv.totalIncome > 0
+                  ? Text(
+                      'Tháng này: ${Formatters.currency(reportProv.totalIncome)}',
 
-                        style: theme
-                            .textTheme
-                            .labelMedium
-                            ?.copyWith(
-                              fontWeight:
-                                  FontWeight
-                                      .w600,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
 
-                              color:
-                                  AppTheme
-                                      .secondary,
-                            ),
-                      )
-                      : Text(
-                        'Chưa có thu nhập tháng này',
-
-                        style: theme
-                            .textTheme
-                            .labelMedium
-                            ?.copyWith(
-                              color:
-                                  colorScheme
-                                      .onSurfaceVariant,
-                            ),
+                        color: AppTheme.secondary,
                       ),
+                    )
+                  : Text(
+                      'Chưa có thu nhập tháng này',
+
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
 
               onTap: () {
                 Navigator.push(
                   context,
 
                   MaterialPageRoute(
-                    builder:
-                        (_) =>
-                            const IncomeAnalysisScreen(),
+                    builder: (_) => const IncomeAnalysisScreen(),
                   ),
                 ).then((_) {
                   if (mounted) {
@@ -512,91 +350,55 @@ void initState() {
             _buildMenuCard(
               context: context,
 
-              icon:
-                  Icons
-                      .receipt_long_rounded,
+              icon: Icons.receipt_long_rounded,
 
-              iconBgColor:
-                  const Color(
-                    0xFFFFE0B2,
-                  ),
+              iconBgColor: const Color(0xFFFFE0B2),
 
-              iconColor:
-                  const Color(
-                    0xFFE65100,
-                  ),
+              iconColor: const Color(0xFFE65100),
 
-              title:
-                  'Theo dõi vay nợ',
+              title: 'Theo dõi vay nợ',
 
-              subtitle:
-                  'Tổng quan khoản vay và cho vay',
+              subtitle: 'Tổng quan khoản vay và cho vay',
 
-              previewKey:
-                  'loan_${totalLentRemaining}_$totalBorrowedRemaining',
+              previewKey: 'loan_${totalLentRemaining}_$totalBorrowedRemaining',
 
-              preview:
-                  loanProv.isLoading
-                      ? _buildSkeletonBar()
-                      : (totalLentRemaining ==
-                                  0 &&
-                              totalBorrowedRemaining ==
-                                  0)
-                      ? Text(
-                        'Không có khoản vay nào',
+              preview: loanProv.isLoading
+                  ? _buildSkeletonBar()
+                  : (totalLentRemaining == 0 && totalBorrowedRemaining == 0)
+                  ? Text(
+                      'Không có khoản vay nào',
 
-                        style: theme
-                            .textTheme
-                            .labelMedium
-                            ?.copyWith(
-                              color:
-                                  colorScheme
-                                      .onSurfaceVariant,
-                            ),
-                      )
-                      : Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment
-                                .start,
-
-                        children: [
-                          Text(
-                            'Cho vay: ${Formatters.currency(totalLentRemaining)}',
-
-                            style: theme
-                                .textTheme
-                                .labelMedium
-                                ?.copyWith(
-                                  color:
-                                      AppTheme
-                                          .secondary,
-                                ),
-                          ),
-
-                          Text(
-                            'Còn nợ: ${Formatters.currency(totalBorrowedRemaining)}',
-
-                            style: theme
-                                .textTheme
-                                .labelMedium
-                                ?.copyWith(
-                                  color:
-                                      AppTheme
-                                          .tertiary,
-                                ),
-                          ),
-                        ],
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                      children: [
+                        Text(
+                          'Cho vay: ${Formatters.currency(totalLentRemaining)}',
+
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: AppTheme.secondary,
+                          ),
+                        ),
+
+                        Text(
+                          'Còn nợ: ${Formatters.currency(totalBorrowedRemaining)}',
+
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: AppTheme.tertiary,
+                          ),
+                        ),
+                      ],
+                    ),
 
               onTap: () {
                 Navigator.push(
                   context,
 
-                  MaterialPageRoute(
-                    builder:
-                        (_) =>
-                            const LoanTrackingScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const LoanTrackingScreen()),
                 ).then((_) {
                   if (mounted) {
                     _loadPreviewData();
@@ -623,49 +425,31 @@ void initState() {
   }) {
     final theme = Theme.of(context);
 
-    final colorScheme =
-        theme.colorScheme;
+    final colorScheme = theme.colorScheme;
 
     return Padding(
-      padding:
-          const EdgeInsets.only(
-            bottom: 16,
-          ),
+      padding: const EdgeInsets.only(bottom: 16),
 
       child: InkWell(
         onTap: onTap,
 
-        borderRadius:
-            BorderRadius.circular(
-              AppTheme.radiusLg,
-            ),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
 
         child: Container(
-          padding:
-              const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
 
           decoration: BoxDecoration(
-            color: colorScheme
-                .surfaceContainerLowest,
+            color: colorScheme.surfaceContainerLowest,
 
-            borderRadius:
-                BorderRadius.circular(
-                  AppTheme.radiusLg,
-                ),
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
 
             boxShadow: [
               BoxShadow(
-                color: Colors.black
-                    .withValues(
-                      alpha: 0.04,
-                    ),
+                color: Theme.of(context).shadowColor.withValues(alpha: 0.04),
 
                 blurRadius: 10,
 
-                offset: const Offset(
-                  0,
-                  4,
-                ),
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -681,66 +465,41 @@ void initState() {
                   shape: BoxShape.circle,
                 ),
 
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                ),
+                child: Icon(icon, color: iconColor),
               ),
 
               const SizedBox(width: 16),
 
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment
-                          .start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
                     Text(
                       title,
 
-                      style: theme
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(
-                            fontWeight:
-                                FontWeight
-                                    .w600,
-                          ),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
 
-                    const SizedBox(
-                      height: 4,
-                    ),
+                    const SizedBox(height: 4),
 
                     Text(
                       subtitle,
 
-                      style: theme
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(
-                            color:
-                                colorScheme
-                                    .onSurfaceVariant,
-                          ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
 
-                    const SizedBox(
-                      height: 6,
-                    ),
+                    const SizedBox(height: 6),
 
                     AnimatedSwitcher(
-                      duration:
-                          const Duration(
-                            milliseconds:
-                                300,
-                          ),
+                      duration: const Duration(milliseconds: 300),
 
                       child: KeyedSubtree(
-                        key: ValueKey(
-                          previewKey,
-                        ),
+                        key: ValueKey(previewKey),
 
                         child: preview,
                       ),
@@ -752,12 +511,9 @@ void initState() {
               const SizedBox(width: 16),
 
               Icon(
-                Icons
-                    .chevron_right_rounded,
+                Icons.chevron_right_rounded,
 
-                color:
-                    colorScheme
-                        .outlineVariant,
+                color: colorScheme.outlineVariant,
               ),
             ],
           ),

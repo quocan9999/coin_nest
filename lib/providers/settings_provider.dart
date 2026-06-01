@@ -55,8 +55,10 @@ class SettingsProvider extends ChangeNotifier {
         prefs.getString(AppConstants.prefCurrency) ??
         AppConstants.defaultCurrency;
 
-    // ================= DARK MODE =================
-    _isDarkMode = prefs.getBool('dark_mode') ?? false;
+    final savedThemeMode = prefs.getString(AppConstants.prefThemeMode);
+    _isDarkMode =
+        savedThemeMode == 'dark' ||
+        (savedThemeMode == null && (prefs.getBool('dark_mode') ?? false));
 
     notifyListeners();
   }
@@ -155,7 +157,7 @@ class SettingsProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setBool('dark_mode', value);
+    await prefs.setString(AppConstants.prefThemeMode, value ? 'dark' : 'light');
 
     notifyListeners();
   }

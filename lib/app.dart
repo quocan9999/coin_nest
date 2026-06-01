@@ -41,7 +41,7 @@ class _CoinNestAppState extends State<CoinNestApp> {
           theme: AppTheme.lightTheme,
 
           // ================= DARK =================
-          darkTheme: ThemeData.dark(),
+          darkTheme: AppTheme.darkTheme,
 
           // ================= MODE =================
           themeMode: settings.themeMode,
