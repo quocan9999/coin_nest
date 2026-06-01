@@ -12,6 +12,7 @@ import '../budgets/budget_list_screen.dart';
 import 'general_settings_screen.dart';
 import 'data_settings_screen.dart';
 import 'feedback_screen.dart';
+import 'notification_settings_screen.dart';
 
 import '../auth/login_screen.dart';
 
@@ -217,6 +218,19 @@ class MoreScreen extends StatelessWidget {
                 () => _push(
                   context,
                   const BudgetListScreen(),
+                ),
+              ),
+
+              _menuItem(
+                context,
+
+                Icons.mark_email_unread_rounded,
+
+                'Ghi chép từ thông báo',
+
+                () => _push(
+                  context,
+                  const NotificationSettingsScreen(),
                 ),
               ),
 
