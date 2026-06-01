@@ -20,6 +20,32 @@ class DatabaseHelper {
   DatabaseHelper._();
   static final DatabaseHelper instance = DatabaseHelper._();
   static const int _firebaseAuthBaselineVersion = 3;
+  static const List<Map<String, Object>> _defaultExpenseCategories = [
+    {'name': 'Cho mượn', 'icon_name': 'lend', 'color': '#FF7043', 'sort': 1},
+    {'name': 'Trả nợ', 'icon_name': 'loan', 'color': '#8A5100', 'sort': 2},
+    {
+      'name': AppConstants.autoExpenseCategoryName,
+      'icon_name': 'auto_record',
+      'color': '#BB1614',
+      'sort': 90,
+    },
+  ];
+  static const List<Map<String, Object>> _defaultIncomeCategories = [
+    {'name': 'Vay mượn', 'icon_name': 'loan', 'color': '#42A5F5', 'sort': 1},
+    {'name': 'Thu nợ', 'icon_name': 'lend', 'color': '#66BB6A', 'sort': 2},
+    {
+      'name': 'Tiết kiệm lãi',
+      'icon_name': 'interest',
+      'color': '#26C6DA',
+      'sort': 3,
+    },
+    {
+      'name': AppConstants.autoIncomeCategoryName,
+      'icon_name': 'auto_record',
+      'color': '#006E1C',
+      'sort': 90,
+    },
+  ];
 
   Database? _database;
 
@@ -125,6 +151,9 @@ class DatabaseHelper {
     //
     // Keep migrations additive whenever possible so existing users keep their
     // accounts, transactions, loans, and report data.
+    if (oldVersion < 4) {
+      await _seedDefaultCategoriesForExistingUsers(db);
+    }
   }
 
   // ignore: unused_element
@@ -139,6 +168,18 @@ class DatabaseHelper {
     if (exists) return;
 
     await db.execute('ALTER TABLE $table ADD COLUMN $column $definition');
+  }
+
+  Future<void> _seedDefaultCategoriesForExistingUsers(
+    DatabaseExecutor db,
+  ) async {
+    final users = await db.query('users', columns: ['id']);
+    final now = DateTime.now().toIso8601String();
+
+    for (final user in users) {
+      final userId = user['id'] as int;
+      await _seedDefaultCategoriesForUser(db, userId, now);
+    }
   }
 
   Future<void> _createAllTables(DatabaseExecutor db) async {
@@ -332,30 +373,22 @@ class DatabaseHelper {
     final db = await database;
     final now = DateTime.now().toIso8601String();
 
-    const expenseCategories = [
-      {'name': 'Cho mượn', 'icon_name': 'lend', 'color': '#FF7043', 'sort': 1},
-      {'name': 'Trả nợ', 'icon_name': 'loan', 'color': '#8A5100', 'sort': 2},
-    ];
-
-    const incomeCategories = [
-      {'name': 'Vay mượn', 'icon_name': 'loan', 'color': '#42A5F5', 'sort': 1},
-      {'name': 'Thu nợ', 'icon_name': 'lend', 'color': '#66BB6A', 'sort': 2},
-      {
-        'name': 'Tiết kiệm lãi',
-        'icon_name': 'interest',
-        'color': '#26C6DA',
-        'sort': 3,
-      },
-    ];
-
     await db.transaction((txn) async {
-      for (final category in expenseCategories) {
-        await _insertCategoryIfMissing(txn, userId, 'expense', category, now);
-      }
-      for (final category in incomeCategories) {
-        await _insertCategoryIfMissing(txn, userId, 'income', category, now);
-      }
+      await _seedDefaultCategoriesForUser(txn, userId, now);
     });
+  }
+
+  Future<void> _seedDefaultCategoriesForUser(
+    DatabaseExecutor db,
+    int userId,
+    String now,
+  ) async {
+    for (final category in _defaultExpenseCategories) {
+      await _insertCategoryIfMissing(db, userId, 'expense', category, now);
+    }
+    for (final category in _defaultIncomeCategories) {
+      await _insertCategoryIfMissing(db, userId, 'income', category, now);
+    }
   }
 
   Future<void> _insertCategoryIfMissing(

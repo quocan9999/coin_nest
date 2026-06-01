@@ -29,9 +29,17 @@ void main() {
       Category(
         id: 10,
         userId: 7,
-        name: 'Chi tự động',
+        name: 'Ăn uống',
         type: AppConstants.typeExpense,
         iconName: 'category',
+        createdAt: receivedAt,
+      ),
+      Category(
+        id: 11,
+        userId: 7,
+        name: AppConstants.autoExpenseCategoryName,
+        type: AppConstants.typeExpense,
+        iconName: 'auto_record',
         createdAt: receivedAt,
       ),
     ];
@@ -39,9 +47,17 @@ void main() {
       Category(
         id: 20,
         userId: 7,
-        name: 'Thu tự động',
+        name: 'Lương',
         type: AppConstants.typeIncome,
         iconName: 'category',
+        createdAt: receivedAt,
+      ),
+      Category(
+        id: 21,
+        userId: 7,
+        name: AppConstants.autoIncomeCategoryName,
+        type: AppConstants.typeIncome,
+        iconName: 'auto_record',
         createdAt: receivedAt,
       ),
     ];
@@ -62,7 +78,7 @@ void main() {
       expect(result?.type, AppConstants.typeIncome);
       expect(result?.amount, 5000);
       expect(result?.accountId, 2);
-      expect(result?.categoryId, 20);
+      expect(result?.categoryId, 21);
       expect(result?.note, 'TRINH QUOC AN chuyen tien');
       expect(result?.date, DateTime(2026, 6, 1, 23, 5, 8));
       expect(result?.time, '23:05');
@@ -108,7 +124,7 @@ TRINH QUOC AN chuyen tien
       expect(result?.type, AppConstants.typeExpense);
       expect(result?.amount, 5000);
       expect(result?.accountId, 1);
-      expect(result?.categoryId, 10);
+      expect(result?.categoryId, 11);
       expect(result?.note, 'TRINH QUOC AN chuyen tien');
     });
 
