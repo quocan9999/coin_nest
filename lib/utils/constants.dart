@@ -56,6 +56,11 @@ class AppConstants {
   static const String prefDebtReminder = 'debt_reminder';
   static const String prefReminderTime = 'reminder_time';
   static const String defaultReminderTime = '20:00';
+  static const String prefAutoNotificationRecord = 'auto_notification_enabled';
+  static const String prefAutoExpenseAccountId = 'auto_expense_account_id';
+  static const String prefAutoIncomeAccountId = 'auto_income_account_id';
+  static const String prefAutoNotificationSignatureHistory =
+      'auto_notification_signature_history';
 
   // ─── Secure Storage Keys ───────────────────────────────────────
   static const String secureSessionToken = 'session_token';

@@ -8,6 +8,9 @@ class SettingsProvider extends ChangeNotifier {
   bool _showBalance = true;
   bool _dailyReminder = false;
   bool _debtReminder = false;
+  bool _autoNotificationRecord = false;
+  int? _autoExpenseAccountId;
+  int? _autoIncomeAccountId;
   String _reminderTime = AppConstants.defaultReminderTime;
   String _currency = 'VND';
 
@@ -17,6 +20,9 @@ class SettingsProvider extends ChangeNotifier {
   bool get showBalance => _showBalance;
   bool get dailyReminder => _dailyReminder;
   bool get debtReminder => _debtReminder;
+  bool get autoNotificationRecord => _autoNotificationRecord;
+  int? get autoExpenseAccountId => _autoExpenseAccountId;
+  int? get autoIncomeAccountId => _autoIncomeAccountId;
   String get reminderTime => _reminderTime;
   String get currency => _currency;
 
@@ -33,6 +39,13 @@ class SettingsProvider extends ChangeNotifier {
     _dailyReminder = prefs.getBool(AppConstants.prefDailyReminder) ?? false;
 
     _debtReminder = prefs.getBool(AppConstants.prefDebtReminder) ?? false;
+
+    _autoNotificationRecord =
+        prefs.getBool(AppConstants.prefAutoNotificationRecord) ?? false;
+
+    _autoExpenseAccountId = prefs.getInt(AppConstants.prefAutoExpenseAccountId);
+
+    _autoIncomeAccountId = prefs.getInt(AppConstants.prefAutoIncomeAccountId);
 
     _reminderTime =
         prefs.getString(AppConstants.prefReminderTime) ??
@@ -74,6 +87,44 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
 
     await prefs.setBool(AppConstants.prefDebtReminder, value);
+
+    notifyListeners();
+  }
+
+  Future<void> setAutoNotificationRecord(bool value) async {
+    _autoNotificationRecord = value;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setBool(AppConstants.prefAutoNotificationRecord, value);
+
+    notifyListeners();
+  }
+
+  Future<void> setAutoExpenseAccountId(int? value) async {
+    _autoExpenseAccountId = value;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    if (value == null) {
+      await prefs.remove(AppConstants.prefAutoExpenseAccountId);
+    } else {
+      await prefs.setInt(AppConstants.prefAutoExpenseAccountId, value);
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> setAutoIncomeAccountId(int? value) async {
+    _autoIncomeAccountId = value;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    if (value == null) {
+      await prefs.remove(AppConstants.prefAutoIncomeAccountId);
+    } else {
+      await prefs.setInt(AppConstants.prefAutoIncomeAccountId, value);
+    }
 
     notifyListeners();
   }
