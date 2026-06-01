@@ -8,6 +8,7 @@ import '../../providers/transaction_provider.dart';
 import '../../providers/category_provider.dart';
 
 import '../../models/category.dart';
+import '../../models/receipt_scan_result.dart';
 import '../../models/transaction_model.dart';
 
 import '../../theme/app_theme.dart';
@@ -15,6 +16,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/validators.dart';
 import '../../utils/category_icons.dart';
 import '../../utils/formatters.dart';
+import 'receipt_scan_screen.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionModel? transaction;
@@ -34,6 +36,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   final _amountController = TextEditingController();
 
   final _noteController = TextEditingController();
+
+  final _amountFocusNode = FocusNode();
 
   int? _selectedCategoryId;
   int? _selectedAccountId;
@@ -116,11 +120,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         });
       }
     });
+
+    _amountFocusNode.addListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _amountFocusNode.dispose();
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
@@ -384,6 +395,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     return Scaffold(
       backgroundColor: colorScheme.surface,
 
+      bottomNavigationBar: _buildReceiptScanAccessory(theme),
+
       appBar: AppBar(
         backgroundColor: colorScheme.surface,
 
@@ -443,6 +456,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
               TextFormField(
                 controller: _amountController,
+
+                focusNode: _amountFocusNode,
 
                 keyboardType: TextInputType.number,
 
@@ -660,6 +675,200 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     );
   }
 
+  Widget _buildReceiptScanAccessory(ThemeData theme) {
+    final keyboardBottom = MediaQuery.viewInsetsOf(context).bottom;
+    final shouldShow =
+        _amountFocusNode.hasFocus && keyboardBottom > 0 && !_isLoanLinkedEdit;
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 180),
+      child: shouldShow
+          ? Padding(
+              key: const ValueKey('receipt-scan-accessory'),
+              padding: EdgeInsets.only(bottom: keyboardBottom),
+              child: SafeArea(
+                top: false,
+                child: Container(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacing8,
+                    vertical: AppTheme.spacing4,
+                  ),
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: FilledButton.tonalIcon(
+                      onPressed: _openReceiptScanner,
+                      icon: const Icon(Icons.receipt_long_outlined),
+                      label: const Text('Scan hoá đơn'),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : const SizedBox.shrink(key: ValueKey('receipt-scan-hidden')),
+    );
+  }
+
+  Future<void> _openReceiptScanner() async {
+    _amountFocusNode.unfocus();
+
+    final result = await Navigator.push<ReceiptScanResult>(
+      context,
+      MaterialPageRoute(builder: (_) => const ReceiptScanScreen()),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    await _showReceiptScanResult(result);
+  }
+
+  Future<void> _showReceiptScanResult(ReceiptScanResult result) async {
+    final action = await showModalBottomSheet<_ReceiptScanAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.spacing12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Kết quả scan hoá đơn',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacing8),
+                Container(
+                  padding: const EdgeInsets.all(AppTheme.spacing8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Số tiền',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.spacing2),
+                      Text(
+                        Formatters.currency(result.totalAmount.toDouble()),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.spacing8),
+                      Text(
+                        'Ghi chú gợi ý',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.spacing2),
+                      Text(
+                        result.generatedNote,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacing8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, _ReceiptScanAction.dismiss),
+                        child: const Text('Bỏ qua'),
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacing4),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () =>
+                            Navigator.pop(context, _ReceiptScanAction.rescan),
+                        child: const Text('Quét lại'),
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacing4),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () =>
+                            Navigator.pop(context, _ReceiptScanAction.apply),
+                        child: const Text('Áp dụng'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    switch (action) {
+      case _ReceiptScanAction.apply:
+        _applyReceiptScanResult(result);
+        break;
+      case _ReceiptScanAction.rescan:
+        await _openReceiptScanner();
+        break;
+      case _ReceiptScanAction.dismiss:
+      case null:
+        break;
+    }
+  }
+
+  void _applyReceiptScanResult(ReceiptScanResult result) {
+    setState(() {
+      _amountController.text = _formatAmountForInput(result.totalAmount);
+
+      // Không ghi đè ghi chú người dùng đã nhập để tránh làm mất ngữ cảnh giao dịch.
+      if (_noteController.text.trim().isEmpty) {
+        _noteController.text = result.generatedNote;
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Đã áp dụng kết quả scan hoá đơn')),
+    );
+  }
+
+  String _formatAmountForInput(int amount) {
+    final digits = amount.toString();
+    final buffer = StringBuffer();
+
+    for (var i = 0; i < digits.length; i++) {
+      final remaining = digits.length - i;
+      buffer.write(digits[i]);
+      if (remaining > 1 && remaining % 3 == 1) {
+        buffer.write('.');
+      }
+    }
+
+    return buffer.toString();
+  }
+
   Widget _buildCategoryGrid(List<Category> categories) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -788,6 +997,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     );
   }
 }
+
+enum _ReceiptScanAction { apply, rescan, dismiss }
 
 class CurrencyInputFormatter extends TextInputFormatter {
   @override
