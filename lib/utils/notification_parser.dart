@@ -293,6 +293,15 @@ class NotificationParser {
     final categories = type == AppConstants.typeExpense
         ? expenseCategories
         : incomeCategories;
+    final autoCategoryName = type == AppConstants.typeExpense
+        ? AppConstants.autoExpenseCategoryName
+        : AppConstants.autoIncomeCategoryName;
+    for (final category in categories) {
+      if (category.isActive && category.name == autoCategoryName) {
+        return category.id;
+      }
+    }
+
     if (categories.isEmpty) return null;
     return categories.first.id;
   }

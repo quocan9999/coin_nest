@@ -14,7 +14,7 @@ class AppConstants {
 
   // ─── Database ──────────────────────────────────────────────────
   static const String dbName = 'coinnest.db';
-  static const int dbVersion = 3;
+  static const int dbVersion = 4;
 
   // ─── Security ──────────────────────────────────────────────────
   /// Minimum password length enforced at input validation.
@@ -100,6 +100,9 @@ class AppConstants {
     typeLend: 'Cho vay',
     typeBalanceAdjust: 'Điều chỉnh số dư',
   };
+
+  static const String autoExpenseCategoryName = 'Chi tiêu tự động';
+  static const String autoIncomeCategoryName = 'Thu nhập tự động';
 
   // ─── Loan Status ───────────────────────────────────────────────
   static const String loanStatusActive = 'active';
