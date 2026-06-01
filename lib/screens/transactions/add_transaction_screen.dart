@@ -688,6 +688,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               child: _AmountKeyboard(
                 onScanReceipt: _openReceiptScanner,
                 onKeyPressed: _handleAmountKeyboardKey,
+                shouldEvaluate: _amountExpressionNeedsEvaluation,
               ),
             )
           : const SizedBox.shrink(key: ValueKey('receipt-scan-hidden')),
@@ -709,11 +710,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         _deleteAmountToken();
         break;
       case _AmountKeyboardKeyType.done:
-        if (_finalizeAmountExpression(showError: true)) {
+        if (_amountExpressionNeedsEvaluation) {
+          _finalizeAmountExpression(showError: true);
+        } else {
           _amountFocusNode.unfocus();
         }
         break;
     }
+  }
+
+  bool get _amountExpressionNeedsEvaluation {
+    final rawExpression = _rawAmountExpression();
+    return _containsOperator(rawExpression);
   }
 
   void _appendAmountToken(String token) {
@@ -1172,12 +1180,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 }
 
 class _AmountKeyboard extends StatelessWidget {
+  static const double _keyHeight = AppTheme.spacing24;
+  static const double _keyGap = AppTheme.spacing4;
+  static const double _doneButtonHeight = (_keyHeight * 2) + _keyGap;
+
   final VoidCallback onScanReceipt;
   final ValueChanged<_AmountKeyboardKey> onKeyPressed;
+  final bool shouldEvaluate;
 
   const _AmountKeyboard({
     required this.onScanReceipt,
     required this.onKeyPressed,
+    required this.shouldEvaluate,
   });
 
   @override
@@ -1205,6 +1219,8 @@ class _AmountKeyboard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppTheme.spacing6),
+          // Vùng bottomNavigationBar không cấp chiều cao vô hạn ổn định cho Expanded
+          // theo trục dọc, nên keypad dùng chiều cao cố định để tránh lỗi layout.
           _keyboardRow(context, [
             _AmountKeyboardKey.clear(),
             _AmountKeyboardKey.operator('÷'),
@@ -1223,39 +1239,66 @@ class _AmountKeyboard extends StatelessWidget {
             _AmountKeyboardKey.digit('6'),
             _AmountKeyboardKey.operator('+'),
           ]),
-          _keyboardRow(context, [
-            _AmountKeyboardKey.digit('1'),
-            _AmountKeyboardKey.digit('2'),
-            _AmountKeyboardKey.digit('3'),
-            _AmountKeyboardKey.done(),
-          ]),
-          _keyboardRow(context, [
-            _AmountKeyboardKey.digit('0'),
-            _AmountKeyboardKey.digit('000'),
-            _AmountKeyboardKey.backspace(),
-            _AmountKeyboardKey.done(),
-          ]),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _keyboardRow(context, [
+                      _AmountKeyboardKey.digit('1'),
+                      _AmountKeyboardKey.digit('2'),
+                      _AmountKeyboardKey.digit('3'),
+                    ]),
+                    _keyboardRow(context, [
+                      _AmountKeyboardKey.digit('0'),
+                      _AmountKeyboardKey.digit('000'),
+                      _AmountKeyboardKey.backspace(),
+                    ], addBottomGap: false),
+                  ],
+                ),
+              ),
+              const SizedBox(width: _keyGap),
+              SizedBox(
+                width: _keyHeight,
+                height: _doneButtonHeight,
+                child: _keyboardButton(
+                  context,
+                  _AmountKeyboardKey.done(shouldEvaluate ? '=' : 'Xong'),
+                  height: _doneButtonHeight,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _keyboardRow(BuildContext context, List<_AmountKeyboardKey> keys) {
+  Widget _keyboardRow(
+    BuildContext context,
+    List<_AmountKeyboardKey> keys, {
+    bool addBottomGap = true,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppTheme.spacing4),
+      padding: EdgeInsets.only(bottom: addBottomGap ? _keyGap : 0),
       child: Row(
         children: [
           for (var index = 0; index < keys.length; index++) ...[
             Expanded(child: _keyboardButton(context, keys[index])),
-            if (index != keys.length - 1)
-              const SizedBox(width: AppTheme.spacing4),
+            if (index != keys.length - 1) const SizedBox(width: _keyGap),
           ],
         ],
       ),
     );
   }
 
-  Widget _keyboardButton(BuildContext context, _AmountKeyboardKey key) {
+  Widget _keyboardButton(
+    BuildContext context,
+    _AmountKeyboardKey key, {
+    double height = _keyHeight,
+  }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDone = key.type == _AmountKeyboardKeyType.done;
@@ -1267,7 +1310,7 @@ class _AmountKeyboard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         onTap: () => onKeyPressed(key),
         child: SizedBox(
-          height: AppTheme.spacing24,
+          height: height,
           child: Center(
             // Bàn phím custom không dùng IME hệ thống, nên mọi phím đều đi qua
             // callback này để kiểm soát định dạng tiền và phép tính trước khi lưu.
@@ -1340,11 +1383,11 @@ class _AmountKeyboardKey {
     );
   }
 
-  factory _AmountKeyboardKey.done() {
-    return const _AmountKeyboardKey._(
+  factory _AmountKeyboardKey.done(String label) {
+    return _AmountKeyboardKey._(
       type: _AmountKeyboardKeyType.done,
       value: '',
-      label: 'Xong',
+      label: label,
     );
   }
 }
