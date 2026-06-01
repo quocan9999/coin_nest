@@ -15,12 +15,16 @@ void main() {
     await provider.markChanged(1, source: 'budget');
 
     expect(provider.pendingCount, 2);
+    expect(provider.pendingTransactionCount, 1);
+    expect(provider.hasPendingTransactions, isTrue);
     expect(provider.hasPendingChanges, isTrue);
     expect(provider.badgeLabel, '2');
 
     await provider.clearPending(1);
 
     expect(provider.pendingCount, 0);
+    expect(provider.pendingTransactionCount, 0);
+    expect(provider.hasPendingTransactions, isFalse);
     expect(provider.hasPendingChanges, isFalse);
   });
 

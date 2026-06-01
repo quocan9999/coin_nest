@@ -13,6 +13,7 @@ class TransactionProvider extends ChangeNotifier {
   // --- BỔ SUNG: Kênh dữ liệu riêng cho Trang chủ ---
   List<TransactionModel> _recentTransactions = [];
   bool _isLoading = false;
+  int _revision = 0;
 
   String? _filterType;
   int? _filterCategoryId;
@@ -28,6 +29,7 @@ class TransactionProvider extends ChangeNotifier {
   // --- BỔ SUNG: Getter lấy 5 giao dịch gần nhất ---
   List<TransactionModel> get recentTransactions => _recentTransactions;
   bool get isLoading => _isLoading;
+  int get revision => _revision;
 
   int? get filterAccountId => _filterAccountId;
   String get timeFilter => _timeFilter;
@@ -251,6 +253,7 @@ class TransactionProvider extends ChangeNotifier {
 
       final txnId = await _txnDao.insertWithBalance(txn);
       await _backupAlertProvider?.markChanged(userId, source: 'transaction');
+      _revision++;
       await loadTransactions(userId);
       await loadRecentTransactions(
         userId,
@@ -304,6 +307,7 @@ class TransactionProvider extends ChangeNotifier {
 
       await _txnDao.updateWithBalance(txn);
       await _backupAlertProvider?.markChanged(userId, source: 'transaction');
+      _revision++;
       await loadTransactions(userId);
       await loadRecentTransactions(
         userId,
@@ -323,6 +327,7 @@ class TransactionProvider extends ChangeNotifier {
 
       await _txnDao.deleteWithBalance(txnId);
       await _backupAlertProvider?.markChanged(userId, source: 'transaction');
+      _revision++;
       await loadTransactions(userId);
       await loadRecentTransactions(
         userId,

@@ -10,8 +10,11 @@ class CategoryDao {
     return db.insert('categories', category.toMap());
   }
 
-  Future<List<Category>> getAllByUser(int userId,
-      {String? type, bool activeOnly = true}) async {
+  Future<List<Category>> getAllByUser(
+    int userId, {
+    String? type,
+    bool activeOnly = true,
+  }) async {
     final db = await _dbHelper.database;
 
     final where = StringBuffer('user_id = ?');

@@ -10,7 +10,10 @@ class AccountDao {
     return db.insert('accounts', account.toMap());
   }
 
-  Future<List<Account>> getAllByUser(int userId, {bool activeOnly = true}) async {
+  Future<List<Account>> getAllByUser(
+    int userId, {
+    bool activeOnly = true,
+  }) async {
     final db = await _dbHelper.database;
     final where = activeOnly ? 'user_id = ? AND is_active = 1' : 'user_id = ?';
     final result = await db.query(
@@ -49,10 +52,7 @@ class AccountDao {
     final db = await _dbHelper.database;
     return db.update(
       'accounts',
-      {
-        'is_active': 0,
-        'updated_at': DateTime.now().toIso8601String(),
-      },
+      {'is_active': 0, 'updated_at': DateTime.now().toIso8601String()},
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -72,10 +72,7 @@ class AccountDao {
     final db = await _dbHelper.database;
     await db.update(
       'accounts',
-      {
-        'balance': newBalance,
-        'updated_at': DateTime.now().toIso8601String(),
-      },
+      {'balance': newBalance, 'updated_at': DateTime.now().toIso8601String()},
       where: 'id = ?',
       whereArgs: [accountId],
     );

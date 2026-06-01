@@ -86,6 +86,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     setState(() => _currentIndex = index);
+    if (index == 3) {
+      _loadData();
+    }
   }
 
   @override
