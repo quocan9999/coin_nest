@@ -50,9 +50,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _finish() {
     context.read<AuthProvider>().completeOnboarding();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
   }
 
   @override
@@ -64,7 +64,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -166,18 +166,18 @@ class _OnboardingPage extends StatelessWidget {
             title,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.onSurface,
-                ),
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             description,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
-                  height: 1.5,
-                ),
+              color: AppTheme.colors(context).textSecondary,
+              height: 1.5,
+            ),
           ),
         ],
       ),

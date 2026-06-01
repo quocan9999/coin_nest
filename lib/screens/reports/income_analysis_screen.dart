@@ -37,20 +37,13 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
 
   int _loadSeq = 0;
 
-  // ================= DARK MODE =================
+  Color get bgColor => AppTheme.colors(context).surface;
 
-  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get cardColor => AppTheme.colors(context).card;
 
-  Color get bgColor => isDark ? const Color(0xFF0F172A) : AppTheme.surface;
+  Color get textColor => AppTheme.colors(context).textPrimary;
 
-  Color get cardColor =>
-      isDark ? const Color(0xFF111827) : AppTheme.surfaceContainerLowest;
-
-  Color get textColor => isDark ? Colors.white : AppTheme.onSurface;
-
-  Color get subTextColor => isDark ? Colors.white70 : AppTheme.onSurfaceVariant;
-
-  // =================================================
+  Color get subTextColor => AppTheme.colors(context).textSecondary;
 
   @override
   void initState() {
@@ -290,7 +283,7 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
 
             icon: const Icon(Icons.chevron_left_rounded, size: 20),
 
-            color: AppTheme.primary,
+            color: Theme.of(context).colorScheme.primary,
 
             disabledColor: AppTheme.outlineVariant,
           ),
@@ -373,7 +366,7 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
 
         centerTitle: true,
 
-        iconTheme: const IconThemeData(color: AppTheme.primary),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
       ),
 
       body: Column(
@@ -436,13 +429,15 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
                               horizontal: 16,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.surfaceContainerLowest,
+                              color: cardColor,
                               borderRadius: BorderRadius.circular(
                                 AppTheme.radiusLg,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
+                                  color: Theme.of(
+                                    context,
+                                  ).shadowColor.withValues(alpha: 0.04),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -471,9 +466,7 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
                                 Text(
                                   _periodLabel(),
                                   style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: AppTheme.onSurfaceVariant,
-                                      ),
+                                      ?.copyWith(color: subTextColor),
                                 ),
                                 const SizedBox(height: 24),
                                 SizedBox(
@@ -490,13 +483,15 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: AppTheme.surfaceContainerLowest,
+                              color: cardColor,
                               borderRadius: BorderRadius.circular(
                                 AppTheme.radiusLg,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
+                                  color: Theme.of(
+                                    context,
+                                  ).shadowColor.withValues(alpha: 0.04),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -683,14 +678,14 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
       fontWeight: FontWeight.w700,
     );
     final labelStyle = Theme.of(context).textTheme.labelSmall!.copyWith(
-      color: AppTheme.onSurfaceVariant,
+      color: subTextColor,
       fontWeight: FontWeight.w500,
     );
 
     return LineTouchData(
       handleBuiltInTouches: true,
       touchTooltipData: LineTouchTooltipData(
-        getTooltipColor: (_) => AppTheme.surfaceContainerLowest,
+        getTooltipColor: (_) => cardColor,
         tooltipRoundedRadius: AppTheme.radiusSm,
         tooltipPadding: const EdgeInsets.symmetric(
           horizontal: AppTheme.spacing6,
@@ -725,7 +720,7 @@ class _IncomeAnalysisScreenState extends State<IncomeAnalysisScreen> {
         child: Text(
           _chartUnitLabel(unitScale),
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppTheme.onSurfaceVariant,
+            color: subTextColor,
             fontWeight: FontWeight.w500,
           ),
         ),

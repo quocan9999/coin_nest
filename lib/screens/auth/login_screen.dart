@@ -61,9 +61,12 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final isLoading = auth.isLoading;
+    final theme = Theme.of(context);
+    final colors = AppTheme.colors(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
@@ -81,18 +84,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       'Chào mừng quay trở lại',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
-                          ),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       'Vui lòng nhập thông tin để tiếp tục quản lý tài\nchính của bạn.',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.outline,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colors.textSecondary,
                         height: 1.6,
                       ),
                     ),
@@ -101,11 +103,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: theme.cardColor,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withAlpha(10),
+                            color: theme.shadowColor.withAlpha(10),
                             blurRadius: 15,
                             offset: const Offset(0, 8),
                           ),
@@ -140,11 +142,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 child: Text(
                                   'Quên mật khẩu?',
-                                  style: Theme.of(context).textTheme.labelMedium
-                                      ?.copyWith(
-                                        color: AppTheme.primary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -161,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   _obscurePassword
                                       ? Icons.visibility_off_outlined
                                       : Icons.visibility_outlined,
-                                  color: AppTheme.outline,
+                                  color: colorScheme.outline,
                                 ),
                                 onPressed: () => setState(
                                   () => _obscurePassword = !_obscurePassword,
@@ -181,12 +182,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               child: isLoading
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 20,
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Colors.white,
+                                        color: colorScheme.onPrimary,
                                       ),
                                     )
                                   : const Text('Đăng nhập'),
@@ -197,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               Expanded(
                                 child: Divider(
-                                  color: AppTheme.outlineVariant.withAlpha(60),
+                                  color: colors.border.withAlpha(60),
                                 ),
                               ),
                               Padding(
@@ -206,17 +207,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 child: Text(
                                   'HOẶC ĐĂNG NHẬP VỚI',
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(
-                                        color: const Color(0xFF999999),
-                                        letterSpacing: 1,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: colors.textDisabled,
+                                    letterSpacing: 1,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                               Expanded(
                                 child: Divider(
-                                  color: AppTheme.outlineVariant.withAlpha(60),
+                                  color: colors.border.withAlpha(60),
                                 ),
                               ),
                             ],
@@ -228,12 +228,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: isLoading ? null : _loginWithGoogle,
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(
-                                  color: AppTheme.outlineVariant.withAlpha(40),
+                                  color: colors.border.withAlpha(40),
                                 ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: theme.cardColor,
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -250,13 +250,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   const SizedBox(width: 8),
                                   Text(
                                     'Google',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelLarge
-                                        ?.copyWith(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: colorScheme.onSurface,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -272,8 +269,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           Text(
                             'Chưa có tài khoản? ',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: AppTheme.outline),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
                           ),
                           GestureDetector(
                             onTap: () => Navigator.push(
@@ -284,11 +282,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             child: Text(
                               'Đăng ký ngay',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: AppTheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ],
@@ -316,15 +313,15 @@ class _LoginScreenState extends State<LoginScreen> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(13),
+                  color: Theme.of(context).shadowColor.withAlpha(13),
                   blurRadius: 2,
                   offset: const Offset(0, 1),
                 ),
               ],
             ),
-            child: const Icon(
+            child: Icon(
               Icons.account_balance_wallet_rounded,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
               size: 30,
             ),
           ),
@@ -332,7 +329,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Text(
             AppConstants.appName,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: AppTheme.primary,
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.w700,
               letterSpacing: -1.5,
             ),
@@ -341,7 +338,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Text(
             AppConstants.appTagline,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: AppTheme.outline,
+              color: AppTheme.colors(context).textSecondary,
               letterSpacing: 2,
               fontSize: 10,
             ),
@@ -357,7 +354,7 @@ class _LoginScreenState extends State<LoginScreen> {
       style: Theme.of(context).textTheme.labelMedium?.copyWith(
         fontWeight: FontWeight.w700,
         letterSpacing: 0.3,
-        color: const Color(0xFF4A4A4A),
+        color: AppTheme.colors(context).textSecondary,
       ),
     );
   }

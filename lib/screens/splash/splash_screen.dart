@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Center logo
@@ -89,10 +89,7 @@ class _SplashScreenState extends State<SplashScreen>
               builder: (context, child) {
                 return Opacity(
                   opacity: _fadeIn.value,
-                  child: Transform.scale(
-                    scale: _scale.value,
-                    child: child,
-                  ),
+                  child: Transform.scale(scale: _scale.value, child: child),
                 );
               },
               child: Column(
@@ -105,9 +102,9 @@ class _SplashScreenState extends State<SplashScreen>
                       color: AppTheme.primaryContainer,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.account_balance_wallet_rounded,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onPrimary,
                       size: 44,
                     ),
                   ),
@@ -115,17 +112,17 @@ class _SplashScreenState extends State<SplashScreen>
                   Text(
                     AppConstants.appName,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: AppTheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     AppConstants.appTagline,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: AppTheme.onSurfaceVariant,
-                          letterSpacing: 3,
-                        ),
+                      color: AppTheme.colors(context).textSecondary,
+                      letterSpacing: 3,
+                    ),
                   ),
                 ],
               ),
@@ -144,9 +141,9 @@ class _SplashScreenState extends State<SplashScreen>
                 'SECURE BANKING ENVIRONMENT',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppTheme.outline,
-                      letterSpacing: 2,
-                    ),
+                  color: AppTheme.outline,
+                  letterSpacing: 2,
+                ),
               ),
             ),
           ),

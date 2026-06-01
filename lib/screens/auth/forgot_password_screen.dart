@@ -440,7 +440,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             Text(
               message,
               style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.onSurfaceVariant,
+                color: AppTheme.colors(ctx).textSecondary,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -484,10 +484,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded),
@@ -532,9 +534,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           const SizedBox(height: 8),
           Text(
             'Nhập số điện thoại hoặc email đã đăng ký để đặt lại mật khẩu.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppTheme.colors(context).textSecondary,
+            ),
           ),
 
           const SizedBox(height: 28),
@@ -578,7 +580,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         Text(
           'Nhập mã gồm 6 chữ số đã được gửi đến số điện thoại của bạn',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppTheme.onSurfaceVariant,
+            color: AppTheme.colors(context).textSecondary,
             height: 1.6,
           ),
         ),
@@ -660,13 +662,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           maxLength: 2,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            color: AppTheme.onSurface,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
           decoration: InputDecoration(
             counterText: '',
             contentPadding: EdgeInsets.zero,
             filled: true,
-            fillColor: AppTheme.surfaceContainerHighest,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radiusSm),
               borderSide: BorderSide(
@@ -703,9 +705,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           const SizedBox(height: 8),
           Text(
             'Nhập mật khẩu mới cho tài khoản của bạn.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppTheme.colors(context).textSecondary,
+            ),
           ),
 
           const SizedBox(height: 28),
@@ -785,12 +787,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       child: ElevatedButton(
         onPressed: isDisabled ? null : onPressed,
         child: _isSubmitting
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                 ),
               )
             : Text(label),
