@@ -178,9 +178,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
@@ -191,7 +191,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           'Xác thực OTP',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppTheme.onSurface,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),
@@ -206,7 +206,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 'Nhập mã gồm 6 chữ số đã được gửi đến số điện thoại của bạn',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.onSurfaceVariant,
+                  color: AppTheme.colors(context).textSecondary,
                   height: 1.6,
                 ),
               ),
@@ -236,12 +236,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     ),
                   ),
                   child: _isSubmitting || widget.isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         )
                       : const Text('Xác nhận'),
@@ -299,13 +299,13 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           maxLength: 2,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            color: AppTheme.onSurface,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
           decoration: InputDecoration(
             counterText: '',
             contentPadding: EdgeInsets.zero,
             filled: true,
-            fillColor: AppTheme.surfaceContainerHighest,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppTheme.radiusSm),
               borderSide: BorderSide(

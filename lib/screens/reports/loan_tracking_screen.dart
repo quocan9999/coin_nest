@@ -19,23 +19,15 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // ================= DARK MODE =================
+  Color get bgColor => AppTheme.colors(context).surface;
 
-  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get cardColor => AppTheme.colors(context).card;
 
-  Color get bgColor => isDark ? const Color(0xFF0F172A) : AppTheme.surface;
+  Color get textColor => AppTheme.colors(context).textPrimary;
 
-  Color get cardColor =>
-      isDark ? const Color(0xFF111827) : AppTheme.surfaceContainerLowest;
+  Color get subTextColor => AppTheme.colors(context).textSecondary;
 
-  Color get textColor => isDark ? Colors.white : AppTheme.onSurface;
-
-  Color get subTextColor => isDark ? Colors.white70 : AppTheme.onSurfaceVariant;
-
-  Color get progressBg =>
-      isDark ? const Color(0xFF334155) : AppTheme.surfaceContainerHigh;
-
-  // =============================================
+  Color get progressBg => AppTheme.colors(context).border;
 
   @override
   void initState() {
@@ -77,7 +69,7 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
 
-            color: AppTheme.primary,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
 
@@ -87,16 +79,16 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
 
         centerTitle: true,
 
-        iconTheme: const IconThemeData(color: AppTheme.primary),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
 
         bottom: TabBar(
           controller: _tabController,
 
-          labelColor: AppTheme.primary,
+          labelColor: Theme.of(context).colorScheme.primary,
 
           unselectedLabelColor: subTextColor,
 
-          indicatorColor: AppTheme.primary,
+          indicatorColor: Theme.of(context).colorScheme.primary,
 
           indicatorWeight: 3,
 
@@ -353,7 +345,7 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
 
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Theme.of(context).shadowColor.withValues(alpha: 0.04),
 
               blurRadius: 8,
 

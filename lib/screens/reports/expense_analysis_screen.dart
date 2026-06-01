@@ -36,16 +36,13 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
 
   int _loadSeq = 0;
 
-  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  Color get bgColor => AppTheme.colors(context).surface;
 
-  Color get bgColor => isDark ? const Color(0xFF0F172A) : AppTheme.surface;
+  Color get cardColor => AppTheme.colors(context).card;
 
-  Color get cardColor =>
-      isDark ? const Color(0xFF111827) : AppTheme.surfaceContainerLowest;
+  Color get textColor => AppTheme.colors(context).textPrimary;
 
-  Color get textColor => isDark ? Colors.white : AppTheme.onSurface;
-
-  Color get subTextColor => isDark ? Colors.white70 : AppTheme.onSurfaceVariant;
+  Color get subTextColor => AppTheme.colors(context).textSecondary;
 
   @override
   void initState() {
@@ -279,7 +276,7 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
           IconButton(
             onPressed: () => _changePeriod(-1),
             icon: const Icon(Icons.chevron_left_rounded, size: 20),
-            color: AppTheme.primary,
+            color: Theme.of(context).colorScheme.primary,
             disabledColor: AppTheme.outlineVariant,
           ),
           Text(
@@ -347,7 +344,7 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
         backgroundColor: bgColor,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: AppTheme.primary),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
       ),
       body: Column(
         children: [
@@ -404,13 +401,15 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                               horizontal: 16,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.surfaceContainerLowest,
+                              color: cardColor,
                               borderRadius: BorderRadius.circular(
                                 AppTheme.radiusLg,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
+                                  color: Theme.of(
+                                    context,
+                                  ).shadowColor.withValues(alpha: 0.04),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -439,9 +438,7 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                                 Text(
                                   _periodLabel(),
                                   style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: AppTheme.onSurfaceVariant,
-                                      ),
+                                      ?.copyWith(color: subTextColor),
                                 ),
                                 const SizedBox(height: 24),
                                 SizedBox(
@@ -458,13 +455,15 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: AppTheme.surfaceContainerLowest,
+                              color: cardColor,
                               borderRadius: BorderRadius.circular(
                                 AppTheme.radiusLg,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
+                                  color: Theme.of(
+                                    context,
+                                  ).shadowColor.withValues(alpha: 0.04),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -643,14 +642,14 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
       fontWeight: FontWeight.w700,
     );
     final labelStyle = Theme.of(context).textTheme.labelSmall!.copyWith(
-      color: AppTheme.onSurfaceVariant,
+      color: subTextColor,
       fontWeight: FontWeight.w500,
     );
 
     return LineTouchData(
       handleBuiltInTouches: true,
       touchTooltipData: LineTouchTooltipData(
-        getTooltipColor: (_) => AppTheme.surfaceContainerLowest,
+        getTooltipColor: (_) => cardColor,
         tooltipRoundedRadius: AppTheme.radiusSm,
         tooltipPadding: const EdgeInsets.symmetric(
           horizontal: AppTheme.spacing6,
@@ -685,7 +684,7 @@ class _ExpenseAnalysisScreenState extends State<ExpenseAnalysisScreen> {
         child: Text(
           _chartUnitLabel(unitScale),
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppTheme.onSurfaceVariant,
+            color: subTextColor,
             fontWeight: FontWeight.w500,
           ),
         ),

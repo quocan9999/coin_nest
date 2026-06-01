@@ -143,7 +143,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppTheme.primary,
 
-        foregroundColor: Colors.white,
+        foregroundColor: colorScheme.onPrimary,
 
         onPressed: () {
           Navigator.push(
@@ -214,7 +214,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                       'Tổng tài sản ròng',
 
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: colorScheme.onPrimary.withValues(alpha: 0.9),
                       ),
                     ),
 
@@ -226,7 +226,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                       style: theme.textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.w700,
 
-                        color: Colors.white,
+                        color: colorScheme.onPrimary,
                       ),
                     ),
 
@@ -239,7 +239,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                         Icon(
                           Icons.sync_rounded,
 
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: colorScheme.onPrimary.withValues(alpha: 0.8),
 
                           size: 14,
                         ),
@@ -250,7 +250,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                           'Cập nhật hôm nay',
 
                           style: theme.textTheme.labelMedium?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.8),
+                            color: colorScheme.onPrimary.withValues(alpha: 0.8),
                           ),
                         ),
                       ],
@@ -594,7 +594,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
 
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: Theme.of(context).shadowColor.withValues(alpha: 0.04),
 
                 blurRadius: 10,
 

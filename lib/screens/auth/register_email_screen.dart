@@ -65,19 +65,22 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final isLoading = auth.isLoading;
+    final theme = Theme.of(context);
+    final colors = AppTheme.colors(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
         title: Text(
           'Đăng ký',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          style: theme.textTheme.titleLarge?.copyWith(
             fontSize: 28,
             fontWeight: FontWeight.w600,
-            color: AppTheme.onSurface,
+            color: colorScheme.onSurface,
           ),
         ),
         leading: IconButton(
@@ -99,17 +102,16 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'Tạo tài khoản',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.onSurface,
-                          ),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Đăng ký để bắt đầu quản lý tài chính cá nhân.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.outline,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colors.textSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -176,19 +178,19 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                           ),
                         ),
                         child: isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: colorScheme.onPrimary,
                                 ),
                               )
                             : Text(
                                 'Đăng ký',
                                 style: Theme.of(context).textTheme.labelLarge
                                     ?.copyWith(
-                                      color: Colors.white,
+                                      color: colorScheme.onPrimary,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -213,22 +215,19 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: Divider(
-                            color: AppTheme.outlineVariant.withAlpha(120),
-                          ),
+                          child: Divider(color: colors.border.withAlpha(120)),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             'Hoặc đăng ký bằng',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppTheme.outline),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.textSecondary,
+                            ),
                           ),
                         ),
                         Expanded(
-                          child: Divider(
-                            color: AppTheme.outlineVariant.withAlpha(120),
-                          ),
+                          child: Divider(color: colors.border.withAlpha(120)),
                         ),
                       ],
                     ),
@@ -250,11 +249,11 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                                 );
                               },
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppTheme.outlineVariant),
+                          side: BorderSide(color: colors.border),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          backgroundColor: Colors.white,
+                          backgroundColor: theme.cardColor,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -262,16 +261,15 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                             Icon(
                               Icons.phone_android_rounded,
                               size: 20,
-                              color: AppTheme.onSurfaceVariant,
+                              color: colors.textSecondary,
                             ),
                             const SizedBox(width: 12),
                             Text(
                               'Số điện thoại',
-                              style: Theme.of(context).textTheme.labelLarge
-                                  ?.copyWith(
-                                    color: AppTheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: colors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -283,15 +281,13 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                     SizedBox(
                       height: 52,
                       child: OutlinedButton(
-                        onPressed: isLoading
-                            ? null
-                            : _loginWithGoogle,
+                        onPressed: isLoading ? null : _loginWithGoogle,
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppTheme.outlineVariant),
+                          side: BorderSide(color: colors.border),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          backgroundColor: Colors.white,
+                          backgroundColor: theme.cardColor,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -306,11 +302,10 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                             const SizedBox(width: 12),
                             Text(
                               'Google',
-                              style: Theme.of(context).textTheme.labelLarge
-                                  ?.copyWith(
-                                    color: AppTheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: colors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -324,8 +319,9 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                       children: [
                         Text(
                           'Đã có tài khoản? ',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppTheme.outline),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colors.textSecondary,
+                          ),
                         ),
                         GestureDetector(
                           onTap: isLoading
@@ -333,11 +329,10 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                               : () => Navigator.pop(context),
                           child: Text(
                             'Đăng nhập',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: AppTheme.primary,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ],
@@ -397,7 +392,7 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.55,
-              color: AppTheme.outline,
+              color: Theme.of(context).colorScheme.outline,
             ),
           ),
         ),
@@ -411,7 +406,7 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
           obscureText: obscureText,
           decoration: InputDecoration(
             hintText: hint,
-            fillColor: AppTheme.surfaceContainerHigh,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
