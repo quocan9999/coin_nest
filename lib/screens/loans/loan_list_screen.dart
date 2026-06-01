@@ -8,7 +8,14 @@ import 'add_edit_loan_screen.dart';
 import 'loan_detail_screen.dart';
 
 class LoanListScreen extends StatefulWidget {
-  const LoanListScreen({super.key});
+  final String? initialType;
+  final bool selectForPayment;
+
+  const LoanListScreen({
+    super.key,
+    this.initialType,
+    this.selectForPayment = false,
+  });
 
   @override
   State<LoanListScreen> createState() =>
@@ -41,8 +48,13 @@ class _LoanListScreenState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final loanProv =
-        context.watch<LoanProvider>();
+    final loanProv = context.watch<LoanProvider>();
+    final visibleLoans = loanProv.loans.where((loan) {
+      final matchesType =
+          widget.initialType == null || loan.type == widget.initialType;
+      final matchesPaymentFlow = !widget.selectForPayment || !loan.isPaid;
+      return matchesType && matchesPaymentFlow;
+    }).toList();
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -52,7 +64,7 @@ class _LoanListScreenState
         elevation: 0,
         centerTitle: true,
 
-        title: const Text('Vay / Cho vay'),
+        title: Text(_screenTitle),
 
         leading: IconButton(
           icon: const Icon(
@@ -109,7 +121,7 @@ class _LoanListScreenState
 
           Expanded(
             child:
-                loanProv.loans.isEmpty
+                visibleLoans.isEmpty
                     ? Center(
                       child: Column(
                         mainAxisSize:
@@ -131,7 +143,7 @@ class _LoanListScreenState
                           ),
 
                           Text(
-                            'Chưa có khoản vay nào',
+                            _emptyStateText,
 
                             style: TextStyle(
                               color: colorScheme
@@ -148,11 +160,11 @@ class _LoanListScreenState
                           ),
 
                       itemCount:
-                          loanProv.loans.length,
+                          visibleLoans.length,
 
                       itemBuilder: (_, i) {
                         final loan =
-                            loanProv.loans[i];
+                            visibleLoans[i];
 
                         return GestureDetector(
                           onTap:
@@ -372,7 +384,9 @@ class _LoanListScreenState
           MaterialPageRoute(
             builder:
                 (_) =>
-                    const AddEditLoanScreen(),
+                    AddEditLoanScreen(
+                      initialType: widget.initialType,
+                    ),
           ),
         );
 
@@ -400,6 +414,26 @@ class _LoanListScreenState
     if (changed == true) {
       await _refresh();
     }
+  }
+
+  String get _screenTitle {
+    if (widget.selectForPayment && widget.initialType == 'borrow') {
+      return 'Chọn khoản cần trả';
+    }
+    if (widget.selectForPayment && widget.initialType == 'lend') {
+      return 'Chọn khoản cần thu';
+    }
+    return 'Vay / Cho vay';
+  }
+
+  String get _emptyStateText {
+    if (widget.initialType == 'borrow') {
+      return 'Chưa có khoản vay nào';
+    }
+    if (widget.initialType == 'lend') {
+      return 'Chưa có khoản cho vay nào';
+    }
+    return 'Chưa có khoản vay nào';
   }
 
   Widget _statusBadge(

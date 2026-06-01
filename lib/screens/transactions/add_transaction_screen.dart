@@ -16,6 +16,8 @@ import '../../theme/app_theme.dart';
 import '../../utils/validators.dart';
 import '../../utils/category_icons.dart';
 import '../../utils/formatters.dart';
+import '../loans/add_edit_loan_screen.dart';
+import '../loans/loan_list_screen.dart';
 import 'receipt_scan_screen.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -381,6 +383,91 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           'Chú ý! Dữ liệu bị xoá sẽ không thể khôi phục lại được. Bạn có muốn tiếp tục?',
 
       onConfirm: _executeDelete,
+    );
+  }
+
+  bool _isLoanWorkflowCategory(Category category) {
+    if (_currentType == 'expense') {
+      return category.name == 'Cho mượn' || category.name == 'Trả nợ';
+    }
+
+    if (_currentType == 'income') {
+      return category.name == 'Vay mượn' || category.name == 'Thu nợ';
+    }
+
+    return false;
+  }
+
+  bool _isLoanCreationCategory(Category category) {
+    return category.name == 'Cho mượn' || category.name == 'Vay mượn';
+  }
+
+  String _initialLoanTypeForCategory(Category category) {
+    return category.name == 'Cho mượn' || category.name == 'Thu nợ'
+        ? 'lend'
+        : 'borrow';
+  }
+
+  Future<void> _handleCategoryTap(Category category) async {
+    final isSelected = _selectedCategoryId == category.id;
+    if (isSelected) {
+      setState(() => _selectedCategoryId = null);
+      return;
+    }
+
+    // Các hạng mục vay/cho vay phải đi qua domain khoản vay để số dư,
+    // lịch sử thanh toán và linked transaction luôn đồng bộ.
+    if (_isLoanWorkflowCategory(category)) {
+      await _showLoanWorkflowDialog(category);
+      return;
+    }
+
+    setState(() => _selectedCategoryId = category.id);
+  }
+
+  Future<void> _showLoanWorkflowDialog(Category category) async {
+    final isCreation = _isLoanCreationCategory(category);
+    final title = isCreation
+        ? 'Tạo khoản vay/cho vay'
+        : 'Chọn khoản vay/cho vay';
+    final message = isCreation
+        ? 'Bạn đang chọn hạng mục "${category.name}" để phát sinh khoản vay/cho vay mới. '
+            'Bạn có muốn chuyển sang tạo khoản vay/cho vay không?'
+        : 'Bạn đang chọn hạng mục "${category.name}" để thanh toán khoản vay/cho vay đã có. '
+            'Bạn có muốn chuyển sang danh sách khoản vay/cho vay để chọn khoản cần xử lý không?';
+
+    final shouldNavigate = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Ở lại'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Chuyển sang'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || shouldNavigate != true) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => isCreation
+            ? AddEditLoanScreen(
+                initialType: _initialLoanTypeForCategory(category),
+              )
+            : LoanListScreen(
+                initialType: _initialLoanTypeForCategory(category),
+                selectForPayment: true,
+              ),
+      ),
     );
   }
 
@@ -1063,8 +1150,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         final isSelected = _selectedCategoryId == cat.id;
 
         return GestureDetector(
-          onTap: () =>
-              setState(() => _selectedCategoryId = isSelected ? null : cat.id),
+          onTap: () => _handleCategoryTap(cat),
 
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
