@@ -42,3 +42,16 @@ Validation:
 - `dart format lib/screens/transactions/add_transaction_screen.dart`: pass.
 - `flutter analyze`: pass.
 - `flutter test test/services/receipt_ocr_parser_test.dart`: pass.
+
+## 2026-06-01 - Phase 4
+
+- Rà lại comment tiếng Việt ở các khối quan trọng: OCR heuristic, camera lifecycle, lỗi camera Genymotion, quyền thư viện Android và logic không ghi đè ghi chú.
+- Rà nhanh UI mới để bảo đảm phần thêm mới dùng `AppTheme` cho màu, spacing và radius.
+- Dọn thư mục metadata build `android/.kotlin/` sinh ra trong lúc build để không đưa artifact vào commit.
+
+Validation:
+
+- `flutter test`: pass toàn bộ 71 test.
+- `flutter devices`: phát hiện Genymotion `A10` Android 11 (API 30); chưa thấy điện thoại thật Android 15 trong danh sách thiết bị.
+- `flutter build apk --debug`: tạo được `build/app/outputs/flutter-apk/app-debug.apk` khoảng 85.9 MB, nhưng lệnh không kết thúc sạch trong timeout 5 phút của công cụ.
+- Chưa chạy manual test trên Android 15 vì thiết bị không được Flutter liệt kê ở thời điểm validation.
