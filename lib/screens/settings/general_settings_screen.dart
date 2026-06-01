@@ -42,10 +42,6 @@ class GeneralSettingsScreen extends StatelessWidget {
                 onChanged: settings.setShowBalance,
               ),
               SwitchListTile(
-                secondary: Icon(
-                  settings.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                  color: colorScheme.primary,
-                ),
                 title: const Text('Giao diện tối'),
                 subtitle: const Text('Bật chế độ nền tối'),
                 value: settings.isDarkMode,
