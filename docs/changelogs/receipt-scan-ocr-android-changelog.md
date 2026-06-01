@@ -43,6 +43,18 @@ Validation:
 - `flutter analyze`: pass.
 - `flutter test test/services/receipt_ocr_parser_test.dart`: pass.
 
+## 2026-06-01 - Phase 7
+
+- Sửa nút `Xong/=` từ hình chữ nhật dọc thành một ô vuông cùng kích thước với các phím còn lại.
+- Đưa keypad về grid 4 cột cố định để các hàng `1 2 3` và `0 000 xoá` thẳng hàng với `4 5 6`, `7 8 9`.
+- Giữ ô trống ở cột phải của hàng `1 2 3` để nút `Xong/=` nằm ở hàng cuối mà không làm lệch bố cục.
+
+Validation:
+
+- `dart format lib/screens/transactions/add_transaction_screen.dart`: pass.
+- `flutter analyze`: pass.
+- `flutter test test/services/receipt_ocr_parser_test.dart`: pass.
+
 ## 2026-06-01 - Phase 6
 
 - Reset bỏ commit lỗi `5ff3cec` vì layout dùng `Expanded` theo trục dọc trong `bottomNavigationBar` gây `BoxConstraints forces an infinite height`.
