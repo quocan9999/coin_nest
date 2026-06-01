@@ -28,3 +28,17 @@ Validation:
 - `dart format lib/screens/transactions/receipt_scan_screen.dart`: pass.
 - `flutter analyze`: pass.
 - `flutter test test/services/receipt_ocr_parser_test.dart`: pass.
+
+## 2026-06-01 - Phase 3
+
+- Tích hợp `ReceiptScanScreen` vào `AddTransactionScreen`.
+- Giữ ô `Số tiền` nhập tay bằng bàn phím số Android như trước.
+- Thêm thanh `Scan hoá đơn` khi ô số tiền đang focus và bàn phím đang mở.
+- Thêm bottom sheet xác nhận kết quả scan trước khi điền số tiền và ghi chú.
+- Không ghi đè ghi chú nếu người dùng đã nhập nội dung trước đó.
+
+Validation:
+
+- `dart format lib/screens/transactions/add_transaction_screen.dart`: pass.
+- `flutter analyze`: pass.
+- `flutter test test/services/receipt_ocr_parser_test.dart`: pass.
