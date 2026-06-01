@@ -13,6 +13,7 @@ import 'providers/budget_provider.dart';
 import 'providers/report_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/auth/firebase_auth_service.dart';
+import 'services/notification_service.dart';
 
 // Firebase
 import 'package:firebase_core/firebase_core.dart';
@@ -40,6 +41,8 @@ void main() async {
 
   // Init Vietnamese locale for dates
   await initializeDateFormatting('vi_VN', null);
+
+  await NotificationService.initListener();
 
   final authService = FirebaseAuthService();
 

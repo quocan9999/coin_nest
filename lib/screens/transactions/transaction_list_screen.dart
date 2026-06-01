@@ -22,14 +22,14 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      
+
       final userId = context.read<AuthProvider>().currentUserId;
       final txnProv = context.read<TransactionProvider>();
-      
+
       // --- VÁ LỖI: Trả toàn bộ bộ lọc về trạng thái ban đầu ---
-      txnProv.clearFilters(); 
+      txnProv.clearFilters();
       _searchController.clear(); // Xóa chữ trong thanh tìm kiếm
-      
+
       // Sau khi reset, mới tiến hành nạp danh sách giao dịch
       context.read<AccountProvider>().loadAccounts(userId);
       txnProv.loadTransactions(userId);
@@ -60,7 +60,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     // Chỉ lắng nghe sự thay đổi, logic nạp đã được cô lập trong initState
     final txnProv = context.watch<TransactionProvider>();
     final accountProv = context.watch<AccountProvider>();
-    
+
     final grouped = txnProv.groupedByDate;
 
     return Scaffold(
@@ -120,7 +120,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               children: [
                 Expanded(child: _buildTimeDropdown(context, txnProv)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildAccountDropdown(context, txnProv, accountProv)),
+                Expanded(
+                  child: _buildAccountDropdown(context, txnProv, accountProv),
+                ),
               ],
             ),
           ),
@@ -137,17 +139,17 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          txnProv.searchQuery.isNotEmpty 
-                            ? Icons.search_off 
-                            : Icons.receipt_long_outlined,
+                          txnProv.searchQuery.isNotEmpty
+                              ? Icons.search_off
+                              : Icons.receipt_long_outlined,
                           size: 56,
                           color: AppTheme.outlineVariant,
                         ),
                         const SizedBox(height: 12),
                         Text(
                           txnProv.searchQuery.isNotEmpty
-                            ? 'Không tìm thấy kết quả phù hợp'
-                            : 'Chưa có ghi chép nào',
+                              ? 'Không tìm thấy kết quả phù hợp'
+                              : 'Chưa có ghi chép nào',
                           style: TextStyle(color: AppTheme.onSurfaceVariant),
                         ),
                       ],
@@ -220,25 +222,39 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 value: txnProv.timeFilter,
                 isExpanded: true,
                 icon: const Icon(Icons.keyboard_arrow_down, size: 16),
-                style: TextStyle(fontSize: 13, color: AppTheme.onSurface, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
                 items: [
                   const DropdownMenuItem(value: 'all', child: Text('Tất cả')),
-                  const DropdownMenuItem(value: 'today', child: Text('Hôm nay')),
-                  const DropdownMenuItem(value: 'this_month', child: Text('Tháng này')),
-                  const DropdownMenuItem(value: 'last_month', child: Text('Tháng trước')),
+                  const DropdownMenuItem(
+                    value: 'today',
+                    child: Text('Hôm nay'),
+                  ),
+                  const DropdownMenuItem(
+                    value: 'this_month',
+                    child: Text('Tháng này'),
+                  ),
+                  const DropdownMenuItem(
+                    value: 'last_month',
+                    child: Text('Tháng trước'),
+                  ),
                   DropdownMenuItem(
-                    value: 'custom', 
+                    value: 'custom',
                     child: Text(
-                      txnProv.timeFilter == 'custom' && txnProv.customDateRange != null
-                        ? '${txnProv.customDateRange!.start.day}/${txnProv.customDateRange!.start.month} - ${txnProv.customDateRange!.end.day}/${txnProv.customDateRange!.end.month}'
-                        : 'Tùy chọn...'
-                    )
+                      txnProv.timeFilter == 'custom' &&
+                              txnProv.customDateRange != null
+                          ? '${txnProv.customDateRange!.start.day}/${txnProv.customDateRange!.start.month} - ${txnProv.customDateRange!.end.day}/${txnProv.customDateRange!.end.month}'
+                          : 'Tùy chọn...',
+                    ),
                   ),
                 ],
                 onChanged: (val) async {
                   if (val == null) return;
                   final userId = context.read<AuthProvider>().currentUserId;
-                  
+
                   if (val == 'custom') {
                     final range = await showDateRangePicker(
                       context: context,
@@ -247,7 +263,9 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       builder: (context, child) {
                         return Theme(
                           data: Theme.of(context).copyWith(
-                            colorScheme: const ColorScheme.light(primary: AppTheme.primary),
+                            colorScheme: const ColorScheme.light(
+                              primary: AppTheme.primary,
+                            ),
                           ),
                           child: child!,
                         );
@@ -272,7 +290,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   }
 
   // Widget Tùy chỉnh: Dropdown lọc Tài khoản
-  Widget _buildAccountDropdown(BuildContext context, TransactionProvider txnProv, AccountProvider accProv) {
+  Widget _buildAccountDropdown(
+    BuildContext context,
+    TransactionProvider txnProv,
+    AccountProvider accProv,
+  ) {
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -282,7 +304,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.account_balance_wallet_outlined, size: 16, color: AppTheme.primary),
+          const Icon(
+            Icons.account_balance_wallet_outlined,
+            size: 16,
+            color: AppTheme.primary,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: DropdownButtonHideUnderline(
@@ -290,16 +316,22 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 value: txnProv.filterAccountId,
                 isExpanded: true,
                 icon: const Icon(Icons.keyboard_arrow_down, size: 16),
-                style: TextStyle(fontSize: 13, color: AppTheme.onSurface, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
                 items: [
                   const DropdownMenuItem<int?>(
                     value: null,
                     child: Text('Tất cả ví', overflow: TextOverflow.ellipsis),
                   ),
-                  ...accProv.accounts.map((a) => DropdownMenuItem<int?>(
-                        value: a.id,
-                        child: Text(a.name, overflow: TextOverflow.ellipsis),
-                      )),
+                  ...accProv.accounts.map(
+                    (a) => DropdownMenuItem<int?>(
+                      value: a.id,
+                      child: Text(a.name, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
                 ],
                 onChanged: (val) {
                   final userId = context.read<AuthProvider>().currentUserId;
@@ -322,9 +354,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     final sign = isExpense ? '- ' : (txn.type == 'income' ? '+ ' : '');
     final iconKey = txn.categoryIconName ?? txn.type;
 
-    final noteStr = (txn.note != null && txn.note!.toString().trim().isNotEmpty)
-        ? '${txn.note} • '
-        : '';
+    final hasNote = txn.note != null && txn.note!.toString().trim().isNotEmpty;
 
     return GestureDetector(
       onTap: () {
@@ -348,6 +378,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Row(
+          crossAxisAlignment:
+              CrossAxisAlignment.start, // Đưa icon lên sát mép trên
           children: [
             Container(
               width: 42,
@@ -367,39 +399,65 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    txn.categoryName ?? _getTypeLabel(txn.type),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                  // HÀNG 1: Hạng mục & Số tiền
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          txn.categoryName ?? _getTypeLabel(txn.type),
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        '$sign${Formatters.currency(txn.amount)}',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+
+                  // HÀNG 2: Thời gian & Tên tài khoản
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        txn.time ?? Formatters.time(txn.date),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (txn.accountName != null)
+                        Text(
+                          txn.accountName!,
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(color: AppTheme.onSurfaceVariant),
+                        ),
+                    ],
+                  ),
+
+                  // HÀNG 3: Nội dung ghi chú (Đẩy xuống dưới cùng)
+                  if (hasNote) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      txn.note!.toString().trim(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: AppTheme.onSurfaceVariant.withAlpha(200),
+                      ),
+                      maxLines:
+                          2, // Cho phép hiển thị tối đa 2 dòng nếu ghi chú dài
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  Text(
-                    '$noteStr${txn.time ?? Formatters.time(txn.date)}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  ],
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$sign${Formatters.currency(txn.amount)}',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (txn.accountName != null)
-                  Text(
-                    txn.accountName!,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
             ),
           ],
         ),

@@ -37,10 +37,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // 2. Dùng biến Provider đã lưu để gọi hàm thay vì gọi lại context
     // ĐÃ SỬA: Gọi hàm tải 5 giao dịch gần nhất
     await txnProv.loadRecentTransactions(userId);
-    
+
     // Vẫn tải danh sách tổng để tính Tổng Thu/Chi
     await txnProv.loadTransactions(userId);
-    
+
     if (mounted) {
       await accProv.loadAccounts(userId);
     }
@@ -302,9 +302,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildTransactionTile(BuildContext context, dynamic txn) {
     final isExpense = txn.type == 'expense';
-    final amountColor = isExpense ? AppTheme.tertiary : AppTheme.secondary;
-    final sign = isExpense ? '- ' : '+ ';
+    final color = isExpense
+        ? AppTheme.tertiary
+        : (txn.type == 'income' ? AppTheme.secondary : AppTheme.primary);
+    final sign = isExpense ? '- ' : (txn.type == 'income' ? '+ ' : '');
     final iconKey = txn.categoryIconName ?? txn.type;
+
+    final hasNote = txn.note != null && txn.note!.toString().trim().isNotEmpty;
 
     return GestureDetector(
       onTap: () {
@@ -327,6 +331,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Row(
+          crossAxisAlignment:
+              CrossAxisAlignment.start, // Đưa icon lên sát mép trên
           children: [
             Container(
               width: 44,
@@ -346,40 +352,65 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    txn.categoryName ?? _getTypeLabel(txn.type),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  // HÀNG 1: Hạng mục & Số tiền
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          txn.categoryName ?? _getTypeLabel(txn.type),
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        '$sign${Formatters.currency(txn.amount)}',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
-                  if (txn.note != null && txn.note!.isNotEmpty)
+                  const SizedBox(height: 4),
+
+                  // HÀNG 2: Thời gian & Tên tài khoản
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        txn.time ?? Formatters.time(txn.date),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (txn.accountName != null)
+                        Text(
+                          txn.accountName!,
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(color: AppTheme.onSurfaceVariant),
+                        ),
+                    ],
+                  ),
+
+                  // HÀNG 3: Nội dung ghi chú (Đẩy xuống dưới cùng)
+                  if (hasNote) ...[
+                    const SizedBox(height: 6),
                     Text(
-                      txn.note!,
-                      style: Theme.of(context).textTheme.bodySmall,
-                      maxLines: 1,
+                      txn.note!.toString().trim(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: AppTheme.onSurfaceVariant.withAlpha(200),
+                      ),
+                      maxLines:
+                          2, // Cho phép hiển thị tối đa 2 dòng nếu ghi chú dài
                       overflow: TextOverflow.ellipsis,
                     ),
+                  ],
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$sign${Formatters.currency(txn.amount)}',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: amountColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (txn.accountName != null)
-                  Text(
-                    txn.accountName!,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
             ),
           ],
         ),

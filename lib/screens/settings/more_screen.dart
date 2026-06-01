@@ -9,6 +9,7 @@ import 'general_settings_screen.dart';
 import 'data_settings_screen.dart';
 import 'feedback_screen.dart';
 import '../auth/login_screen.dart';
+import 'notification_settings_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
@@ -106,6 +107,16 @@ class MoreScreen extends StatelessWidget {
                 Icons.pie_chart_outline_rounded,
                 'Hạn mức chi',
                 () => _push(context, const BudgetListScreen()),
+              ),
+              
+              _menuItem(
+                context,
+                Icons.mark_email_unread_rounded, // Icon gợi báo thông báo
+                'Ghi chép từ thông báo',
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
+                ),
               ),
 
               const SizedBox(height: 20),
