@@ -14,3 +14,17 @@ Validation:
 - `dart format lib/models/receipt_scan_result.dart lib/services/receipt/receipt_ocr_service.dart test/services/receipt_ocr_parser_test.dart`: pass.
 - `flutter test test/services/receipt_ocr_parser_test.dart`: pass.
 - `flutter analyze`: pass.
+
+## 2026-06-01 - Phase 2
+
+- Thêm `ReceiptScanScreen` cho Android với camera preview, nút chụp ảnh và nút chọn ảnh từ thư viện.
+- Xử lý quyền camera bằng dialog tiếng Việt có lối mở cài đặt ứng dụng.
+- Giữ fallback chọn ảnh thư viện khi Genymotion hoặc thiết bị không mở được camera.
+- Kết nối ảnh chụp/ảnh chọn với `ReceiptOcrService` để trả `ReceiptScanResult` về caller.
+- Thêm comment tiếng Việt cho lifecycle camera, lỗi camera trên Genymotion và hành vi quyền thư viện Android.
+
+Validation:
+
+- `dart format lib/screens/transactions/receipt_scan_screen.dart`: pass.
+- `flutter analyze`: pass.
+- `flutter test test/services/receipt_ocr_parser_test.dart`: pass.
