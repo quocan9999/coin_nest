@@ -186,7 +186,7 @@ class NotificationRecordService {
   }
 
   static bool _looksLikeBankMessage(String text) {
-    return text.contains('DG:') && text.contains('ND:');
+    return text.contains('GD:') && text.contains('ND:');
   }
 
   static String _buildSignature(NotificationEvent event) {
