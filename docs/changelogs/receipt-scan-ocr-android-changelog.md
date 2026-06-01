@@ -55,3 +55,17 @@ Validation:
 - `flutter devices`: phát hiện Genymotion `A10` Android 11 (API 30); chưa thấy điện thoại thật Android 15 trong danh sách thiết bị.
 - `flutter build apk --debug`: tạo được `build/app/outputs/flutter-apk/app-debug.apk` khoảng 85.9 MB, nhưng lệnh không kết thúc sạch trong timeout 5 phút của công cụ.
 - Chưa chạy manual test trên Android 15 vì thiết bị không được Flutter liệt kê ở thời điểm validation.
+
+## 2026-06-01 - Phase 5
+
+- Thay thanh `Scan hoá đơn` bám bàn phím hệ thống bằng bàn phím custom nằm trong app để không che toàn bộ màn hình.
+- Giữ thao tác nhập số tiền qua custom keypad với các phím `0-9`, `000`, `C`, xoá lùi, `Xong`.
+- Thêm phép tính cơ bản `+`, `-`, `×`, `÷`; khi bấm `Xong` hoặc lưu giao dịch, biểu thức được tính về số tiền cuối.
+- Giữ nút `Scan hoá đơn` ở hàng trên của bàn phím custom.
+- Thêm comment tiếng Việt cho luồng bàn phím custom và thứ tự tính nhân/chia trước cộng/trừ.
+
+Validation:
+
+- `dart format lib/screens/transactions/add_transaction_screen.dart`: pass.
+- `flutter analyze`: pass.
+- `flutter test test/services/receipt_ocr_parser_test.dart`: pass.

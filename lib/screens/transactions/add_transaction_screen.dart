@@ -288,6 +288,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       return;
     }
 
+    if (!_finalizeAmountExpression(showError: true)) return;
+
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedAccountId == null) {
@@ -459,12 +461,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
                 focusNode: _amountFocusNode,
 
-                keyboardType: TextInputType.number,
+                readOnly: true,
 
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  CurrencyInputFormatter(),
-                ],
+                showCursor: true,
+
+                enableInteractiveSelection: false,
 
                 validator: Validators.amount,
 
@@ -676,37 +677,209 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   }
 
   Widget _buildReceiptScanAccessory(ThemeData theme) {
-    final keyboardBottom = MediaQuery.viewInsetsOf(context).bottom;
-    final shouldShow =
-        _amountFocusNode.hasFocus && keyboardBottom > 0 && !_isLoanLinkedEdit;
+    final shouldShow = _amountFocusNode.hasFocus && !_isLoanLinkedEdit;
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 180),
       child: shouldShow
-          ? Padding(
+          ? SafeArea(
               key: const ValueKey('receipt-scan-accessory'),
-              padding: EdgeInsets.only(bottom: keyboardBottom),
-              child: SafeArea(
-                top: false,
-                child: Container(
-                  color: theme.colorScheme.surfaceContainerLow,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.spacing8,
-                    vertical: AppTheme.spacing4,
-                  ),
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: FilledButton.tonalIcon(
-                      onPressed: _openReceiptScanner,
-                      icon: const Icon(Icons.receipt_long_outlined),
-                      label: const Text('Scan hoá đơn'),
-                    ),
-                  ),
-                ),
+              top: false,
+              child: _AmountKeyboard(
+                onScanReceipt: _openReceiptScanner,
+                onKeyPressed: _handleAmountKeyboardKey,
               ),
             )
           : const SizedBox.shrink(key: ValueKey('receipt-scan-hidden')),
     );
+  }
+
+  void _handleAmountKeyboardKey(_AmountKeyboardKey key) {
+    switch (key.type) {
+      case _AmountKeyboardKeyType.digit:
+        _appendAmountToken(key.value);
+        break;
+      case _AmountKeyboardKeyType.operator:
+        _appendAmountOperator(key.value);
+        break;
+      case _AmountKeyboardKeyType.clear:
+        setState(() => _amountController.clear());
+        break;
+      case _AmountKeyboardKeyType.backspace:
+        _deleteAmountToken();
+        break;
+      case _AmountKeyboardKeyType.done:
+        if (_finalizeAmountExpression(showError: true)) {
+          _amountFocusNode.unfocus();
+        }
+        break;
+    }
+  }
+
+  void _appendAmountToken(String token) {
+    final rawExpression = _rawAmountExpression();
+    final nextExpression = rawExpression == '0' ? token : rawExpression + token;
+    _setAmountExpression(nextExpression);
+  }
+
+  void _appendAmountOperator(String operator) {
+    final rawExpression = _rawAmountExpression();
+    if (rawExpression.isEmpty) {
+      return;
+    }
+
+    final nextExpression = _endsWithOperator(rawExpression)
+        ? rawExpression.substring(0, rawExpression.length - 1) + operator
+        : rawExpression + operator;
+
+    _setAmountExpression(nextExpression);
+  }
+
+  void _deleteAmountToken() {
+    final rawExpression = _rawAmountExpression();
+    if (rawExpression.isEmpty) {
+      return;
+    }
+
+    _setAmountExpression(rawExpression.substring(0, rawExpression.length - 1));
+  }
+
+  bool _finalizeAmountExpression({required bool showError}) {
+    final rawExpression = _rawAmountExpression();
+    if (rawExpression.isEmpty || !_containsOperator(rawExpression)) {
+      return true;
+    }
+
+    final evaluatedAmount = _evaluateAmountExpression(rawExpression);
+    if (evaluatedAmount == null || evaluatedAmount <= 0) {
+      if (showError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Biểu thức số tiền không hợp lệ')),
+        );
+      }
+      return false;
+    }
+
+    setState(() {
+      _amountController.text = _formatAmountForInput(evaluatedAmount);
+    });
+    return true;
+  }
+
+  String _rawAmountExpression() {
+    return _amountController.text
+        .replaceAll('.', '')
+        .replaceAll(' ', '')
+        .replaceAll('×', '*')
+        .replaceAll('÷', '/');
+  }
+
+  void _setAmountExpression(String expression) {
+    setState(() {
+      _amountController.text = _formatAmountExpression(expression);
+    });
+  }
+
+  bool _containsOperator(String expression) {
+    return RegExp(r'[+\-*/]').hasMatch(expression);
+  }
+
+  bool _endsWithOperator(String expression) {
+    return expression.isNotEmpty && RegExp(r'[+\-*/]$').hasMatch(expression);
+  }
+
+  String _formatAmountExpression(String expression) {
+    final buffer = StringBuffer();
+    final currentNumber = StringBuffer();
+
+    void flushNumber() {
+      if (currentNumber.isEmpty) {
+        return;
+      }
+
+      final parsed = int.tryParse(currentNumber.toString());
+      buffer.write(
+        parsed == null
+            ? currentNumber.toString()
+            : _formatAmountForInput(parsed),
+      );
+      currentNumber.clear();
+    }
+
+    for (final char in expression.split('')) {
+      if (RegExp(r'\d').hasMatch(char)) {
+        currentNumber.write(char);
+      } else {
+        flushNumber();
+        buffer.write(_displayOperator(char));
+      }
+    }
+
+    flushNumber();
+    return buffer.toString();
+  }
+
+  String _displayOperator(String operator) {
+    switch (operator) {
+      case '*':
+        return ' × ';
+      case '/':
+        return ' ÷ ';
+      case '+':
+      case '-':
+        return ' $operator ';
+      default:
+        return operator;
+    }
+  }
+
+  int? _evaluateAmountExpression(String expression) {
+    if (_endsWithOperator(expression)) {
+      return null;
+    }
+
+    final tokens = RegExp(
+      r'\d+|[+\-*/]',
+    ).allMatches(expression).map((match) => match.group(0)!).toList();
+
+    if (tokens.isEmpty || tokens.length.isEven) {
+      return null;
+    }
+
+    final values = <double>[double.parse(tokens.first)];
+    final operators = <String>[];
+
+    // Tính trước nhân/chia để bàn phím hoạt động giống máy tính cơ bản.
+    for (var i = 1; i < tokens.length; i += 2) {
+      final operator = tokens[i];
+      final value = double.tryParse(tokens[i + 1]);
+      if (value == null) {
+        return null;
+      }
+
+      if (operator == '*' || operator == '/') {
+        if (operator == '/' && value == 0) {
+          return null;
+        }
+        final previous = values.removeLast();
+        values.add(operator == '*' ? previous * value : previous / value);
+      } else {
+        operators.add(operator);
+        values.add(value);
+      }
+    }
+
+    var result = values.first;
+    for (var i = 0; i < operators.length; i++) {
+      result = operators[i] == '+'
+          ? result + values[i + 1]
+          : result - values[i + 1];
+    }
+
+    if (!result.isFinite || result <= 0) {
+      return null;
+    }
+    return result.round();
   }
 
   Future<void> _openReceiptScanner() async {
@@ -997,6 +1170,186 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     );
   }
 }
+
+class _AmountKeyboard extends StatelessWidget {
+  final VoidCallback onScanReceipt;
+  final ValueChanged<_AmountKeyboardKey> onKeyPressed;
+
+  const _AmountKeyboard({
+    required this.onScanReceipt,
+    required this.onKeyPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      color: colorScheme.surfaceContainerLow,
+      padding: const EdgeInsets.fromLTRB(
+        AppTheme.spacing8,
+        AppTheme.spacing6,
+        AppTheme.spacing8,
+        AppTheme.spacing8,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Align(
+            alignment: Alignment.center,
+            child: FilledButton.tonalIcon(
+              onPressed: onScanReceipt,
+              icon: const Icon(Icons.receipt_long_outlined),
+              label: const Text('Scan hoá đơn'),
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacing6),
+          _keyboardRow(context, [
+            _AmountKeyboardKey.clear(),
+            _AmountKeyboardKey.operator('÷'),
+            _AmountKeyboardKey.operator('×'),
+            _AmountKeyboardKey.backspace(),
+          ]),
+          _keyboardRow(context, [
+            _AmountKeyboardKey.digit('7'),
+            _AmountKeyboardKey.digit('8'),
+            _AmountKeyboardKey.digit('9'),
+            _AmountKeyboardKey.operator('-'),
+          ]),
+          _keyboardRow(context, [
+            _AmountKeyboardKey.digit('4'),
+            _AmountKeyboardKey.digit('5'),
+            _AmountKeyboardKey.digit('6'),
+            _AmountKeyboardKey.operator('+'),
+          ]),
+          _keyboardRow(context, [
+            _AmountKeyboardKey.digit('1'),
+            _AmountKeyboardKey.digit('2'),
+            _AmountKeyboardKey.digit('3'),
+            _AmountKeyboardKey.done(),
+          ]),
+          _keyboardRow(context, [
+            _AmountKeyboardKey.digit('0'),
+            _AmountKeyboardKey.digit('000'),
+            _AmountKeyboardKey.backspace(),
+            _AmountKeyboardKey.done(),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _keyboardRow(BuildContext context, List<_AmountKeyboardKey> keys) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppTheme.spacing4),
+      child: Row(
+        children: [
+          for (var index = 0; index < keys.length; index++) ...[
+            Expanded(child: _keyboardButton(context, keys[index])),
+            if (index != keys.length - 1)
+              const SizedBox(width: AppTheme.spacing4),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _keyboardButton(BuildContext context, _AmountKeyboardKey key) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDone = key.type == _AmountKeyboardKeyType.done;
+
+    return Material(
+      color: isDone ? colorScheme.primary : colorScheme.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        onTap: () => onKeyPressed(key),
+        child: SizedBox(
+          height: AppTheme.spacing24,
+          child: Center(
+            // Bàn phím custom không dùng IME hệ thống, nên mọi phím đều đi qua
+            // callback này để kiểm soát định dạng tiền và phép tính trước khi lưu.
+            child: key.icon == null
+                ? Text(
+                    key.label,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: isDone
+                          ? colorScheme.onPrimary
+                          : colorScheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                : Icon(
+                    key.icon,
+                    color: isDone
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurfaceVariant,
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AmountKeyboardKey {
+  final _AmountKeyboardKeyType type;
+  final String value;
+  final String label;
+  final IconData? icon;
+
+  const _AmountKeyboardKey._({
+    required this.type,
+    required this.value,
+    required this.label,
+    this.icon,
+  });
+
+  factory _AmountKeyboardKey.digit(String value) {
+    return _AmountKeyboardKey._(
+      type: _AmountKeyboardKeyType.digit,
+      value: value,
+      label: value,
+    );
+  }
+
+  factory _AmountKeyboardKey.operator(String label) {
+    return _AmountKeyboardKey._(
+      type: _AmountKeyboardKeyType.operator,
+      value: label == '×' ? '*' : (label == '÷' ? '/' : label),
+      label: label,
+    );
+  }
+
+  factory _AmountKeyboardKey.clear() {
+    return const _AmountKeyboardKey._(
+      type: _AmountKeyboardKeyType.clear,
+      value: '',
+      label: 'C',
+    );
+  }
+
+  factory _AmountKeyboardKey.backspace() {
+    return const _AmountKeyboardKey._(
+      type: _AmountKeyboardKeyType.backspace,
+      value: '',
+      label: '',
+      icon: Icons.backspace_outlined,
+    );
+  }
+
+  factory _AmountKeyboardKey.done() {
+    return const _AmountKeyboardKey._(
+      type: _AmountKeyboardKeyType.done,
+      value: '',
+      label: 'Xong',
+    );
+  }
+}
+
+enum _AmountKeyboardKeyType { digit, operator, clear, backspace, done }
 
 enum _ReceiptScanAction { apply, rescan, dismiss }
 
