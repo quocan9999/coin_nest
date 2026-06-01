@@ -25,19 +25,14 @@ class MoreScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor:
-          theme.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding:
-              const EdgeInsets.symmetric(
-            horizontal: 20,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
 
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
               const SizedBox(height: 16),
@@ -45,33 +40,23 @@ class MoreScreen extends StatelessWidget {
               Text(
                 'Khác',
 
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(
-                      fontWeight:
-                          FontWeight.w700,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
 
-                      color: theme
-                          .colorScheme
-                          .onSurface,
-                    ),
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
 
               const SizedBox(height: 20),
 
               // Profile card
               Container(
-                padding:
-                    const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
 
                 decoration: BoxDecoration(
                   color: theme.cardColor,
 
-                  borderRadius:
-                      BorderRadius.circular(
-                    AppTheme.radiusLg,
-                  ),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                 ),
 
                 child: Row(
@@ -79,26 +64,19 @@ class MoreScreen extends StatelessWidget {
                     CircleAvatar(
                       radius: 28,
 
-                      backgroundColor:
-                          AppTheme
-                              .primaryContainer
-                              .withAlpha(51),
+                      backgroundColor: AppTheme.primaryContainer.withAlpha(51),
 
                       child: Text(
-                        (auth.currentUser
-                                    ?.fullName ??
-                                'U')
+                        (auth.currentUser?.fullName ?? 'U')
                             .substring(0, 1)
                             .toUpperCase(),
 
                         style: const TextStyle(
                           fontSize: 22,
 
-                          fontWeight:
-                              FontWeight.w700,
+                          fontWeight: FontWeight.w700,
 
-                          color:
-                              AppTheme.primary,
+                          color: AppTheme.primary,
                         ),
                       ),
                     ),
@@ -107,52 +85,30 @@ class MoreScreen extends StatelessWidget {
 
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment
-                                .start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
 
                         children: [
                           Text(
-                            auth.currentUser
-                                    ?.fullName ??
-                                'Người dùng',
+                            auth.currentUser?.fullName ?? 'Người dùng',
 
-                            style: Theme.of(
-                                  context,
-                                )
-                                .textTheme
-                                .titleMedium
+                            style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
-                                  fontWeight:
-                                      FontWeight
-                                          .w600,
+                                  fontWeight: FontWeight.w600,
 
-                                  color: theme
-                                      .colorScheme
-                                      .onSurface,
+                                  color: theme.colorScheme.onSurface,
                                 ),
                           ),
 
-                          const SizedBox(
-                            height: 2,
-                          ),
+                          const SizedBox(height: 2),
 
                           Text(
-                            auth.currentUser
-                                    ?.phone ??
-                                auth.currentUser
-                                    ?.email ??
+                            auth.currentUser?.phone ??
+                                auth.currentUser?.email ??
                                 '',
 
-                            style: Theme.of(
-                                  context,
-                                )
-                                .textTheme
-                                .bodySmall
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                                  color: theme
-                                      .colorScheme
-                                      .onSurfaceVariant,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                           ),
                         ],
@@ -160,12 +116,9 @@ class MoreScreen extends StatelessWidget {
                     ),
 
                     Icon(
-                      Icons
-                          .chevron_right_rounded,
+                      Icons.chevron_right_rounded,
 
-                      color: theme
-                          .colorScheme
-                          .outline,
+                      color: theme.colorScheme.outline,
                     ),
                   ],
                 ),
@@ -174,10 +127,7 @@ class MoreScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Management section
-              _sectionTitle(
-                context,
-                'QUẢN LÝ',
-              ),
+              _sectionTitle(context, 'QUẢN LÝ'),
 
               const SizedBox(height: 8),
 
@@ -188,10 +138,7 @@ class MoreScreen extends StatelessWidget {
 
                 'Quản lý hạng mục',
 
-                () => _push(
-                  context,
-                  const CategoryListScreen(),
-                ),
+                () => _push(context, const CategoryListScreen()),
               ),
 
               _menuItem(
@@ -201,24 +148,17 @@ class MoreScreen extends StatelessWidget {
 
                 'Vay / Cho vay',
 
-                () => _push(
-                  context,
-                  const LoanListScreen(),
-                ),
+                () => _push(context, const LoanListScreen()),
               ),
 
               _menuItem(
                 context,
 
-                Icons
-                    .pie_chart_outline_rounded,
+                Icons.pie_chart_outline_rounded,
 
                 'Hạn mức chi',
 
-                () => _push(
-                  context,
-                  const BudgetListScreen(),
-                ),
+                () => _push(context, const BudgetListScreen()),
               ),
 
               _menuItem(
@@ -228,19 +168,13 @@ class MoreScreen extends StatelessWidget {
 
                 'Ghi chép từ thông báo',
 
-                () => _push(
-                  context,
-                  const NotificationSettingsScreen(),
-                ),
+                () => _push(context, const NotificationSettingsScreen()),
               ),
 
               const SizedBox(height: 20),
 
               // Settings section
-              _sectionTitle(
-                context,
-                'CÀI ĐẶT',
-              ),
+              _sectionTitle(context, 'CÀI ĐẶT'),
 
               const SizedBox(height: 8),
 
@@ -251,10 +185,7 @@ class MoreScreen extends StatelessWidget {
 
                 'Cài đặt chung',
 
-                () => _push(
-                  context,
-                  const GeneralSettingsScreen(),
-                ),
+                () => _push(context, const GeneralSettingsScreen()),
               ),
 
               _menuItem(
@@ -264,10 +195,7 @@ class MoreScreen extends StatelessWidget {
 
                 'Sao lưu & Phục hồi',
 
-                () => _push(
-                  context,
-                  const DataSettingsScreen(),
-                ),
+                () => _push(context, const DataSettingsScreen()),
               ),
 
               _menuItem(
@@ -277,10 +205,7 @@ class MoreScreen extends StatelessWidget {
 
                 'Góp ý',
 
-                () => _push(
-                  context,
-                  const FeedbackScreen(),
-                ),
+                () => _push(context, const FeedbackScreen()),
               ),
 
               const SizedBox(height: 20),
@@ -298,13 +223,8 @@ class MoreScreen extends StatelessWidget {
                       return;
                     }
 
-                    Navigator.of(context)
-                        .pushAndRemoveUntil(
-                      MaterialPageRoute(
-                        builder:
-                            (_) =>
-                                const LoginScreen(),
-                      ),
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
                       (route) => false,
                     );
                   },
@@ -312,25 +232,17 @@ class MoreScreen extends StatelessWidget {
                   icon: const Icon(
                     Icons.logout_rounded,
 
-                    color:
-                        AppTheme.tertiary,
+                    color: AppTheme.tertiary,
                   ),
 
                   label: const Text(
                     'Đăng xuất',
 
-                    style: TextStyle(
-                      color:
-                          AppTheme.tertiary,
-                    ),
+                    style: TextStyle(color: AppTheme.tertiary),
                   ),
 
-                  style:
-                      OutlinedButton.styleFrom(
-                    side: const BorderSide(
-                      color:
-                          AppTheme.tertiary,
-                    ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppTheme.tertiary),
                   ),
                 ),
               ),
@@ -343,26 +255,17 @@ class MoreScreen extends StatelessWidget {
     );
   }
 
-  Widget _sectionTitle(
-    BuildContext context,
-    String title,
-  ) {
+  Widget _sectionTitle(BuildContext context, String title) {
     return Text(
       title,
 
-      style: Theme.of(context)
-          .textTheme
-          .labelMedium
-          ?.copyWith(
-            color: Theme.of(context)
-                .colorScheme
-                .onSurfaceVariant,
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
 
-            fontWeight:
-                FontWeight.w600,
+        fontWeight: FontWeight.w600,
 
-            letterSpacing: 1,
-          ),
+        letterSpacing: 1,
+      ),
     );
   }
 
@@ -378,32 +281,19 @@ class MoreScreen extends StatelessWidget {
       onTap: onTap,
 
       child: Container(
-        margin:
-            const EdgeInsets.only(
-          bottom: 6,
-        ),
+        margin: const EdgeInsets.only(bottom: 6),
 
-        padding:
-            const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
 
         decoration: BoxDecoration(
           color: theme.cardColor,
 
-          borderRadius:
-              BorderRadius.circular(
-            AppTheme.radiusMd,
-          ),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
 
         child: Row(
           children: [
-            Icon(
-              icon,
-
-              size: 22,
-
-              color: AppTheme.primary,
-            ),
+            Icon(icon, size: 22, color: AppTheme.primary),
 
             const SizedBox(width: 14),
 
@@ -411,19 +301,11 @@ class MoreScreen extends StatelessWidget {
               child: Text(
                 label,
 
-                style: Theme.of(
-                      context,
-                    )
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(
-                      fontWeight:
-                          FontWeight.w500,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w500,
 
-                      color: theme
-                          .colorScheme
-                          .onSurface,
-                    ),
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
             ),
 
@@ -432,9 +314,7 @@ class MoreScreen extends StatelessWidget {
 
               size: 20,
 
-              color: theme
-                  .colorScheme
-                  .outline,
+              color: theme.colorScheme.outline,
             ),
           ],
         ),
@@ -442,16 +322,7 @@ class MoreScreen extends StatelessWidget {
     );
   }
 
-  void _push(
-    BuildContext context,
-    Widget screen,
-  ) {
-    Navigator.push(
-      context,
-
-      MaterialPageRoute(
-        builder: (_) => screen,
-      ),
-    );
+  void _push(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
 }

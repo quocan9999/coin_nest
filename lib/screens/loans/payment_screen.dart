@@ -11,25 +11,18 @@ import '../../utils/validators.dart';
 class PaymentScreen extends StatefulWidget {
   final Loan loan;
 
-  const PaymentScreen({
-    super.key,
-    required this.loan,
-  });
+  const PaymentScreen({super.key, required this.loan});
 
   @override
-  State<PaymentScreen> createState() =>
-      _PaymentScreenState();
+  State<PaymentScreen> createState() => _PaymentScreenState();
 }
 
-class _PaymentScreenState
-    extends State<PaymentScreen> {
+class _PaymentScreenState extends State<PaymentScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final _amountController =
-      TextEditingController();
+  final _amountController = TextEditingController();
 
-  final _noteController =
-      TextEditingController();
+  final _noteController = TextEditingController();
 
   late DateTime _paymentDate;
 
@@ -44,8 +37,7 @@ class _PaymentScreenState
     _accountId = widget.loan.accountId;
 
     if (_accountId == null) {
-      final accounts =
-          context.read<AccountProvider>().accounts;
+      final accounts = context.read<AccountProvider>().accounts;
 
       if (accounts.isNotEmpty) {
         _accountId = accounts.first.id;
@@ -66,55 +58,41 @@ class _PaymentScreenState
     }
 
     if (_accountId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Vui lòng chọn tài khoản',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn tài khoản')));
       return;
     }
 
-    final userId =
-        context.read<AuthProvider>().currentUserId;
+    final userId = context.read<AuthProvider>().currentUserId;
 
-    final success = await context
-        .read<LoanProvider>()
-        .recordPayment(
-          widget.loan.id!,
-          Validators.parseAmount(
-            _amountController.text,
-          ),
-          userId,
-          paymentDate: _paymentDate,
-          note:
-              _noteController.text.trim().isEmpty
-                  ? null
-                  : _noteController.text.trim(),
-          accountId: _accountId,
-        );
+    final success = await context.read<LoanProvider>().recordPayment(
+      widget.loan.id!,
+      Validators.parseAmount(_amountController.text),
+      userId,
+      paymentDate: _paymentDate,
+      note: _noteController.text.trim().isEmpty
+          ? null
+          : _noteController.text.trim(),
+      accountId: _accountId,
+    );
 
     if (!mounted) return;
 
     if (success) {
-      await context
-          .read<AccountProvider>()
-          .loadAccounts(userId);
+      await context.read<AccountProvider>().loadAccounts(userId);
 
       if (mounted) {
         Navigator.pop(context, true);
       }
     } else {
       final message =
-          context
-              .read<LoanProvider>()
-              .errorMessage ??
+          context.read<LoanProvider>().errorMessage ??
           'Không thể ghi nhận thanh toán';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -123,13 +101,11 @@ class _PaymentScreenState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final accounts =
-        context.watch<AccountProvider>().accounts;
+    final accounts = context.watch<AccountProvider>().accounts;
 
-    final color =
-        widget.loan.type == 'borrow'
-            ? AppTheme.tertiary
-            : AppTheme.loanColor;
+    final color = widget.loan.type == 'borrow'
+        ? AppTheme.tertiary
+        : AppTheme.loanColor;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -146,11 +122,8 @@ class _PaymentScreenState
         ),
 
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_rounded,
-          ),
-          onPressed:
-              () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
 
@@ -161,8 +134,7 @@ class _PaymentScreenState
           key: _formKey,
 
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
 
             children: [
               // CARD INFO
@@ -172,28 +144,20 @@ class _PaymentScreenState
                 decoration: BoxDecoration(
                   color: color.withAlpha(16),
 
-                  borderRadius:
-                      BorderRadius.circular(
-                        AppTheme.radiusLg,
-                      ),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                 ),
 
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
                     Text(
                       widget.loan.personName,
 
-                      style: theme
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(
-                            fontWeight:
-                                FontWeight.w700,
-                            color: color,
-                          ),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
                     ),
 
                     const SizedBox(height: 6),
@@ -201,8 +165,7 @@ class _PaymentScreenState
                     Text(
                       'Còn lại: ${Formatters.currency(widget.loan.remainingAmount)}',
 
-                      style:
-                          theme.textTheme.bodyMedium,
+                      style: theme.textTheme.bodyMedium,
                     ),
                   ],
                 ),
@@ -218,8 +181,7 @@ class _PaymentScreenState
               TextFormField(
                 controller: _amountController,
 
-                keyboardType:
-                    TextInputType.number,
+                keyboardType: TextInputType.number,
 
                 decoration: const InputDecoration(
                   hintText: '0',
@@ -227,20 +189,15 @@ class _PaymentScreenState
                 ),
 
                 validator: (value) {
-                  final base =
-                      Validators.amount(value);
+                  final base = Validators.amount(value);
 
                   if (base != null) {
                     return base;
                   }
 
-                  final amount =
-                      Validators.parseAmount(
-                        value ?? '',
-                      );
+                  final amount = Validators.parseAmount(value ?? '');
 
-                  if (amount >
-                      widget.loan.remainingAmount) {
+                  if (amount > widget.loan.remainingAmount) {
                     return 'Số tiền không được vượt quá dư nợ còn lại';
                   }
 
@@ -265,19 +222,12 @@ class _PaymentScreenState
               const SizedBox(height: 8),
 
               Container(
-                padding:
-                    const EdgeInsets.symmetric(
-                      horizontal: 16,
-                    ),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
 
                 decoration: BoxDecoration(
-                  color: colorScheme
-                      .surfaceContainerHighest,
+                  color: colorScheme.surfaceContainerHighest,
 
-                  borderRadius:
-                      BorderRadius.circular(
-                        AppTheme.radiusMd,
-                      ),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                 ),
 
                 child: DropdownButtonHideUnderline(
@@ -286,30 +236,20 @@ class _PaymentScreenState
 
                     isExpanded: true,
 
-                    dropdownColor:
-                        colorScheme.surface,
+                    dropdownColor: colorScheme.surface,
 
-                    hint: const Text(
-                      'Chọn tài khoản',
-                    ),
+                    hint: const Text('Chọn tài khoản'),
 
-                    items:
-                        accounts
-                            .map(
-                              (a) =>
-                                  DropdownMenuItem(
-                                    value: a.id,
-                                    child: Text(
-                                      a.name,
-                                    ),
-                                  ),
-                            )
-                            .toList(),
+                    items: accounts
+                        .map(
+                          (a) => DropdownMenuItem(
+                            value: a.id,
+                            child: Text(a.name),
+                          ),
+                        )
+                        .toList(),
 
-                    onChanged:
-                        (v) => setState(
-                          () => _accountId = v,
-                        ),
+                    onChanged: (v) => setState(() => _accountId = v),
                   ),
                 ),
               ),
@@ -328,9 +268,7 @@ class _PaymentScreenState
 
                 validator: Validators.note,
 
-                decoration: const InputDecoration(
-                  hintText: 'Tùy chọn',
-                ),
+                decoration: const InputDecoration(hintText: 'Tùy chọn'),
               ),
 
               const SizedBox(height: 28),
@@ -342,9 +280,7 @@ class _PaymentScreenState
                 child: ElevatedButton(
                   onPressed: _submit,
 
-                  child: const Text(
-                    'Lưu thanh toán',
-                  ),
+                  child: const Text('Lưu thanh toán'),
                 ),
               ),
             ],
@@ -358,9 +294,7 @@ class _PaymentScreenState
     return Text(
       text,
 
-      style: Theme.of(
-        context,
-      ).textTheme.labelMedium?.copyWith(
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
         fontWeight: FontWeight.w600,
         letterSpacing: 0.8,
       ),
@@ -378,10 +312,7 @@ class _PaymentScreenState
         final picked = await showDatePicker(
           context: context,
 
-          initialDate:
-              _paymentDate.isAfter(today)
-                  ? today
-                  : _paymentDate,
+          initialDate: _paymentDate.isAfter(today) ? today : _paymentDate,
 
           firstDate: widget.loan.startDate,
 
@@ -394,19 +325,12 @@ class _PaymentScreenState
       },
 
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
 
         decoration: BoxDecoration(
-          color:
-              colorScheme.surfaceContainerHighest,
+          color: colorScheme.surfaceContainerHighest,
 
-          borderRadius: BorderRadius.circular(
-            AppTheme.radiusMd,
-          ),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
 
         child: Row(
@@ -414,8 +338,7 @@ class _PaymentScreenState
             Icon(
               Icons.calendar_today_outlined,
               size: 16,
-              color:
-                  colorScheme.onSurfaceVariant,
+              color: colorScheme.onSurfaceVariant,
             ),
 
             const SizedBox(width: 8),
@@ -423,9 +346,7 @@ class _PaymentScreenState
             Text(
               Formatters.date(_paymentDate),
 
-              style: TextStyle(
-                color: colorScheme.onSurface,
-              ),
+              style: TextStyle(color: colorScheme.onSurface),
             ),
           ],
         ),

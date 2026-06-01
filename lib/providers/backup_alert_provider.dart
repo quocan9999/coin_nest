@@ -4,10 +4,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class BackupAlertProvider extends ChangeNotifier {
   int _currentUserId = 0;
   int _pendingCount = 0;
+  int _pendingTransactionCount = 0;
   bool _isLoaded = false;
 
   int get pendingCount => _pendingCount;
+  int get pendingTransactionCount => _pendingTransactionCount;
   bool get hasPendingChanges => _pendingCount > 0;
+  bool get hasPendingTransactions => _pendingTransactionCount > 0;
   bool get isLoaded => _isLoaded;
 
   String get badgeLabel {
@@ -20,6 +23,7 @@ class BackupAlertProvider extends ChangeNotifier {
     if (userId == 0) {
       _currentUserId = 0;
       _pendingCount = 0;
+      _pendingTransactionCount = 0;
       _isLoaded = true;
       notifyListeners();
       return;
@@ -28,6 +32,7 @@ class BackupAlertProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _currentUserId = userId;
     _pendingCount = prefs.getInt(_keyFor(userId)) ?? 0;
+    _pendingTransactionCount = prefs.getInt(_transactionKeyFor(userId)) ?? 0;
     _isLoaded = true;
     notifyListeners();
   }
@@ -38,10 +43,18 @@ class BackupAlertProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final nextCount = (prefs.getInt(_keyFor(userId)) ?? 0) + 1;
     await prefs.setInt(_keyFor(userId), nextCount);
+    final isTransactionChange = source == 'transaction';
+    final nextTransactionCount = isTransactionChange
+        ? (prefs.getInt(_transactionKeyFor(userId)) ?? 0) + 1
+        : (prefs.getInt(_transactionKeyFor(userId)) ?? 0);
+    if (isTransactionChange) {
+      await prefs.setInt(_transactionKeyFor(userId), nextTransactionCount);
+    }
 
     if (_currentUserId == userId || !_isLoaded) {
       _currentUserId = userId;
       _pendingCount = nextCount;
+      _pendingTransactionCount = nextTransactionCount;
       _isLoaded = true;
       notifyListeners();
     }
@@ -52,14 +65,18 @@ class BackupAlertProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyFor(userId), 0);
+    await prefs.setInt(_transactionKeyFor(userId), 0);
 
     if (_currentUserId == userId || !_isLoaded) {
       _currentUserId = userId;
       _pendingCount = 0;
+      _pendingTransactionCount = 0;
       _isLoaded = true;
       notifyListeners();
     }
   }
 
   String _keyFor(int userId) => 'backup_pending_changes_$userId';
+  String _transactionKeyFor(int userId) =>
+      'backup_pending_transaction_changes_$userId';
 }

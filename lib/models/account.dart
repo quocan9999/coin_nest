@@ -93,5 +93,6 @@ class Account {
   }
 
   @override
-  String toString() => 'Account(id: $id, name: $name, type: $type, balance: $balance)';
+  String toString() =>
+      'Account(id: $id, name: $name, type: $type, balance: $balance)';
 }

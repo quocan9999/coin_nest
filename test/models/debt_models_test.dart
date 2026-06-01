@@ -45,7 +45,9 @@ void main() {
     // Cảnh báo quá hạn không được xuất hiện cho khoản đã tất toán hoặc không có hạn.
     test('quá hạn chỉ áp dụng cho khoản đang hoạt động sau hạn trả', () {
       expect(
-        loan(dueDate: DateTime.now().subtract(const Duration(days: 1))).isOverdue,
+        loan(
+          dueDate: DateTime.now().subtract(const Duration(days: 1)),
+        ).isOverdue,
         isTrue,
       );
       expect(
@@ -62,10 +64,7 @@ void main() {
   // Kiểm tra semantic của giao dịch debt để sign và liên kết loan nhất quán.
   group('Tiện ích giao dịch vay và cho vay', () {
     // Dựng giao dịch tối thiểu để cô lập logic phân loại khỏi dữ liệu DB.
-    TransactionModel transaction({
-      String type = 'income',
-      int? loanId,
-    }) {
+    TransactionModel transaction({String type = 'income', int? loanId}) {
       final now = DateTime(2026, 5, 24);
       return TransactionModel(
         userId: 1,

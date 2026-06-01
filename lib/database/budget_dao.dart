@@ -11,22 +11,28 @@ class BudgetDao {
   }
 
   /// Get all budgets with their current spent amount computed from transactions.
-  Future<List<Budget>> getAllByUser(int userId, {bool activeOnly = true}) async {
+  Future<List<Budget>> getAllByUser(
+    int userId, {
+    bool activeOnly = true,
+  }) async {
     final db = await _dbHelper.database;
 
     final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1)
-        .toIso8601String()
-        .split('T')
-        .first;
-    final monthEnd = DateTime(now.year, now.month + 1, 0)
-        .toIso8601String()
-        .split('T')
-        .first;
+    final monthStart = DateTime(
+      now.year,
+      now.month,
+      1,
+    ).toIso8601String().split('T').first;
+    final monthEnd = DateTime(
+      now.year,
+      now.month + 1,
+      0,
+    ).toIso8601String().split('T').first;
 
     final where = activeOnly ? 'AND b.is_active = 1' : '';
 
-    final result = await db.rawQuery('''
+    final result = await db.rawQuery(
+      '''
       SELECT b.*,
              c.name as category_name,
              c.icon_name as category_icon_name,
@@ -54,7 +60,9 @@ class BudgetDao {
       LEFT JOIN accounts a ON b.account_id = a.id
       WHERE b.user_id = ? $where
       ORDER BY b.created_at DESC
-    ''', [monthStart, monthEnd, userId]);
+    ''',
+      [monthStart, monthEnd, userId],
+    );
 
     return result.map((m) => Budget.fromMap(m)).toList();
   }

@@ -32,8 +32,7 @@ class SecurityUtils {
   }
 
   /// Verify that [password] matches [storedHash] given [salt].
-  static bool verifyPassword(
-      String password, String storedHash, String salt) {
+  static bool verifyPassword(String password, String storedHash, String salt) {
     final computedHash = hashPassword(password, salt);
     // Constant-time comparison to prevent timing attacks.
     return _constantTimeEquals(computedHash, storedHash);

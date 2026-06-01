@@ -182,7 +182,9 @@ void main() {
   });
 
   // Sửa khoản vay từ UI phải cập nhật provider và hiệu chỉnh số dư theo số tiền mới.
-  testWidgets('Màn sửa khoản vay lưu lại thông tin và số tiền mới', (tester) async {
+  testWidgets('Màn sửa khoản vay lưu lại thông tin và số tiền mới', (
+    tester,
+  ) async {
     late final DebtDatabaseFixture fixture;
     late final Loan loan;
     await runDebtStep(
@@ -204,7 +206,9 @@ void main() {
     expect(find.text('Sửa vay/cho vay'), findsOneWidget);
     await tester.enterText(find.byType(TextFormField).at(0), 'Alice cập nhật');
     await tester.enterText(find.byType(TextFormField).at(1), '700');
-    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Lưu thay đổi'));
+    await tester.ensureVisible(
+      find.widgetWithText(ElevatedButton, 'Lưu thay đổi'),
+    );
     final saveButton = tester.widget<ElevatedButton>(
       find.widgetWithText(ElevatedButton, 'Lưu thay đổi'),
     );
@@ -264,7 +268,9 @@ void main() {
       fixture: fixture,
       child: LoanDetailScreen(loan: paidLoan),
     );
-    await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 10)));
+    await tester.runAsync(
+      () async => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
     await pumpDebtFrames(tester);
 
     expect(find.text('Đã trả'), findsWidgets);
@@ -337,19 +343,15 @@ void main() {
   ) async {
     late final DebtDatabaseFixture fixture;
     late final Loan loan;
-    await runDebtStep(
-      tester,
-      'fixture thu nợ: tạo khoản cho vay',
-      () async {
-        fixture = await openFfiDebtDatabaseFixture(initialBalance: 1000);
-        loan = await _insertLoan(
-          fixture,
-          type: 'lend',
-          personName: 'Bob',
-          amount: 300,
-        );
-      },
-    );
+    await runDebtStep(tester, 'fixture thu nợ: tạo khoản cho vay', () async {
+      fixture = await openFfiDebtDatabaseFixture(initialBalance: 1000);
+      loan = await _insertLoan(
+        fixture,
+        type: 'lend',
+        personName: 'Bob',
+        amount: 300,
+      );
+    });
     addTearDown(fixture.dispose);
 
     final harness = await pumpDebtWidgetWithFixture(
@@ -363,17 +365,13 @@ void main() {
     final saveButton = tester.widget<ElevatedButton>(
       find.widgetWithText(ElevatedButton, 'Lưu thanh toán'),
     );
-    await runDebtStep(
-      tester,
-      'thu nợ: lưu khoản thu đủ',
-      () async {
-        saveButton.onPressed!();
-        await waitForDebtCondition(
-          'provider chuyển khoản cho vay sang đã trả',
-          () => harness.loanProvider.loans.single.status == 'paid',
-        );
-      },
-    );
+    await runDebtStep(tester, 'thu nợ: lưu khoản thu đủ', () async {
+      saveButton.onPressed!();
+      await waitForDebtCondition(
+        'provider chuyển khoản cho vay sang đã trả',
+        () => harness.loanProvider.loans.single.status == 'paid',
+      );
+    });
     await pumpDebtFrames(tester);
 
     expect(harness.loanProvider.loans.single.remainingAmount, 0);
