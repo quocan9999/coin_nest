@@ -88,26 +88,46 @@ class CategoryIcons {
   };
 
   /// Return the [IconData] for a given key, with a fallback.
-  static IconData getIcon(String key) =>
-      icons[key] ?? Icons.category_rounded;
+  static IconData getIcon(String key) => icons[key] ?? Icons.category_rounded;
 
   /// Return the [Color] for a given key, with a fallback.
-  static Color getColor(String key) =>
-      colors[key] ?? const Color(0xFF78909C);
+  static Color getColor(String key) => colors[key] ?? const Color(0xFF78909C);
 
   /// All icon keys available for category selection UI.
   static List<String> get expenseIconKeys => const [
-        'food', 'transport', 'housing', 'utilities', 'shopping',
-        'health', 'education', 'entertainment', 'clothing', 'personal',
-        'gift', 'telecom', 'travel', 'repair', 'other_expense',
-      ];
+    'food',
+    'transport',
+    'housing',
+    'utilities',
+    'shopping',
+    'health',
+    'education',
+    'entertainment',
+    'clothing',
+    'personal',
+    'gift',
+    'telecom',
+    'travel',
+    'repair',
+    'other_expense',
+  ];
 
   static List<String> get incomeIconKeys => const [
-        'salary', 'investment', 'bonus', 'side_income',
-        'interest', 'received_gift', 'other_income',
-      ];
+    'salary',
+    'investment',
+    'bonus',
+    'side_income',
+    'interest',
+    'received_gift',
+    'other_income',
+  ];
 
   static List<String> get accountIconKeys => const [
-        'cash', 'bank', 'e_wallet', 'savings', 'credit_card', 'other',
-      ];
+    'cash',
+    'bank',
+    'e_wallet',
+    'savings',
+    'credit_card',
+    'other',
+  ];
 }

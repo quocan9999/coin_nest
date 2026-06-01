@@ -7,32 +7,25 @@ class SupportMapScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const location =
-        LatLng(10.8061539, 106.6286656);
+    const location = LatLng(10.8061539, 106.6286656);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Liên hệ hỗ trợ'),
-      ),
+      appBar: AppBar(title: const Text('Liên hệ hỗ trợ')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Vị trí hỗ trợ',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
 
             const SizedBox(height: 12),
 
             Expanded(
               child: ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16),
                 child: FlutterMap(
                   options: const MapOptions(
                     initialCenter: location,
@@ -42,8 +35,7 @@ class SupportMapScreen extends StatelessWidget {
                     TileLayer(
                       urlTemplate:
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName:
-                          'com.example.coin_nest',
+                      userAgentPackageName: 'com.example.coin_nest',
                     ),
 
                     MarkerLayer(
@@ -67,9 +59,7 @@ class SupportMapScreen extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            const Text(
-              '10.8061539, 106.6286656',
-            ),
+            const Text('10.8061539, 106.6286656'),
           ],
         ),
       ),

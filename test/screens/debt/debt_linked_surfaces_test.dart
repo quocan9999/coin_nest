@@ -30,7 +30,9 @@ void main() {
       fixture: fixture,
       child: const LoanListScreen(),
     );
-    await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 10)));
+    await tester.runAsync(
+      () async => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
     await pumpDebtFrames(tester);
 
     expect(find.text('Chưa có khoản vay nào'), findsOneWidget);
@@ -75,7 +77,9 @@ void main() {
       fixture: fixture,
       child: const LoanListScreen(),
     );
-    await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 10)));
+    await tester.runAsync(
+      () async => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
     await pumpDebtFrames(tester);
 
     expect(find.text('Khoản quá hạn'), findsOneWidget);
@@ -102,24 +106,24 @@ void main() {
       fixture: fixture,
       child: const TransactionListScreen(),
     );
-    await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 10)));
+    await tester.runAsync(
+      () async => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
     await pumpDebtFrames(tester);
     expect(find.text('Vay mượn'), findsOneWidget);
 
     final tile = tester.widget<GestureDetector>(
-      find.ancestor(
-        of: find.text('Vay mượn'),
-        matching: find.byType(GestureDetector),
-      ).first,
+      find
+          .ancestor(
+            of: find.text('Vay mượn'),
+            matching: find.byType(GestureDetector),
+          )
+          .first,
     );
-    await runDebtStep(
-      tester,
-      'giao dịch liên kết: mở chi tiết',
-      () async {
-        tile.onTap!();
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-      },
-    );
+    await runDebtStep(tester, 'giao dịch liên kết: mở chi tiết', () async {
+      tile.onTap!();
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    });
     await pumpDebtFrames(tester);
 
     expect(find.byType(LoanDetailScreen), findsOneWidget);
@@ -156,13 +160,17 @@ void main() {
       fixture: fixture,
       child: const TransactionListScreen(),
     );
-    await tester.runAsync(() async => Future<void>.delayed(const Duration(milliseconds: 10)));
+    await tester.runAsync(
+      () async => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
     await pumpDebtFrames(tester);
     final tile = tester.widget<GestureDetector>(
-      find.ancestor(
-        of: find.text('Vay mượn'),
-        matching: find.byType(GestureDetector),
-      ).first,
+      find
+          .ancestor(
+            of: find.text('Vay mượn'),
+            matching: find.byType(GestureDetector),
+          )
+          .first,
     );
     await runDebtStep(
       tester,

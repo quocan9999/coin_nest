@@ -5,6 +5,7 @@ import '../../providers/account_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../providers/report_provider.dart';
+import '../../providers/transaction_provider.dart';
 
 import '../../theme/app_theme.dart';
 
@@ -24,10 +25,27 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
+  int? _lastTransactionRevision;
+
   @override
   void initState() {
     super.initState();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadPreviewData();
+    });
+  }
+
+  void _reloadWhenTransactionRevisionChanges(int transactionRevision) {
+    if (_lastTransactionRevision == null) {
+      _lastTransactionRevision = transactionRevision;
+      return;
+    }
+
+    if (_lastTransactionRevision == transactionRevision) return;
+
+    _lastTransactionRevision = transactionRevision;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _loadPreviewData();
@@ -78,6 +96,10 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final transactionRevision = context.select<TransactionProvider, int>(
+      (provider) => provider.revision,
+    );
+    _reloadWhenTransactionRevisionChanges(transactionRevision);
 
     final colorScheme = theme.colorScheme;
 

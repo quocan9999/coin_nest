@@ -123,5 +123,6 @@ class Budget {
   bool get isExceeded => (spentAmount ?? 0) >= amount;
 
   @override
-  String toString() => 'Budget(id: $id, name: $name, amount: $amount, accountId: $accountId)';
+  String toString() =>
+      'Budget(id: $id, name: $name, amount: $amount, accountId: $accountId)';
 }

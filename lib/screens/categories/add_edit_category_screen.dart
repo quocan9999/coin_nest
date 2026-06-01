@@ -10,18 +10,13 @@ import '../../utils/category_icons.dart';
 class AddEditCategoryScreen extends StatefulWidget {
   final Category? category;
 
-  const AddEditCategoryScreen({
-    super.key,
-    this.category,
-  });
+  const AddEditCategoryScreen({super.key, this.category});
 
   @override
-  State<AddEditCategoryScreen> createState() =>
-      _AddEditCategoryScreenState();
+  State<AddEditCategoryScreen> createState() => _AddEditCategoryScreenState();
 }
 
-class _AddEditCategoryScreenState
-    extends State<AddEditCategoryScreen> {
+class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
 
@@ -52,11 +47,9 @@ class _AddEditCategoryScreenState
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final userId =
-        context.read<AuthProvider>().currentUserId;
+    final userId = context.read<AuthProvider>().currentUserId;
 
-    final prov =
-        context.read<CategoryProvider>();
+    final prov = context.read<CategoryProvider>();
 
     bool success;
 
@@ -93,41 +86,27 @@ class _AddEditCategoryScreenState
         ? CategoryIcons.expenseIconKeys
         : CategoryIcons.incomeIconKeys;
 
-    final catProv =
-        context.watch<CategoryProvider>();
+    final catProv = context.watch<CategoryProvider>();
 
     final allCats = _type == 'expense'
         ? catProv.expenseCategories
         : catProv.incomeCategories;
 
     final parentCandidates = allCats
-        .where(
-          (c) =>
-              c.parentId == null &&
-              c.id != widget.category?.id,
-        )
+        .where((c) => c.parentId == null && c.id != widget.category?.id)
         .toList();
 
     return Scaffold(
-      backgroundColor:
-          theme.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       appBar: AppBar(
-        backgroundColor:
-            theme.scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
 
-        title: Text(
-          _isEditing
-              ? 'Sửa hạng mục'
-              : 'Thêm hạng mục',
-        ),
+        title: Text(_isEditing ? 'Sửa hạng mục' : 'Thêm hạng mục'),
 
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_rounded,
-          ),
-          onPressed: () =>
-              Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
 
@@ -138,43 +117,30 @@ class _AddEditCategoryScreenState
           key: _formKey,
 
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
 
             children: [
               if (!_isEditing) ...[
                 Text(
                   'LOẠI',
 
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelMedium
-                      ?.copyWith(
-                        fontWeight:
-                            FontWeight.w600,
-                        letterSpacing: 0.8,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
 
-                        color: theme
-                            .colorScheme
-                            .onSurfaceVariant,
-                      ),
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
 
                 const SizedBox(height: 8),
 
                 Row(
                   children: [
-                    _typeChip(
-                        context,
-                        'Chi tiêu',
-                        'expense'),
+                    _typeChip(context, 'Chi tiêu', 'expense'),
 
                     const SizedBox(width: 8),
 
-                    _typeChip(
-                        context,
-                        'Thu nhập',
-                        'income'),
+                    _typeChip(context, 'Thu nhập', 'income'),
                   ],
                 ),
 
@@ -184,18 +150,12 @@ class _AddEditCategoryScreenState
               Text(
                 'TÊN HẠNG MỤC',
 
-                style: Theme.of(context)
-                    .textTheme
-                    .labelMedium
-                    ?.copyWith(
-                      fontWeight:
-                          FontWeight.w600,
-                      letterSpacing: 0.8,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
 
-                      color: theme
-                          .colorScheme
-                          .onSurfaceVariant,
-                    ),
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
 
               const SizedBox(height: 8),
@@ -203,16 +163,9 @@ class _AddEditCategoryScreenState
               TextFormField(
                 controller: _nameController,
 
-                validator: (v) =>
-                    Validators.entityName(
-                  v,
-                  'Tên hạng mục',
-                ),
+                validator: (v) => Validators.entityName(v, 'Tên hạng mục'),
 
-                decoration:
-                    const InputDecoration(
-                  hintText: 'VD: Ăn uống',
-                ),
+                decoration: const InputDecoration(hintText: 'VD: Ăn uống'),
               ),
 
               const SizedBox(height: 20),
@@ -220,43 +173,31 @@ class _AddEditCategoryScreenState
               Text(
                 'HẠNG MỤC CHA (TÙY CHỌN)',
 
-                style: Theme.of(context)
-                    .textTheme
-                    .labelMedium
-                    ?.copyWith(
-                      fontWeight:
-                          FontWeight.w600,
-                      letterSpacing: 0.8,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
 
-                      color: theme
-                          .colorScheme
-                          .onSurfaceVariant,
-                    ),
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
 
               const SizedBox(height: 8),
 
               InputDecorator(
-                decoration:
-                    const InputDecoration(
-                  contentPadding:
-                      EdgeInsets.symmetric(
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 4,
                   ),
                 ),
 
-                child:
-                    DropdownButtonHideUnderline(
+                child: DropdownButtonHideUnderline(
                   child: DropdownButton<int?>(
                     value: _selectedParentId,
 
-                    hint: const Text(
-                      'Không có (Hạng mục gốc)',
-                    ),
+                    hint: const Text('Không có (Hạng mục gốc)'),
 
-                    dropdownColor:
-                        theme.cardColor,
+                    dropdownColor: theme.cardColor,
 
                     isExpanded: true,
 
@@ -264,21 +205,16 @@ class _AddEditCategoryScreenState
                       const DropdownMenuItem<int?>(
                         value: null,
 
-                        child: Text(
-                          'Không có (Hạng mục gốc)',
-                        ),
+                        child: Text('Không có (Hạng mục gốc)'),
                       ),
 
                       ...parentCandidates.map(
-                        (c) => DropdownMenuItem(
-                          value: c.id,
-                          child: Text(c.name),
-                        ),
+                        (c) =>
+                            DropdownMenuItem(value: c.id, child: Text(c.name)),
                       ),
                     ],
 
-                    onChanged: (val) =>
-                        setState(() {
+                    onChanged: (val) => setState(() {
                       _selectedParentId = val;
                     }),
                   ),
@@ -290,95 +226,66 @@ class _AddEditCategoryScreenState
               Text(
                 'BIỂU TƯỢNG',
 
-                style: Theme.of(context)
-                    .textTheme
-                    .labelMedium
-                    ?.copyWith(
-                      fontWeight:
-                          FontWeight.w600,
-                      letterSpacing: 0.8,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
 
-                      color: theme
-                          .colorScheme
-                          .onSurfaceVariant,
-                    ),
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
 
               const SizedBox(height: 8),
 
               InkWell(
-                borderRadius:
-                    BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12),
 
                 onTap: () async {
-                  final selected =
-                      await showModalBottomSheet<
-                          String>(
+                  final selected = await showModalBottomSheet<String>(
                     context: context,
 
-                    backgroundColor:
-                        theme.cardColor,
+                    backgroundColor: theme.cardColor,
 
-                    shape:
-                        const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.vertical(
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(
                         top: Radius.circular(20),
                       ),
                     ),
 
                     builder: (_) {
                       return Padding(
-                        padding:
-                            const EdgeInsets.all(
-                                20),
+                        padding: const EdgeInsets.all(20),
 
                         child: GridView.builder(
                           shrinkWrap: true,
 
-                          itemCount:
-                              iconKeys.length,
+                          itemCount: iconKeys.length,
 
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                          ),
+                                crossAxisCount: 4,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
 
-                          itemBuilder:
-                              (context, index) {
-                            final key =
-                                iconKeys[index];
+                          itemBuilder: (context, index) {
+                            final key = iconKeys[index];
 
-                            final sel =
-                                _selectedIcon ==
-                                    key;
+                            final sel = _selectedIcon == key;
 
                             return GestureDetector(
                               onTap: () {
-                                Navigator.pop(
-                                  context,
-                                  key,
-                                );
+                                Navigator.pop(context, key);
                               },
 
                               child: Container(
-                                decoration:
-                                    BoxDecoration(
+                                decoration: BoxDecoration(
                                   color: sel
-                                      ? AppTheme
-                                          .primary
-                                      : CategoryIcons
-                                          .getColor(
-                                              key)
-                                          .withAlpha(
-                                              30),
+                                      ? AppTheme.primary
+                                      : CategoryIcons.getColor(
+                                          key,
+                                        ).withAlpha(30),
 
-                                  borderRadius:
-                                      BorderRadius
-                                          .circular(
-                                              12),
+                                  borderRadius: BorderRadius.circular(12),
 
                                   border: sel
                                       ? null
@@ -386,58 +293,40 @@ class _AddEditCategoryScreenState
                                           color: theme
                                               .colorScheme
                                               .outlineVariant
-                                              .withAlpha(
-                                                  51),
+                                              .withAlpha(51),
                                         ),
                                 ),
 
                                 child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment
-                                          .center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
 
                                   children: [
                                     Icon(
-                                      CategoryIcons
-                                          .getIcon(
-                                              key),
+                                      CategoryIcons.getIcon(key),
 
                                       color: sel
-                                          ? Colors
-                                              .white
-                                          : CategoryIcons
-                                              .getColor(
-                                                  key),
+                                          ? Colors.white
+                                          : CategoryIcons.getColor(key),
 
                                       size: 22,
                                     ),
 
-                                    const SizedBox(
-                                        height: 4),
+                                    const SizedBox(height: 4),
 
                                     Text(
-                                      _getVietnameseName(
-                                          key),
+                                      _getVietnameseName(key),
 
-                                      style:
-                                          TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
 
                                         color: sel
-                                            ? Colors
-                                                .white
-                                            : theme
-                                                .colorScheme
-                                                .onSurface,
+                                            ? Colors.white
+                                            : theme.colorScheme.onSurface,
                                       ),
 
-                                      textAlign:
-                                          TextAlign
-                                              .center,
+                                      textAlign: TextAlign.center,
 
-                                      overflow:
-                                          TextOverflow
-                                              .ellipsis,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
@@ -451,15 +340,13 @@ class _AddEditCategoryScreenState
 
                   if (selected != null) {
                     setState(() {
-                      _selectedIcon =
-                          selected;
+                      _selectedIcon = selected;
                     });
                   }
                 },
 
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(
+                  padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 14,
                   ),
@@ -467,15 +354,10 @@ class _AddEditCategoryScreenState
                   decoration: BoxDecoration(
                     color: theme.cardColor,
 
-                    borderRadius:
-                        BorderRadius.circular(
-                            12),
+                    borderRadius: BorderRadius.circular(12),
 
                     border: Border.all(
-                      color: theme
-                          .colorScheme
-                          .outlineVariant
-                          .withAlpha(40),
+                      color: theme.colorScheme.outlineVariant.withAlpha(40),
                     ),
                   ),
 
@@ -486,23 +368,17 @@ class _AddEditCategoryScreenState
                         height: 40,
 
                         decoration: BoxDecoration(
-                          color: CategoryIcons
-                              .getColor(
-                                  _selectedIcon)
-                              .withAlpha(30),
+                          color: CategoryIcons.getColor(
+                            _selectedIcon,
+                          ).withAlpha(30),
 
-                          borderRadius:
-                              BorderRadius
-                                  .circular(10),
+                          borderRadius: BorderRadius.circular(10),
                         ),
 
                         child: Icon(
-                          CategoryIcons.getIcon(
-                              _selectedIcon),
+                          CategoryIcons.getIcon(_selectedIcon),
 
-                          color: CategoryIcons
-                              .getColor(
-                                  _selectedIcon),
+                          color: CategoryIcons.getColor(_selectedIcon),
                         ),
                       ),
 
@@ -510,26 +386,20 @@ class _AddEditCategoryScreenState
 
                       Expanded(
                         child: Text(
-                          _getVietnameseName(
-                              _selectedIcon),
+                          _getVietnameseName(_selectedIcon),
 
                           style: TextStyle(
                             fontSize: 15,
 
-                            color: theme
-                                .colorScheme
-                                .onSurface,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ),
 
                       Icon(
-                        Icons
-                            .keyboard_arrow_down,
+                        Icons.keyboard_arrow_down,
 
-                        color: theme
-                            .colorScheme
-                            .onSurfaceVariant,
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ],
                   ),
@@ -544,11 +414,7 @@ class _AddEditCategoryScreenState
                 child: ElevatedButton(
                   onPressed: _save,
 
-                  child: Text(
-                    _isEditing
-                        ? 'Cập nhật'
-                        : 'Thêm hạng mục',
-                  ),
+                  child: Text(_isEditing ? 'Cập nhật' : 'Thêm hạng mục'),
                 ),
               ),
             ],
@@ -558,11 +424,7 @@ class _AddEditCategoryScreenState
     );
   }
 
-  Widget _typeChip(
-    BuildContext context,
-    String label,
-    String value,
-  ) {
+  Widget _typeChip(BuildContext context, String label, String value) {
     final theme = Theme.of(context);
 
     final sel = _type == value;
@@ -571,45 +433,27 @@ class _AddEditCategoryScreenState
       onTap: () => setState(() {
         _type = value;
 
-        _selectedIcon =
-            value == 'expense'
-                ? 'food'
-                : 'salary';
+        _selectedIcon = value == 'expense' ? 'food' : 'salary';
 
         _selectedParentId = null;
       }),
 
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 10,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
 
         decoration: BoxDecoration(
-          color: sel
-              ? AppTheme.primary
-              : theme.cardColor,
+          color: sel ? AppTheme.primary : theme.cardColor,
 
-          borderRadius:
-              BorderRadius.circular(
-            AppTheme.radiusFull,
-          ),
+          borderRadius: BorderRadius.circular(AppTheme.radiusFull),
         ),
 
         child: Text(
           label,
 
           style: TextStyle(
-            color: sel
-                ? Colors.white
-                : theme
-                    .colorScheme
-                    .onSurface,
+            color: sel ? Colors.white : theme.colorScheme.onSurface,
 
-            fontWeight: sel
-                ? FontWeight.w600
-                : FontWeight.w400,
+            fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
       ),

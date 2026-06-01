@@ -17,63 +17,47 @@ import 'add_edit_account_screen.dart';
 class AccountDetailScreen extends StatelessWidget {
   final Account account;
 
-  const AccountDetailScreen({
-    super.key,
-    required this.account,
-  });
+  const AccountDetailScreen({super.key, required this.account});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final currentAccount = context.watch<AccountProvider>().findById(
+      account.id ?? -1,
+    );
+    final displayAccount = currentAccount ?? account;
 
     return Scaffold(
-      backgroundColor:
-          theme.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       appBar: AppBar(
-        backgroundColor:
-            theme.scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
 
-        title:
-            const Text('Chi tiết tài khoản'),
+        title: const Text('Chi tiết tài khoản'),
 
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_rounded,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_rounded),
 
-          onPressed: () =>
-              Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),
         ),
 
         actions: [
           IconButton(
-            icon:
-                const Icon(Icons.edit_outlined),
+            icon: const Icon(Icons.edit_outlined),
 
-            onPressed: () =>
-                Navigator.push(
+            onPressed: () => Navigator.push(
               context,
 
               MaterialPageRoute(
-                builder:
-                    (_) =>
-                        AddEditAccountScreen(
-                  account: account,
-                ),
+                builder: (_) => AddEditAccountScreen(account: displayAccount),
               ),
             ),
           ),
 
           IconButton(
-            icon: const Icon(
-              Icons.delete_outline,
+            icon: const Icon(Icons.delete_outline, color: AppTheme.tertiary),
 
-              color: AppTheme.tertiary,
-            ),
-
-            onPressed: () =>
-                _confirmDelete(context),
+            onPressed: () => _confirmDelete(context, displayAccount),
           ),
         ],
       ),
@@ -87,16 +71,12 @@ class AccountDetailScreen extends StatelessWidget {
             Container(
               width: double.infinity,
 
-              padding:
-                  const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
 
               decoration: BoxDecoration(
                 color: theme.cardColor,
 
-                borderRadius:
-                    BorderRadius.circular(
-                  AppTheme.radiusLg,
-                ),
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
               ),
 
               child: Column(
@@ -106,30 +86,20 @@ class AccountDetailScreen extends StatelessWidget {
                     height: 64,
 
                     decoration: BoxDecoration(
-                      color:
-                          CategoryIcons
-                              .getColor(
-                        account.iconName ??
-                            account.type,
+                      color: CategoryIcons.getColor(
+                        displayAccount.iconName ?? displayAccount.type,
                       ).withAlpha(30),
 
-                      borderRadius:
-                          BorderRadius.circular(
-                        16,
-                      ),
+                      borderRadius: BorderRadius.circular(16),
                     ),
 
                     child: Icon(
                       CategoryIcons.getIcon(
-                        account.iconName ??
-                            account.type,
+                        displayAccount.iconName ?? displayAccount.type,
                       ),
 
-                      color:
-                          CategoryIcons
-                              .getColor(
-                        account.iconName ??
-                            account.type,
+                      color: CategoryIcons.getColor(
+                        displayAccount.iconName ?? displayAccount.type,
                       ),
 
                       size: 32,
@@ -139,57 +109,36 @@ class AccountDetailScreen extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   Text(
-                    account.name,
+                    displayAccount.name,
 
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(
-                          fontWeight:
-                              FontWeight.w700,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
 
-                          color: theme
-                              .colorScheme
-                              .onSurface,
-                        ),
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
 
                   const SizedBox(height: 4),
 
                   Text(
-                    AppConstants
-                                .accountTypeLabels[
-                            account.type] ??
-                        account.type,
+                    AppConstants.accountTypeLabels[displayAccount.type] ??
+                        displayAccount.type,
 
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(
-                          color: theme
-                              .colorScheme
-                              .onSurfaceVariant,
-                        ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
 
                   const SizedBox(height: 16),
 
                   Text(
-                    Formatters.currency(
-                      account.balance,
+                    Formatters.currency(displayAccount.balance),
+
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+
+                      color: theme.colorScheme.onSurface,
                     ),
-
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineMedium
-                        ?.copyWith(
-                          fontWeight:
-                              FontWeight.w700,
-
-                          color: theme
-                              .colorScheme
-                              .onSurface,
-                        ),
                   ),
                 ],
               ),
@@ -203,25 +152,18 @@ class AccountDetailScreen extends StatelessWidget {
               height: 48,
 
               child: OutlinedButton.icon(
-                onPressed: () =>
-                    Navigator.push(
+                onPressed: () => Navigator.push(
                   context,
 
                   MaterialPageRoute(
-                    builder:
-                        (_) =>
-                            AddEditAccountScreen(
-                      account: account,
-                    ),
+                    builder: (_) =>
+                        AddEditAccountScreen(account: displayAccount),
                   ),
                 ),
 
-                icon:
-                    const Icon(Icons.edit_outlined),
+                icon: const Icon(Icons.edit_outlined),
 
-                label: const Text(
-                  'Chỉnh sửa thông tin tài khoản',
-                ),
+                label: const Text('Chỉnh sửa thông tin tài khoản'),
               ),
             ),
           ],
@@ -230,68 +172,52 @@ class AccountDetailScreen extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(
-    BuildContext context,
-  ) {
+  void _confirmDelete(BuildContext context, Account displayAccount) {
     final theme = Theme.of(context);
 
     showDialog(
       context: context,
 
-      builder:
-          (ctx) => AlertDialog(
-            backgroundColor:
-                theme.cardColor,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: theme.cardColor,
 
-            title:
-                const Text('Xóa tài khoản'),
+        title: const Text('Xóa tài khoản'),
 
-            content: Text(
-              'Bạn có chắc chắn muốn xóa "${account.name}"?',
-            ),
+        content: Text('Bạn có chắc chắn muốn xóa "${displayAccount.name}"?'),
 
-            actions: [
-              TextButton(
-                onPressed: () =>
-                    Navigator.pop(ctx),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
 
-                child: const Text('Hủy'),
-              ),
-
-              TextButton(
-                onPressed: () async {
-                  final userId =
-                      context
-                          .read<AuthProvider>()
-                          .currentUserId;
-
-                  await context
-                      .read<AccountProvider>()
-                      .deleteAccount(
-                        account.id!,
-                        userId,
-                      );
-
-                  if (ctx.mounted) {
-                    Navigator.pop(ctx);
-                  }
-
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
-                },
-
-                child: const Text(
-                  'Xóa',
-
-                  style: TextStyle(
-                    color:
-                        AppTheme.tertiary,
-                  ),
-                ),
-              ),
-            ],
+            child: const Text('Hủy'),
           ),
+
+          TextButton(
+            onPressed: () async {
+              final userId = context.read<AuthProvider>().currentUserId;
+
+              await context.read<AccountProvider>().deleteAccount(
+                displayAccount.id!,
+                userId,
+              );
+
+              if (ctx.mounted) {
+                Navigator.pop(ctx);
+              }
+
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
+            },
+
+            child: const Text(
+              'Xóa',
+
+              style: TextStyle(color: AppTheme.tertiary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

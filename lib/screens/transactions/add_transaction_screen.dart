@@ -432,9 +432,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         : 'Chọn khoản vay/cho vay';
     final message = isCreation
         ? 'Bạn đang chọn hạng mục "${category.name}" để phát sinh khoản vay/cho vay mới. '
-            'Bạn có muốn chuyển sang tạo khoản vay/cho vay không?'
+              'Bạn có muốn chuyển sang tạo khoản vay/cho vay không?'
         : 'Bạn đang chọn hạng mục "${category.name}" để thanh toán khoản vay/cho vay đã có. '
-            'Bạn có muốn chuyển sang danh sách khoản vay/cho vay để chọn khoản cần xử lý không?';
+              'Bạn có muốn chuyển sang danh sách khoản vay/cho vay để chọn khoản cần xử lý không?';
 
     final shouldNavigate = await showDialog<bool>(
       context: context,
@@ -574,7 +574,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
                 const SizedBox(height: 8),
 
-                _buildCategoryGrid(
+                _buildCategoryDropdown(
                   _currentType == 'expense'
                       ? catProv.expenseCategories
                       : catProv.incomeCategories,
@@ -1139,64 +1139,57 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     return buffer.toString();
   }
 
-  Widget _buildCategoryGrid(List<Category> categories) {
+  Widget _buildCategoryDropdown(List<Category> categories) {
     final colorScheme = Theme.of(context).colorScheme;
+    final hasSelectedCategory = categories.any(
+      (category) => category.id == _selectedCategoryId,
+    );
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-
-      children: categories.map((cat) {
-        final isSelected = _selectedCategoryId == cat.id;
-
-        return GestureDetector(
-          onTap: () => _handleCategoryTap(cat),
-
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? AppTheme.primary
-                  : colorScheme.surfaceContainerLow,
-
-              borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-            ),
-
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-
-              children: [
-                Icon(
-                  CategoryIcons.getIcon(cat.iconName),
-
-                  size: 16,
-
-                  color: isSelected
-                      ? Colors.white
-                      : CategoryIcons.getColor(cat.iconName),
-                ),
-
-                const SizedBox(width: 6),
-
-                Text(
-                  cat.name,
-
-                  style: TextStyle(
-                    fontSize: 12,
-
-                    fontWeight: FontWeight.w500,
-
-                    color: isSelected ? Colors.white : colorScheme.onSurface,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: hasSelectedCategory ? _selectedCategoryId : null,
+          isExpanded: true,
+          dropdownColor: colorScheme.surface,
+          hint: const Text('Ch\u1ecdn h\u1ea1ng m\u1ee5c'),
+          items: categories
+              .map(
+                (category) => DropdownMenuItem<int>(
+                  value: category.id,
+                  child: Row(
+                    children: [
+                      Icon(
+                        CategoryIcons.getIcon(category.iconName),
+                        size: 18,
+                        color: CategoryIcons.getColor(category.iconName),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          category.name,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
+              )
+              .toList(),
+          onChanged: (categoryId) async {
+            if (categoryId == null) return;
+
+            final category = categories.firstWhere(
+              (category) => category.id == categoryId,
+            );
+            await _handleCategoryTap(category);
+          },
+        ),
+      ),
     );
   }
 

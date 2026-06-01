@@ -44,10 +44,7 @@ class DebtDatabaseFixture {
   }
 
   /// Seed tài khoản phụ của cùng user cho các case chuyển dòng tiền.
-  Future<int> insertAccount({
-    required String name,
-    required double balance,
-  }) {
+  Future<int> insertAccount({required String name, required double balance}) {
     final now = DateTime(2026, 5, 24, 8).toIso8601String();
     return db.insert('accounts', {
       'user_id': userId,
@@ -89,13 +86,17 @@ class DebtDatabaseFixture {
 
   /// Đếm transaction để khẳng định validation không ghi dữ liệu ngoài ý muốn.
   Future<int> transactionCount() async {
-    final rows = await db.rawQuery('SELECT COUNT(*) AS total FROM transactions');
+    final rows = await db.rawQuery(
+      'SELECT COUNT(*) AS total FROM transactions',
+    );
     return rows.first['total'] as int;
   }
 
   /// Đếm lịch sử trả nợ để khẳng định validation không phát sinh payment.
   Future<int> paymentCount() async {
-    final rows = await db.rawQuery('SELECT COUNT(*) AS total FROM loan_payments');
+    final rows = await db.rawQuery(
+      'SELECT COUNT(*) AS total FROM loan_payments',
+    );
     return rows.first['total'] as int;
   }
 

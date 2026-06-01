@@ -25,9 +25,5 @@ Future<DebtWidgetHarness> pumpDebtWidget(
   );
   addTearDown(fixture.dispose);
 
-  return pumpDebtWidgetWithFixture(
-    tester,
-    fixture: fixture,
-    child: child,
-  );
+  return pumpDebtWidgetWithFixture(tester, fixture: fixture, child: child);
 }

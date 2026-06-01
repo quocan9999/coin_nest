@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/account_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/backup_alert_provider.dart';
 import '../../providers/backup_provider.dart';
 import '../../providers/budget_provider.dart';
 import '../../providers/category_provider.dart';
@@ -25,6 +26,9 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProvider>();
+      context.read<BackupAlertProvider>().loadForUser(
+        authProvider.currentUserId,
+      );
       context.read<BackupProvider>().loadMetadata(authProvider.currentUser);
     });
   }
@@ -45,10 +49,18 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
       ),
       body: Consumer<BackupProvider>(
         builder: (context, backupProvider, _) {
+          final backupAlert = context.watch<BackupAlertProvider>();
+
           return ListView(
             padding: const EdgeInsets.all(AppTheme.spacing10),
             children: [
               _StatusPanel(provider: backupProvider),
+              if (backupAlert.hasPendingTransactions) ...[
+                const SizedBox(height: AppTheme.spacing8),
+                _PendingTransactionsPanel(
+                  pendingCount: backupAlert.pendingTransactionCount,
+                ),
+              ],
               const SizedBox(height: AppTheme.spacing8),
               _ActionPanel(
                 icon: Icons.cloud_upload_outlined,
@@ -330,6 +342,42 @@ class _RecordCountChip extends StatelessWidget {
           color: theme.colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+class _PendingTransactionsPanel extends StatelessWidget {
+  const _PendingTransactionsPanel({required this.pendingCount});
+
+  final int pendingCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppTheme.spacing8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withAlpha(45),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, color: theme.colorScheme.primary),
+          const SizedBox(width: AppTheme.spacing6),
+          Expanded(
+            child: Text(
+              'C\u00f3 $pendingCount giao d\u1ecbch ch\u01b0a \u0111\u01b0\u1ee3c sao l\u01b0u l\u00ean cloud.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
