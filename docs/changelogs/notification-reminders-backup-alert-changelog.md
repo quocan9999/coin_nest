@@ -33,3 +33,10 @@ Timestamp: 2026-06-01 00:00:00 +07:00
 - Thêm test `ReminderCoordinator` cho nhắc ghi chép, nhắc vay nợ, trạng thái không có khoản active và từ chối quyền.
 - Thêm test `BackupAlertProvider` cho tăng/reset count theo user và badge `99+`.
 - Thêm widget test cho `NotificationBadgeButton` khi có/không có thay đổi chưa sao lưu.
+
+## Phase 5 - Thông báo gợi ý tự động
+
+- Thêm `AppNotificationCoordinator` để tự động schedule thông báo gợi ý của ứng dụng.
+- Schedule thông báo vào 08:00 và 18:00 hằng ngày với tiêu đề `Quản lý chi tiêu CoinNest`.
+- Gắn đồng bộ thông báo tự động sau frame đầu tiên của root app.
+- Thêm test xác nhận đúng nội dung, payload và hai khung giờ gợi ý.

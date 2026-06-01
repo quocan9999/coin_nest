@@ -11,10 +11,17 @@ class NotificationService {
 
   static const int dailyRecordReminderId = 1001;
   static const int debtReminderId = 1002;
+  static const int morningEngagementReminderId = 2001;
+  static const int eveningEngagementReminderId = 2002;
   static const String reminderChannelId = 'coinnest_reminders';
   static const String reminderChannelName = 'Nhắc nhở CoinNest';
   static const String reminderChannelDescription =
       'Nhắc ghi chép tài chính và theo dõi vay/cho vay hằng ngày';
+
+  static const String engagementChannelId = 'coinnest_engagement';
+  static const String engagementChannelName = 'Gợi ý CoinNest';
+  static const String engagementChannelDescription =
+      'Gợi ý quản lý chi tiêu từ CoinNest';
 
   static const Map<String, String> _timezoneAliases = {
     'Asia/Saigon': 'Asia/Ho_Chi_Minh',
@@ -87,27 +94,36 @@ class NotificationService {
     required int minute,
     String? payload,
   }) async {
-    await initialize();
-    if (!_supportsScheduling) return;
-
-    await _notifications.zonedSchedule(
+    await _scheduleDailyNotification(
       id: id,
       title: title,
       body: body,
-      scheduledDate: _nextTime(hour: hour, minute: minute),
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          reminderChannelId,
-          reminderChannelName,
-          channelDescription: reminderChannelDescription,
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-        ),
-        iOS: DarwinNotificationDetails(),
-        macOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
+      hour: hour,
+      minute: minute,
+      androidChannelId: reminderChannelId,
+      androidChannelName: reminderChannelName,
+      androidChannelDescription: reminderChannelDescription,
+      payload: payload,
+    );
+  }
+
+  Future<void> scheduleDailyEngagementNotification({
+    required int id,
+    required String title,
+    required String body,
+    required int hour,
+    required int minute,
+    String? payload,
+  }) async {
+    await _scheduleDailyNotification(
+      id: id,
+      title: title,
+      body: body,
+      hour: hour,
+      minute: minute,
+      androidChannelId: engagementChannelId,
+      androidChannelName: engagementChannelName,
+      androidChannelDescription: engagementChannelDescription,
       payload: payload,
     );
   }
@@ -147,6 +163,42 @@ class NotificationService {
 
   String _normalizeTimezoneIdentifier(String identifier) {
     return _timezoneAliases[identifier] ?? identifier;
+  }
+
+  Future<void> _scheduleDailyNotification({
+    required int id,
+    required String title,
+    required String body,
+    required int hour,
+    required int minute,
+    required String androidChannelId,
+    required String androidChannelName,
+    required String androidChannelDescription,
+    String? payload,
+  }) async {
+    await initialize();
+    if (!_supportsScheduling) return;
+
+    await _notifications.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: _nextTime(hour: hour, minute: minute),
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          androidChannelId,
+          androidChannelName,
+          channelDescription: androidChannelDescription,
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+        ),
+        iOS: const DarwinNotificationDetails(),
+        macOS: const DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+      payload: payload,
+    );
   }
 
   tz.TZDateTime _nextTime({required int hour, required int minute}) {
