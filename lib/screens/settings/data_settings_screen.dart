@@ -326,6 +326,7 @@ class _RecordCountChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = AppTheme.colors(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -333,13 +334,13 @@ class _RecordCountChip extends StatelessWidget {
         vertical: AppTheme.spacing4,
       ),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLow,
+        color: colors.input,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Text(
         '$label: $count',
         style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
+          color: colors.textSecondary,
           fontWeight: FontWeight.w600,
         ),
       ),
