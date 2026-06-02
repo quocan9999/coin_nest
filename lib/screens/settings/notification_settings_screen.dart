@@ -88,7 +88,10 @@ class _NotificationSettingsScreenState
                   contentPadding: EdgeInsets.zero,
                   value: settings.autoNotificationRecord && isSupported,
                   onChanged: isSupported ? _handleToggle : null,
-                  activeThumbColor: colorScheme.primary,
+                  activeThumbColor: colorScheme.onPrimary,
+                  activeTrackColor: colorScheme.primary,
+                  inactiveThumbColor: colors.textSecondary,
+                  inactiveTrackColor: colors.input,
                   title: Text(
                     'Tự động ghi chép',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -105,6 +108,8 @@ class _NotificationSettingsScreenState
                     ),
                   ),
                 ),
+                const SizedBox(height: AppTheme.spacing8),
+                const _PermissionNotice(),
                 if (settings.autoNotificationRecord && isSupported) ...[
                   const SizedBox(height: AppTheme.spacing8),
                   _AccountDropdown(
@@ -128,6 +133,41 @@ class _NotificationSettingsScreenState
                   ),
                 ],
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PermissionNotice extends StatelessWidget {
+  const _PermissionNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = AppTheme.colors(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppTheme.spacing8),
+      decoration: BoxDecoration(
+        color: colors.input,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.privacy_tip_outlined, color: colors.primary, size: 20),
+          const SizedBox(width: AppTheme.spacing6),
+          Expanded(
+            child: Text(
+              'Tính năng này cần quyền đọc thông báo của Android để nhận diện biến động số dư từ ngân hàng hoặc ví điện tử. CoinNest chỉ xử lý nội dung thông báo trên thiết bị để tạo ghi chép tự động.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
