@@ -265,6 +265,30 @@ class MoneyAmountField extends StatelessWidget {
   }
 }
 
+class MoneyAmountKeyboardBackGuard extends StatelessWidget {
+  const MoneyAmountKeyboardBackGuard({
+    super.key,
+    required this.focusNode,
+    required this.child,
+  });
+
+  final FocusNode focusNode;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: !focusNode.hasFocus,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && focusNode.hasFocus) {
+          focusNode.unfocus();
+        }
+      },
+      child: child,
+    );
+  }
+}
+
 class MoneyAmountKeyboardPanel extends StatelessWidget {
   const MoneyAmountKeyboardPanel({
     super.key,

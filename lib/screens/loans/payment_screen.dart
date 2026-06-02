@@ -117,182 +117,185 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ? AppTheme.tertiary
         : AppTheme.loanColor;
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      bottomNavigationBar: MoneyAmountKeyboardPanel(
-        isVisible: _amountFocusNode.hasFocus,
-        onKeyPressed: _handleAmountKeyboardKey,
-        shouldEvaluate: MoneyAmountInput.needsEvaluation(
-          _amountController.text,
-        ),
-      ),
-
-      appBar: AppBar(
+    return MoneyAmountKeyboardBackGuard(
+      focusNode: _amountFocusNode,
+      child: Scaffold(
         backgroundColor: colorScheme.surface,
-        elevation: 0,
-        centerTitle: true,
-
-        title: Text(
-          widget.loan.type == 'borrow'
-              ? 'Thanh to\u00e1n kho\u1ea3n vay'
-              : 'Ghi nh\u1eadn thu n\u1ee3',
+        bottomNavigationBar: MoneyAmountKeyboardPanel(
+          isVisible: _amountFocusNode.hasFocus,
+          onKeyPressed: _handleAmountKeyboardKey,
+          shouldEvaluate: MoneyAmountInput.needsEvaluation(
+            _amountController.text,
+          ),
         ),
 
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () => Navigator.pop(context),
+        appBar: AppBar(
+          backgroundColor: colorScheme.surface,
+          elevation: 0,
+          centerTitle: true,
+
+          title: Text(
+            widget.loan.type == 'borrow'
+                ? 'Thanh to\u00e1n kho\u1ea3n vay'
+                : 'Ghi nh\u1eadn thu n\u1ee3',
+          ),
+
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-      ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
 
-        child: Form(
-          key: _formKey,
+          child: Form(
+            key: _formKey,
 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
 
-            children: [
-              // CARD INFO
-              Container(
-                padding: const EdgeInsets.all(16),
+              children: [
+                // CARD INFO
+                Container(
+                  padding: const EdgeInsets.all(16),
 
-                decoration: BoxDecoration(
-                  color: color.withAlpha(16),
+                  decoration: BoxDecoration(
+                    color: color.withAlpha(16),
 
-                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                ),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  ),
 
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
 
-                  children: [
-                    Text(
-                      widget.loan.personName,
+                    children: [
+                      Text(
+                        widget.loan.personName,
 
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: color,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 6),
+                      const SizedBox(height: 6),
 
-                    Text(
-                      'C\u00f2n l\u1ea1i: ${Formatters.currency(widget.loan.remainingAmount)}',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // SỐ TIỀN
-              _label('SỐ TIỀN THANH TOÁN'),
-
-              const SizedBox(height: 8),
-
-              MoneyAmountField(
-                controller: _amountController,
-                focusNode: _amountFocusNode,
-                validator: (value) {
-                  final base = Validators.amount(value);
-
-                  if (base != null) {
-                    return base;
-                  }
-
-                  final amount = Validators.parseAmount(value ?? '');
-
-                  if (amount > widget.loan.remainingAmount) {
-                    return 'Số tiền không được vượt quá dư nợ còn lại';
-                  }
-
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              // NGÀY THANH TOÁN
-              _label('NGÀY THANH TOÁN'),
-
-              const SizedBox(height: 8),
-
-              _datePicker(),
-
-              const SizedBox(height: 20),
-
-              // TÀI KHOẢN
-              _label('TÀI KHOẢN'),
-
-              const SizedBox(height: 8),
-
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                ),
-
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                    value: _accountId,
-
-                    isExpanded: true,
-
-                    dropdownColor: colorScheme.surface,
-
-                    hint: const Text('Chọn tài khoản'),
-
-                    items: accounts
-                        .map(
-                          (a) => DropdownMenuItem(
-                            value: a.id,
-                            child: Text(a.name),
-                          ),
-                        )
-                        .toList(),
-
-                    onChanged: (v) => setState(() => _accountId = v),
+                      Text(
+                        'C\u00f2n l\u1ea1i: ${Formatters.currency(widget.loan.remainingAmount)}',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // GHI CHÚ
-              _label('GHI CHÚ'),
+                // SỐ TIỀN
+                _label('SỐ TIỀN THANH TOÁN'),
 
-              const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-              TextFormField(
-                controller: _noteController,
+                MoneyAmountField(
+                  controller: _amountController,
+                  focusNode: _amountFocusNode,
+                  validator: (value) {
+                    final base = Validators.amount(value);
 
-                maxLines: 2,
+                    if (base != null) {
+                      return base;
+                    }
 
-                validator: Validators.note,
+                    final amount = Validators.parseAmount(value ?? '');
 
-                decoration: const InputDecoration(hintText: 'Tùy chọn'),
-              ),
+                    if (amount > widget.loan.remainingAmount) {
+                      return 'Số tiền không được vượt quá dư nợ còn lại';
+                    }
 
-              const SizedBox(height: 28),
-
-              // BUTTON
-              SizedBox(
-                height: 52,
-
-                child: ElevatedButton(
-                  onPressed: _submit,
-
-                  child: const Text('L\u01b0u thanh to\u00e1n'),
+                    return null;
+                  },
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 20),
+
+                // NGÀY THANH TOÁN
+                _label('NGÀY THANH TOÁN'),
+
+                const SizedBox(height: 8),
+
+                _datePicker(),
+
+                const SizedBox(height: 20),
+
+                // TÀI KHOẢN
+                _label('TÀI KHOẢN'),
+
+                const SizedBox(height: 8),
+
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      value: _accountId,
+
+                      isExpanded: true,
+
+                      dropdownColor: colorScheme.surface,
+
+                      hint: const Text('Chọn tài khoản'),
+
+                      items: accounts
+                          .map(
+                            (a) => DropdownMenuItem(
+                              value: a.id,
+                              child: Text(a.name),
+                            ),
+                          )
+                          .toList(),
+
+                      onChanged: (v) => setState(() => _accountId = v),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // GHI CHÚ
+                _label('GHI CHÚ'),
+
+                const SizedBox(height: 8),
+
+                TextFormField(
+                  controller: _noteController,
+
+                  maxLines: 2,
+
+                  validator: Validators.note,
+
+                  decoration: const InputDecoration(hintText: 'Tùy chọn'),
+                ),
+
+                const SizedBox(height: 28),
+
+                // BUTTON
+                SizedBox(
+                  height: 52,
+
+                  child: ElevatedButton(
+                    onPressed: _submit,
+
+                    child: const Text('L\u01b0u thanh to\u00e1n'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
