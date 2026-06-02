@@ -70,7 +70,7 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
                     'Lưu snapshot dữ liệu tài chính của tài khoản hiện tại lên Cloud Firestore.',
                 buttonLabel: 'Sao lưu ngay',
                 isLoading: backupProvider.isLoading,
-                onPressed: () => _backupNow(context),
+                onPressed: () => _confirmBackup(context),
               ),
               const SizedBox(height: AppTheme.spacing8),
               _ActionPanel(
@@ -105,6 +105,32 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _confirmBackup(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sao lưu dữ liệu lên cloud?'),
+        content: const Text(
+          'CoinNest sẽ tạo snapshot dữ liệu tài chính hiện tại và ghi lên Cloud Firestore. Nếu đã có bản sao lưu cũ, bản đó sẽ được thay bằng bản mới.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sao lưu'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    await _backupNow(context);
   }
 
   Future<void> _backupNow(BuildContext context) async {
