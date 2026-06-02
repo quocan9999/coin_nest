@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
@@ -16,6 +15,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/validators.dart';
 import '../../utils/category_icons.dart';
 import '../../utils/formatters.dart';
+import '../../widgets/money_amount_input.dart';
 import '../loans/add_edit_loan_screen.dart';
 import '../loans/loan_list_screen.dart';
 import 'receipt_scan_screen.dart';
@@ -63,23 +63,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         });
       }
 
-      String initialAmount = txn.amount.toInt().toString();
-
-      String formatted = '';
-
-      int count = 0;
-
-      for (int i = initialAmount.length - 1; i >= 0; i--) {
-        if (count != 0 && count % 3 == 0) {
-          formatted = '.$formatted';
-        }
-
-        formatted = initialAmount[i] + formatted;
-
-        count++;
-      }
-
-      _amountController.text = formatted;
+      _amountController.text = MoneyAmountInput.formatAmount(txn.amount);
 
       _noteController.text = txn.note ?? '';
 
@@ -543,26 +527,15 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
               const SizedBox(height: 8),
 
-              TextFormField(
+              MoneyAmountField(
                 controller: _amountController,
 
                 focusNode: _amountFocusNode,
 
-                readOnly: true,
-
-                showCursor: true,
-
-                enableInteractiveSelection: false,
-
                 validator: Validators.amount,
 
-                style: theme.textTheme.headlineSmall?.copyWith(
+                textStyle: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                ),
-
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  suffixText: 'đ',
                 ),
               ),
 
@@ -768,215 +741,38 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 180),
-      child: shouldShow
-          ? SafeArea(
-              key: const ValueKey('receipt-scan-accessory'),
-              top: false,
-              child: _AmountKeyboard(
-                onScanReceipt: _openReceiptScanner,
-                onKeyPressed: _handleAmountKeyboardKey,
-                shouldEvaluate: _amountExpressionNeedsEvaluation,
-              ),
-            )
-          : const SizedBox.shrink(key: ValueKey('receipt-scan-hidden')),
+      child: MoneyAmountKeyboardPanel(
+        key: ValueKey(
+          shouldShow ? 'receipt-scan-accessory' : 'receipt-scan-hidden',
+        ),
+        isVisible: shouldShow,
+        onScanReceipt: _openReceiptScanner,
+        onKeyPressed: _handleAmountKeyboardKey,
+        shouldEvaluate: _amountExpressionNeedsEvaluation,
+      ),
     );
   }
 
-  void _handleAmountKeyboardKey(_AmountKeyboardKey key) {
-    switch (key.type) {
-      case _AmountKeyboardKeyType.digit:
-        _appendAmountToken(key.value);
-        break;
-      case _AmountKeyboardKeyType.operator:
-        _appendAmountOperator(key.value);
-        break;
-      case _AmountKeyboardKeyType.clear:
-        setState(() => _amountController.clear());
-        break;
-      case _AmountKeyboardKeyType.backspace:
-        _deleteAmountToken();
-        break;
-      case _AmountKeyboardKeyType.done:
-        if (_amountExpressionNeedsEvaluation) {
-          _finalizeAmountExpression(showError: true);
-        } else {
-          _amountFocusNode.unfocus();
-        }
-        break;
-      case _AmountKeyboardKeyType.spacer:
-        break;
-    }
+  void _handleAmountKeyboardKey(MoneyAmountKeyboardKey key) {
+    MoneyAmountInput.handleKey(
+      context: context,
+      controller: _amountController,
+      focusNode: _amountFocusNode,
+      key: key,
+      refresh: () => setState(() {}),
+    );
   }
 
-  bool get _amountExpressionNeedsEvaluation {
-    final rawExpression = _rawAmountExpression();
-    return _containsOperator(rawExpression);
-  }
-
-  void _appendAmountToken(String token) {
-    final rawExpression = _rawAmountExpression();
-    final nextExpression = rawExpression == '0' ? token : rawExpression + token;
-    _setAmountExpression(nextExpression);
-  }
-
-  void _appendAmountOperator(String operator) {
-    final rawExpression = _rawAmountExpression();
-    if (rawExpression.isEmpty) {
-      return;
-    }
-
-    final nextExpression = _endsWithOperator(rawExpression)
-        ? rawExpression.substring(0, rawExpression.length - 1) + operator
-        : rawExpression + operator;
-
-    _setAmountExpression(nextExpression);
-  }
-
-  void _deleteAmountToken() {
-    final rawExpression = _rawAmountExpression();
-    if (rawExpression.isEmpty) {
-      return;
-    }
-
-    _setAmountExpression(rawExpression.substring(0, rawExpression.length - 1));
-  }
+  bool get _amountExpressionNeedsEvaluation =>
+      MoneyAmountInput.needsEvaluation(_amountController.text);
 
   bool _finalizeAmountExpression({required bool showError}) {
-    final rawExpression = _rawAmountExpression();
-    if (rawExpression.isEmpty || !_containsOperator(rawExpression)) {
-      return true;
-    }
-
-    final evaluatedAmount = _evaluateAmountExpression(rawExpression);
-    if (evaluatedAmount == null || evaluatedAmount <= 0) {
-      if (showError) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Biểu thức số tiền không hợp lệ')),
-        );
-      }
-      return false;
-    }
-
-    setState(() {
-      _amountController.text = _formatAmountForInput(evaluatedAmount);
-    });
-    return true;
-  }
-
-  String _rawAmountExpression() {
-    return _amountController.text
-        .replaceAll('.', '')
-        .replaceAll(' ', '')
-        .replaceAll('×', '*')
-        .replaceAll('÷', '/');
-  }
-
-  void _setAmountExpression(String expression) {
-    setState(() {
-      _amountController.text = _formatAmountExpression(expression);
-    });
-  }
-
-  bool _containsOperator(String expression) {
-    return RegExp(r'[+\-*/]').hasMatch(expression);
-  }
-
-  bool _endsWithOperator(String expression) {
-    return expression.isNotEmpty && RegExp(r'[+\-*/]$').hasMatch(expression);
-  }
-
-  String _formatAmountExpression(String expression) {
-    final buffer = StringBuffer();
-    final currentNumber = StringBuffer();
-
-    void flushNumber() {
-      if (currentNumber.isEmpty) {
-        return;
-      }
-
-      final parsed = int.tryParse(currentNumber.toString());
-      buffer.write(
-        parsed == null
-            ? currentNumber.toString()
-            : _formatAmountForInput(parsed),
-      );
-      currentNumber.clear();
-    }
-
-    for (final char in expression.split('')) {
-      if (RegExp(r'\d').hasMatch(char)) {
-        currentNumber.write(char);
-      } else {
-        flushNumber();
-        buffer.write(_displayOperator(char));
-      }
-    }
-
-    flushNumber();
-    return buffer.toString();
-  }
-
-  String _displayOperator(String operator) {
-    switch (operator) {
-      case '*':
-        return ' × ';
-      case '/':
-        return ' ÷ ';
-      case '+':
-      case '-':
-        return ' $operator ';
-      default:
-        return operator;
-    }
-  }
-
-  int? _evaluateAmountExpression(String expression) {
-    if (_endsWithOperator(expression)) {
-      return null;
-    }
-
-    final tokens = RegExp(
-      r'\d+|[+\-*/]',
-    ).allMatches(expression).map((match) => match.group(0)!).toList();
-
-    if (tokens.isEmpty || tokens.length.isEven) {
-      return null;
-    }
-
-    final values = <double>[double.parse(tokens.first)];
-    final operators = <String>[];
-
-    // Tính trước nhân/chia để bàn phím hoạt động giống máy tính cơ bản.
-    for (var i = 1; i < tokens.length; i += 2) {
-      final operator = tokens[i];
-      final value = double.tryParse(tokens[i + 1]);
-      if (value == null) {
-        return null;
-      }
-
-      if (operator == '*' || operator == '/') {
-        if (operator == '/' && value == 0) {
-          return null;
-        }
-        final previous = values.removeLast();
-        values.add(operator == '*' ? previous * value : previous / value);
-      } else {
-        operators.add(operator);
-        values.add(value);
-      }
-    }
-
-    var result = values.first;
-    for (var i = 0; i < operators.length; i++) {
-      result = operators[i] == '+'
-          ? result + values[i + 1]
-          : result - values[i + 1];
-    }
-
-    if (!result.isFinite || result <= 0) {
-      return null;
-    }
-    return result.round();
+    return MoneyAmountInput.finalizeExpression(
+      context: context,
+      controller: _amountController,
+      refresh: () => setState(() {}),
+      showError: showError,
+    );
   }
 
   Future<void> _openReceiptScanner() async {
@@ -1111,7 +907,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
   void _applyReceiptScanResult(ReceiptScanResult result) {
     setState(() {
-      _amountController.text = _formatAmountForInput(result.totalAmount);
+      _amountController.text = MoneyAmountInput.formatAmount(
+        result.totalAmount,
+      );
 
       // Không ghi đè ghi chú người dùng đã nhập để tránh làm mất ngữ cảnh giao dịch.
       if (_noteController.text.trim().isEmpty) {
@@ -1122,21 +920,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Đã áp dụng kết quả scan hoá đơn')),
     );
-  }
-
-  String _formatAmountForInput(int amount) {
-    final digits = amount.toString();
-    final buffer = StringBuffer();
-
-    for (var i = 0; i < digits.length; i++) {
-      final remaining = digits.length - i;
-      buffer.write(digits[i]);
-      if (remaining > 1 && remaining % 3 == 1) {
-        buffer.write('.');
-      }
-    }
-
-    return buffer.toString();
   }
 
   Widget _buildCategoryDropdown(List<Category> categories) {
@@ -1260,248 +1043,4 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   }
 }
 
-class _AmountKeyboard extends StatelessWidget {
-  static const double _keyHeight = AppTheme.spacing24;
-  static const double _keyGap = AppTheme.spacing4;
-
-  final VoidCallback onScanReceipt;
-  final ValueChanged<_AmountKeyboardKey> onKeyPressed;
-  final bool shouldEvaluate;
-
-  const _AmountKeyboard({
-    required this.onScanReceipt,
-    required this.onKeyPressed,
-    required this.shouldEvaluate,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      color: colorScheme.surfaceContainerLow,
-      padding: const EdgeInsets.fromLTRB(
-        AppTheme.spacing8,
-        AppTheme.spacing6,
-        AppTheme.spacing8,
-        AppTheme.spacing8,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Align(
-            alignment: Alignment.center,
-            child: FilledButton.tonalIcon(
-              onPressed: onScanReceipt,
-              icon: const Icon(Icons.receipt_long_outlined),
-              label: const Text('Scan hoá đơn'),
-            ),
-          ),
-          const SizedBox(height: AppTheme.spacing6),
-          // Keypad dùng từng hàng 4 cột cao cố định để các phím luôn thẳng cột
-          // trong bottomNavigationBar và tránh lỗi ràng buộc chiều cao vô hạn.
-          _keyboardRow(context, [
-            _AmountKeyboardKey.clear(),
-            _AmountKeyboardKey.operator('÷'),
-            _AmountKeyboardKey.operator('×'),
-            _AmountKeyboardKey.backspace(),
-          ]),
-          _keyboardRow(context, [
-            _AmountKeyboardKey.digit('7'),
-            _AmountKeyboardKey.digit('8'),
-            _AmountKeyboardKey.digit('9'),
-            _AmountKeyboardKey.operator('-'),
-          ]),
-          _keyboardRow(context, [
-            _AmountKeyboardKey.digit('4'),
-            _AmountKeyboardKey.digit('5'),
-            _AmountKeyboardKey.digit('6'),
-            _AmountKeyboardKey.operator('+'),
-          ]),
-          _keyboardRow(context, [
-            _AmountKeyboardKey.digit('1'),
-            _AmountKeyboardKey.digit('2'),
-            _AmountKeyboardKey.digit('3'),
-            _AmountKeyboardKey.spacer(),
-          ]),
-          _keyboardRow(context, [
-            _AmountKeyboardKey.digit('0'),
-            _AmountKeyboardKey.digit('000'),
-            _AmountKeyboardKey.backspace(),
-            _AmountKeyboardKey.done(shouldEvaluate ? '=' : 'Xong'),
-          ], addBottomGap: false),
-        ],
-      ),
-    );
-  }
-
-  Widget _keyboardRow(
-    BuildContext context,
-    List<_AmountKeyboardKey> keys, {
-    bool addBottomGap = true,
-  }) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: addBottomGap ? _keyGap : 0),
-      child: Row(
-        children: [
-          for (var index = 0; index < keys.length; index++) ...[
-            Expanded(
-              child: keys[index].type == _AmountKeyboardKeyType.spacer
-                  ? const SizedBox(height: _keyHeight)
-                  : _keyboardButton(context, keys[index]),
-            ),
-            if (index != keys.length - 1) const SizedBox(width: _keyGap),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _keyboardButton(
-    BuildContext context,
-    _AmountKeyboardKey key, {
-    double height = _keyHeight,
-  }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDone = key.type == _AmountKeyboardKeyType.done;
-
-    return Material(
-      color: isDone ? colorScheme.primary : colorScheme.surfaceContainerLowest,
-      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        onTap: () => onKeyPressed(key),
-        child: SizedBox(
-          height: height,
-          child: Center(
-            // Bàn phím custom không dùng IME hệ thống, nên mọi phím đều đi qua
-            // callback này để kiểm soát định dạng tiền và phép tính trước khi lưu.
-            child: key.icon == null
-                ? Text(
-                    key.label,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: isDone
-                          ? colorScheme.onPrimary
-                          : colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  )
-                : Icon(
-                    key.icon,
-                    color: isDone
-                        ? colorScheme.onPrimary
-                        : colorScheme.onSurfaceVariant,
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AmountKeyboardKey {
-  final _AmountKeyboardKeyType type;
-  final String value;
-  final String label;
-  final IconData? icon;
-
-  const _AmountKeyboardKey._({
-    required this.type,
-    required this.value,
-    required this.label,
-    this.icon,
-  });
-
-  factory _AmountKeyboardKey.digit(String value) {
-    return _AmountKeyboardKey._(
-      type: _AmountKeyboardKeyType.digit,
-      value: value,
-      label: value,
-    );
-  }
-
-  factory _AmountKeyboardKey.operator(String label) {
-    return _AmountKeyboardKey._(
-      type: _AmountKeyboardKeyType.operator,
-      value: label == '×' ? '*' : (label == '÷' ? '/' : label),
-      label: label,
-    );
-  }
-
-  factory _AmountKeyboardKey.clear() {
-    return const _AmountKeyboardKey._(
-      type: _AmountKeyboardKeyType.clear,
-      value: '',
-      label: 'C',
-    );
-  }
-
-  factory _AmountKeyboardKey.backspace() {
-    return const _AmountKeyboardKey._(
-      type: _AmountKeyboardKeyType.backspace,
-      value: '',
-      label: '',
-      icon: Icons.backspace_outlined,
-    );
-  }
-
-  factory _AmountKeyboardKey.done(String label) {
-    return _AmountKeyboardKey._(
-      type: _AmountKeyboardKeyType.done,
-      value: '',
-      label: label,
-    );
-  }
-
-  factory _AmountKeyboardKey.spacer() {
-    return const _AmountKeyboardKey._(
-      type: _AmountKeyboardKeyType.spacer,
-      value: '',
-      label: '',
-    );
-  }
-}
-
-enum _AmountKeyboardKeyType { digit, operator, clear, backspace, done, spacer }
-
 enum _ReceiptScanAction { apply, rescan, dismiss }
-
-class CurrencyInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    if (newValue.text.isEmpty) {
-      return newValue.copyWith(text: '');
-    }
-
-    String newText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-
-    if (newText.isEmpty) {
-      return newValue.copyWith(text: '');
-    }
-
-    String formatted = '';
-
-    int count = 0;
-
-    for (int i = newText.length - 1; i >= 0; i--) {
-      if (count != 0 && count % 3 == 0) {
-        formatted = '.$formatted';
-      }
-
-      formatted = newText[i] + formatted;
-
-      count++;
-    }
-
-    return TextEditingValue(
-      text: formatted,
-
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}
