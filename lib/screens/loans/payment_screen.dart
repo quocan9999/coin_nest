@@ -7,6 +7,7 @@ import '../../providers/loan_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/validators.dart';
+import '../../widgets/money_amount_input.dart';
 
 class PaymentScreen extends StatefulWidget {
   final Loan loan;
@@ -21,6 +22,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _amountController = TextEditingController();
+  final _amountFocusNode = FocusNode();
 
   final _noteController = TextEditingController();
 
@@ -31,6 +33,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   void initState() {
     super.initState();
+    _amountFocusNode.addListener(() {
+      if (mounted) setState(() {});
+    });
 
     _paymentDate = DateTime.now();
 
@@ -48,19 +53,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   void dispose() {
     _amountController.dispose();
+    _amountFocusNode.dispose();
     _noteController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
+    if (!_finalizeAmountExpression(showError: true)) return;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     if (_accountId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn tài khoản')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui l\u00f2ng ch\u1ecdn t\u00e0i kho\u1ea3n'),
+        ),
+      );
       return;
     }
 
@@ -88,7 +98,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } else {
       final message =
           context.read<LoanProvider>().errorMessage ??
-          'Không thể ghi nhận thanh toán';
+          'Kh\u00f4ng th\u1ec3 ghi nh\u1eadn thanh to\u00e1n';
 
       ScaffoldMessenger.of(
         context,
@@ -109,6 +119,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
+      bottomNavigationBar: MoneyAmountKeyboardPanel(
+        isVisible: _amountFocusNode.hasFocus,
+        onKeyPressed: _handleAmountKeyboardKey,
+        shouldEvaluate: MoneyAmountInput.needsEvaluation(
+          _amountController.text,
+        ),
+      ),
 
       appBar: AppBar(
         backgroundColor: colorScheme.surface,
@@ -117,8 +134,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
         title: Text(
           widget.loan.type == 'borrow'
-              ? 'Thanh toán khoản vay'
-              : 'Ghi nhận thu nợ',
+              ? 'Thanh to\u00e1n kho\u1ea3n vay'
+              : 'Ghi nh\u1eadn thu n\u1ee3',
         ),
 
         leading: IconButton(
@@ -163,8 +180,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     const SizedBox(height: 6),
 
                     Text(
-                      'Còn lại: ${Formatters.currency(widget.loan.remainingAmount)}',
-
+                      'C\u00f2n l\u1ea1i: ${Formatters.currency(widget.loan.remainingAmount)}',
                       style: theme.textTheme.bodyMedium,
                     ),
                   ],
@@ -178,16 +194,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
               const SizedBox(height: 8),
 
-              TextFormField(
+              MoneyAmountField(
                 controller: _amountController,
-
-                keyboardType: TextInputType.number,
-
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  suffixText: 'đ',
-                ),
-
+                focusNode: _amountFocusNode,
                 validator: (value) {
                   final base = Validators.amount(value);
 
@@ -280,13 +289,32 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 child: ElevatedButton(
                   onPressed: _submit,
 
-                  child: const Text('Lưu thanh toán'),
+                  child: const Text('L\u01b0u thanh to\u00e1n'),
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  void _handleAmountKeyboardKey(MoneyAmountKeyboardKey key) {
+    MoneyAmountInput.handleKey(
+      context: context,
+      controller: _amountController,
+      focusNode: _amountFocusNode,
+      key: key,
+      refresh: () => setState(() {}),
+    );
+  }
+
+  bool _finalizeAmountExpression({required bool showError}) {
+    return MoneyAmountInput.finalizeExpression(
+      context: context,
+      controller: _amountController,
+      refresh: () => setState(() {}),
+      showError: showError,
     );
   }
 

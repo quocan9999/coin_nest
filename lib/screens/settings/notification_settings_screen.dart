@@ -130,20 +130,6 @@ class _NotificationSettingsScreenState
               ],
             ),
           ),
-          const SizedBox(height: AppTheme.spacing8),
-          Container(
-            padding: const EdgeInsets.all(AppTheme.spacing10),
-            decoration: BoxDecoration(
-              color: theme.cardColor,
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            ),
-            child: Text(
-              'CoinNest chỉ tạo giao dịch khi thông báo có cấu trúc DG/ND của ngân hàng. Các thông báo trùng nội dung sẽ được bỏ qua để tránh ghi sai số dư.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-          ),
         ],
       ),
     );
