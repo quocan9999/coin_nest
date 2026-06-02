@@ -65,11 +65,14 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     // Chỉ lắng nghe sự thay đổi, logic nạp đã được cô lập trong initState
     final txnProv = context.watch<TransactionProvider>();
     final accountProv = context.watch<AccountProvider>();
+    final theme = Theme.of(context);
+    final colors = AppTheme.colors(context);
+    final colorScheme = theme.colorScheme;
 
     final grouped = txnProv.groupedByDate;
 
     return Scaffold(
-      backgroundColor: AppTheme.surface,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Row(
           children: [
@@ -81,8 +84,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             const SizedBox(width: 8),
             Text(
               'CoinNest',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppTheme.primary,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colors.primary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -108,7 +111,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 hintText: 'Tìm theo ghi chú hoặc hạng mục...',
                 prefixIcon: const Icon(Icons.search, size: 20),
                 filled: true,
-                fillColor: AppTheme.surfaceContainerLowest,
+                fillColor: colors.input,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusFull),
                   borderSide: BorderSide.none,
@@ -147,14 +150,14 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                               ? Icons.search_off
                               : Icons.receipt_long_outlined,
                           size: 56,
-                          color: AppTheme.outlineVariant,
+                          color: colors.textDisabled,
                         ),
                         const SizedBox(height: 12),
                         Text(
                           txnProv.searchQuery.isNotEmpty
                               ? 'Không tìm thấy kết quả phù hợp'
                               : 'Chưa có ghi chép nào',
-                          style: TextStyle(color: AppTheme.onSurfaceVariant),
+                          style: TextStyle(color: colors.textSecondary),
                         ),
                       ],
                     ),
@@ -175,21 +178,20 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                             children: [
                               Text(
                                 entry.key,
-                                style: Theme.of(context).textTheme.labelMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.8,
-                                    ),
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: colors.textSecondary,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                ),
                               ),
                               Text(
                                 Formatters.signedCurrency(total),
-                                style: Theme.of(context).textTheme.labelMedium
-                                    ?.copyWith(
-                                      color: total >= 0
-                                          ? AppTheme.secondary
-                                          : AppTheme.tertiary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: total >= 0
+                                      ? colors.income
+                                      : colors.expense,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
@@ -209,16 +211,18 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
   // Widget Tùy chỉnh: Dropdown lọc Thời gian
   Widget _buildTimeDropdown(BuildContext context, TransactionProvider txnProv) {
+    final colors = AppTheme.colors(context);
+
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLow,
+        color: colors.input,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Row(
         children: [
-          const Icon(Icons.calendar_month, size: 16, color: AppTheme.primary),
+          Icon(Icons.calendar_month, size: 16, color: colors.primary),
           const SizedBox(width: 8),
           Expanded(
             child: DropdownButtonHideUnderline(
@@ -228,7 +232,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 icon: const Icon(Icons.keyboard_arrow_down, size: 16),
                 style: TextStyle(
                   fontSize: 13,
-                  color: AppTheme.onSurface,
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
                 items: [
@@ -299,19 +303,21 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     TransactionProvider txnProv,
     AccountProvider accProv,
   ) {
+    final colors = AppTheme.colors(context);
+
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLow,
+        color: colors.input,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.account_balance_wallet_outlined,
             size: 16,
-            color: AppTheme.primary,
+            color: colors.primary,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -322,7 +328,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 icon: const Icon(Icons.keyboard_arrow_down, size: 16),
                 style: TextStyle(
                   fontSize: 13,
-                  color: AppTheme.onSurface,
+                  color: colors.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
                 items: [
@@ -351,9 +357,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   }
 
   Widget _buildTxnTile(BuildContext context, TransactionModel txn) {
+    final theme = Theme.of(context);
+    final colors = AppTheme.colors(context);
     final color = txn.isNegative
-        ? AppTheme.tertiary
-        : (txn.type == 'transfer' ? AppTheme.primary : AppTheme.secondary);
+        ? colors.expense
+        : (txn.type == 'transfer' ? colors.transfer : colors.income);
     final sign = txn.isNegative
         ? '- '
         : (txn.type == 'transfer' || txn.type == 'balance_adjust' ? '' : '+ ');
@@ -371,7 +379,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceContainerLowest,
+          color: colors.card,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Row(
@@ -396,13 +404,16 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 children: [
                   Text(
                     txn.categoryName ?? _getTypeLabel(txn.type),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: colors.textPrimary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     '$noteStr${txn.time ?? Formatters.time(txn.date)}',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -414,7 +425,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               children: [
                 Text(
                   '$sign${Formatters.currency(txn.amount)}',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  style: theme.textTheme.titleSmall?.copyWith(
                     color: color,
                     fontWeight: FontWeight.w700,
                   ),
@@ -422,8 +433,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 if (txn.accountName != null)
                   Text(
                     txn.accountName!,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppTheme.onSurfaceVariant,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colors.textSecondary,
                     ),
                   ),
               ],
