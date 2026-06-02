@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/account.dart';
 import '../../providers/account_provider.dart';
@@ -7,6 +8,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/notification/notification_record_service.dart';
 import '../../theme/app_theme.dart';
+
+const String _prefNotificationPermissionDialogShown =
+    'notification_permission_dialog_shown';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -36,6 +40,11 @@ class _NotificationSettingsScreenState
   }
 
   Future<void> _handleToggle(bool value) async {
+    if (value && !await _confirmPermissionRequestIfNeeded()) {
+      return;
+    }
+    if (!mounted) return;
+
     final settingsProvider = context.read<SettingsProvider>();
     await settingsProvider.setAutoNotificationRecord(value);
 
@@ -52,6 +61,48 @@ class _NotificationSettingsScreenState
         ),
       ),
     );
+  }
+
+  Future<bool> _confirmPermissionRequestIfNeeded() async {
+    if (!NotificationRecordService.isSupported) return true;
+
+    final hasPermission =
+        await NotificationRecordService.hasNotificationPermission();
+    if (hasPermission) return true;
+
+    final prefs = await SharedPreferences.getInstance();
+    final hasShownDialog =
+        prefs.getBool(_prefNotificationPermissionDialogShown) ?? false;
+    if (hasShownDialog) return true;
+
+    if (!mounted) return false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cấp quyền đọc thông báo?'),
+        content: const Text(
+          'CoinNest cần mở màn hình cài đặt quyền đọc thông báo của Android để tự động nhận diện biến động số dư. Ứng dụng chỉ xử lý nội dung thông báo trên thiết bị để tạo ghi chép.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Tiếp tục'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await prefs.setBool(_prefNotificationPermissionDialogShown, true);
+      return true;
+    }
+
+    return false;
   }
 
   @override
