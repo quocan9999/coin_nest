@@ -164,167 +164,172 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
 
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      bottomNavigationBar: MoneyAmountKeyboardPanel(
-        isVisible: _amountFocusNode.hasFocus,
-        onKeyPressed: _handleAmountKeyboardKey,
-        shouldEvaluate: MoneyAmountInput.needsEvaluation(
-          _amountController.text,
+    return MoneyAmountKeyboardBackGuard(
+      focusNode: _amountFocusNode,
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        bottomNavigationBar: MoneyAmountKeyboardPanel(
+          isVisible: _amountFocusNode.hasFocus,
+          onKeyPressed: _handleAmountKeyboardKey,
+          shouldEvaluate: MoneyAmountInput.needsEvaluation(
+            _amountController.text,
+          ),
         ),
-      ),
 
-      appBar: AppBar(
-        title: Text(
-          _isEditMode ? 'S\u1eeda vay/cho vay' : 'Th\u00eam vay/cho vay',
+        appBar: AppBar(
+          title: Text(
+            _isEditMode ? 'S\u1eeda vay/cho vay' : 'Th\u00eam vay/cho vay',
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded),
+
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
 
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppTheme.spacing10),
+          child: Form(
+            key: _formKey,
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.spacing10),
-        child: Form(
-          key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-
-            children: [
-              Row(
-                children: [
-                  _typeChip('Vay', 'borrow'),
-                  const SizedBox(width: AppTheme.spacing4),
-                  _typeChip('Cho vay', 'lend'),
-                ],
-              ),
-              const SizedBox(height: AppTheme.spacing10),
-              _label('NGƯỜI VAY/CHO VAY'),
-              const SizedBox(height: AppTheme.spacing4),
-              TextFormField(
-                controller: _personController,
-                validator: (value) => Validators.entityName(value, 'Tên'),
-                decoration: const InputDecoration(hintText: 'VD: Nguyễn Văn B'),
-              ),
-              const SizedBox(height: AppTheme.spacing10),
-              _label('SỐ TIỀN'),
-              const SizedBox(height: AppTheme.spacing4),
-              MoneyAmountField(
-                controller: _amountController,
-                focusNode: _amountFocusNode,
-                validator: Validators.amount,
-              ),
-              const SizedBox(height: AppTheme.spacing10),
-              _label('Lãi suất (%/năm)'.toUpperCase()),
-              const SizedBox(height: AppTheme.spacing4),
-              TextFormField(
-                controller: _interestController,
-
-                keyboardType: TextInputType.number,
-
-                validator: Validators.interestRate,
-
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  suffixText: '%',
+              children: [
+                Row(
+                  children: [
+                    _typeChip('Vay', 'borrow'),
+                    const SizedBox(width: AppTheme.spacing4),
+                    _typeChip('Cho vay', 'lend'),
+                  ],
                 ),
-              ),
-              const SizedBox(height: AppTheme.spacing4),
-              _metadataNote(context),
-              const SizedBox(height: AppTheme.spacing10),
-              _label('TÀI KHOẢN LIÊN KẾT'),
-              const SizedBox(height: AppTheme.spacing4),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.spacing8,
+                const SizedBox(height: AppTheme.spacing10),
+                _label('NGƯỜI VAY/CHO VAY'),
+                const SizedBox(height: AppTheme.spacing4),
+                TextFormField(
+                  controller: _personController,
+                  validator: (value) => Validators.entityName(value, 'Tên'),
+                  decoration: const InputDecoration(
+                    hintText: 'VD: Nguyễn Văn B',
+                  ),
                 ),
-                decoration: BoxDecoration(
-                  color: theme.cardColor,
-
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                const SizedBox(height: AppTheme.spacing10),
+                _label('SỐ TIỀN'),
+                const SizedBox(height: AppTheme.spacing4),
+                MoneyAmountField(
+                  controller: _amountController,
+                  focusNode: _amountFocusNode,
+                  validator: Validators.amount,
                 ),
+                const SizedBox(height: AppTheme.spacing10),
+                _label('Lãi suất (%/năm)'.toUpperCase()),
+                const SizedBox(height: AppTheme.spacing4),
+                TextFormField(
+                  controller: _interestController,
 
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                    value: _accountId,
+                  keyboardType: TextInputType.number,
 
-                    dropdownColor: theme.cardColor,
+                  validator: Validators.interestRate,
 
-                    isExpanded: true,
-                    hint: const Text('Chọn tài khoản'),
-                    items: accounts
-                        .map(
-                          (account) => DropdownMenuItem(
-                            value: account.id,
-                            child: Text(account.name),
+                  decoration: const InputDecoration(
+                    hintText: '0',
+                    suffixText: '%',
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacing4),
+                _metadataNote(context),
+                const SizedBox(height: AppTheme.spacing10),
+                _label('TÀI KHOẢN LIÊN KẾT'),
+                const SizedBox(height: AppTheme.spacing4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacing8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  ),
+
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      value: _accountId,
+
+                      dropdownColor: theme.cardColor,
+
+                      isExpanded: true,
+                      hint: const Text('Chọn tài khoản'),
+                      items: accounts
+                          .map(
+                            (account) => DropdownMenuItem(
+                              value: account.id,
+                              child: Text(account.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) => setState(() => _accountId = value),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacing10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+
+                        children: [
+                          _label('NGÀY BẮT ĐẦU'),
+                          const SizedBox(height: AppTheme.spacing4),
+                          _datePicker(
+                            _startDate,
+                            (date) => setState(() => _startDate = date),
                           ),
-                        )
-                        .toList(),
-                    onChanged: (value) => setState(() => _accountId = value),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppTheme.spacing10),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacing6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
 
-                      children: [
-                        _label('NGÀY BẮT ĐẦU'),
-                        const SizedBox(height: AppTheme.spacing4),
-                        _datePicker(
-                          _startDate,
-                          (date) => setState(() => _startDate = date),
-                        ),
-                      ],
+                        children: [
+                          _label('HẠN TRẢ'),
+                          const SizedBox(height: AppTheme.spacing4),
+                          _datePicker(
+                            _dueDate,
+                            (date) => setState(() => _dueDate = date),
+                            canClear: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppTheme.spacing10),
+                _label('GHI CHÚ'),
+                const SizedBox(height: AppTheme.spacing4),
+                TextFormField(
+                  controller: _noteController,
+
+                  maxLines: 2,
+
+                  validator: Validators.note,
+
+                  decoration: const InputDecoration(hintText: 'Tùy chọn'),
+                ),
+                const SizedBox(height: AppTheme.spacing12),
+                SizedBox(
+                  height: AppTheme.spacing24 + AppTheme.spacing2,
+                  child: ElevatedButton(
+                    onPressed: _save,
+                    child: Text(
+                      _isEditMode ? 'L\u01b0u thay \u0111\u1ed5i' : 'L\u01b0u',
                     ),
                   ),
-                  const SizedBox(width: AppTheme.spacing6),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-
-                      children: [
-                        _label('HẠN TRẢ'),
-                        const SizedBox(height: AppTheme.spacing4),
-                        _datePicker(
-                          _dueDate,
-                          (date) => setState(() => _dueDate = date),
-                          canClear: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppTheme.spacing10),
-              _label('GHI CHÚ'),
-              const SizedBox(height: AppTheme.spacing4),
-              TextFormField(
-                controller: _noteController,
-
-                maxLines: 2,
-
-                validator: Validators.note,
-
-                decoration: const InputDecoration(hintText: 'Tùy chọn'),
-              ),
-              const SizedBox(height: AppTheme.spacing12),
-              SizedBox(
-                height: AppTheme.spacing24 + AppTheme.spacing2,
-                child: ElevatedButton(
-                  onPressed: _save,
-                  child: Text(
-                    _isEditMode ? 'L\u01b0u thay \u0111\u1ed5i' : 'L\u01b0u',
-                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

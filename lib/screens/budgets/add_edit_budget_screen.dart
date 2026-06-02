@@ -278,95 +278,98 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
     final categories = context.watch<CategoryProvider>().expenseCategories;
     final accounts = context.watch<AccountProvider>().accounts;
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      bottomNavigationBar: MoneyAmountKeyboardPanel(
-        isVisible: _amountFocusNode.hasFocus,
-        onKeyPressed: _handleAmountKeyboardKey,
-        shouldEvaluate: MoneyAmountInput.needsEvaluation(
-          _amountController.text,
-        ),
-      ),
-      appBar: AppBar(
+    return MoneyAmountKeyboardBackGuard(
+      focusNode: _amountFocusNode,
+      child: Scaffold(
         backgroundColor: colorScheme.surface,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(isEditMode ? 'Sửa hạn mức' : 'Thêm hạn mức'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () => Navigator.pop(context),
+        bottomNavigationBar: MoneyAmountKeyboardPanel(
+          isVisible: _amountFocusNode.hasFocus,
+          onKeyPressed: _handleAmountKeyboardKey,
+          shouldEvaluate: MoneyAmountInput.needsEvaluation(
+            _amountController.text,
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.spacing10),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _label('SỐ TIỀN'),
-              const SizedBox(height: AppTheme.spacing4),
-              MoneyAmountField(
-                controller: _amountController,
-                focusNode: _amountFocusNode,
-                validator: Validators.amount,
-                textStyle: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
+        appBar: AppBar(
+          backgroundColor: colorScheme.surface,
+          elevation: 0,
+          centerTitle: true,
+          title: Text(isEditMode ? 'Sửa hạn mức' : 'Thêm hạn mức'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppTheme.spacing10),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _label('SỐ TIỀN'),
+                const SizedBox(height: AppTheme.spacing4),
+                MoneyAmountField(
+                  controller: _amountController,
+                  focusNode: _amountFocusNode,
+                  validator: Validators.amount,
+                  textStyle: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppTheme.spacing10),
-              _label('TÊN HẠN MỨC'),
-              const SizedBox(height: AppTheme.spacing4),
-              TextFormField(
-                controller: _nameController,
-                validator: (value) => Validators.entityName(value, 'Tên'),
-                decoration: const InputDecoration(
-                  hintText: 'VD: Ăn uống tháng này',
+                const SizedBox(height: AppTheme.spacing10),
+                _label('TÊN HẠN MỨC'),
+                const SizedBox(height: AppTheme.spacing4),
+                TextFormField(
+                  controller: _nameController,
+                  validator: (value) => Validators.entityName(value, 'Tên'),
+                  decoration: const InputDecoration(
+                    hintText: 'VD: Ăn uống tháng này',
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppTheme.spacing10),
-              _label('HẠNG MỤC (TÙY CHỌN)'),
-              const SizedBox(height: AppTheme.spacing4),
-              _buildCategoryDropdown(categories, colorScheme),
-              const SizedBox(height: AppTheme.spacing10),
-              _label('TÀI KHOẢN'),
-              const SizedBox(height: AppTheme.spacing4),
-              _buildAccountDropdown(accounts, colorScheme),
-              const SizedBox(height: AppTheme.spacing10),
-              _label('CHU KỲ'),
-              const SizedBox(height: AppTheme.spacing4),
-              _buildPeriodDropdown(colorScheme),
-              const SizedBox(height: AppTheme.spacing10),
-              _label('NGÀY BẮT ĐẦU'),
-              const SizedBox(height: AppTheme.spacing4),
-              _buildDateTile(
-                icon: Icons.calendar_today_outlined,
-                text: Formatters.date(_startDate),
-                colorScheme: colorScheme,
-                onTap: _pickStartDate,
-              ),
-              const SizedBox(height: AppTheme.spacing10),
-              _label('NGÀY KẾT THÚC'),
-              const SizedBox(height: AppTheme.spacing4),
-              _buildDateTile(
-                icon: Icons.event_busy_outlined,
-                text: _endDate != null
-                    ? Formatters.date(_endDate!)
-                    : 'Không xác định',
-                colorScheme: colorScheme,
-                onTap: _pickEndDate,
-                trailing: _endDate == null
-                    ? null
-                    : IconButton(
-                        icon: Icon(Icons.close, color: colorScheme.tertiary),
-                        onPressed: () => setState(() => _endDate = null),
-                      ),
-              ),
-              const SizedBox(height: AppTheme.spacing12),
-              _buildActions(colorScheme),
-              const SizedBox(height: AppTheme.spacing10),
-            ],
+                const SizedBox(height: AppTheme.spacing10),
+                _label('HẠNG MỤC (TÙY CHỌN)'),
+                const SizedBox(height: AppTheme.spacing4),
+                _buildCategoryDropdown(categories, colorScheme),
+                const SizedBox(height: AppTheme.spacing10),
+                _label('TÀI KHOẢN'),
+                const SizedBox(height: AppTheme.spacing4),
+                _buildAccountDropdown(accounts, colorScheme),
+                const SizedBox(height: AppTheme.spacing10),
+                _label('CHU KỲ'),
+                const SizedBox(height: AppTheme.spacing4),
+                _buildPeriodDropdown(colorScheme),
+                const SizedBox(height: AppTheme.spacing10),
+                _label('NGÀY BẮT ĐẦU'),
+                const SizedBox(height: AppTheme.spacing4),
+                _buildDateTile(
+                  icon: Icons.calendar_today_outlined,
+                  text: Formatters.date(_startDate),
+                  colorScheme: colorScheme,
+                  onTap: _pickStartDate,
+                ),
+                const SizedBox(height: AppTheme.spacing10),
+                _label('NGÀY KẾT THÚC'),
+                const SizedBox(height: AppTheme.spacing4),
+                _buildDateTile(
+                  icon: Icons.event_busy_outlined,
+                  text: _endDate != null
+                      ? Formatters.date(_endDate!)
+                      : 'Không xác định',
+                  colorScheme: colorScheme,
+                  onTap: _pickEndDate,
+                  trailing: _endDate == null
+                      ? null
+                      : IconButton(
+                          icon: Icon(Icons.close, color: colorScheme.tertiary),
+                          onPressed: () => setState(() => _endDate = null),
+                        ),
+                ),
+                const SizedBox(height: AppTheme.spacing12),
+                _buildActions(colorScheme),
+                const SizedBox(height: AppTheme.spacing10),
+              ],
+            ),
           ),
         ),
       ),

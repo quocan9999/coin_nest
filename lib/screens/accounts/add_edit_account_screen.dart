@@ -118,95 +118,100 @@ class _AddEditAccountScreenState extends State<AddEditAccountScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      bottomNavigationBar: MoneyAmountKeyboardPanel(
-        isVisible: _balanceFocusNode.hasFocus,
-        onKeyPressed: _handleBalanceKeyboardKey,
-        shouldEvaluate: MoneyAmountInput.needsEvaluation(
-          _balanceController.text,
-        ),
-      ),
-
-      appBar: AppBar(
+    return MoneyAmountKeyboardBackGuard(
+      focusNode: _balanceFocusNode,
+      child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
-
-        title: Text(_isEditing ? 'Sửa tài khoản' : 'Thêm tài khoản'),
-
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
-
-          onPressed: () => Navigator.pop(context),
+        bottomNavigationBar: MoneyAmountKeyboardPanel(
+          isVisible: _balanceFocusNode.hasFocus,
+          onKeyPressed: _handleBalanceKeyboardKey,
+          shouldEvaluate: MoneyAmountInput.needsEvaluation(
+            _balanceController.text,
+          ),
         ),
-      ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        appBar: AppBar(
+          backgroundColor: theme.scaffoldBackgroundColor,
 
-        child: Form(
-          key: _formKey,
+          title: Text(_isEditing ? 'Sửa tài khoản' : 'Thêm tài khoản'),
 
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded),
 
-            children: [
-              _label('TÊN TÀI KHOẢN'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
 
-              const SizedBox(height: 8),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
 
-              TextFormField(
-                controller: _nameController,
+          child: Form(
+            key: _formKey,
 
-                validator: (v) => Validators.entityName(v, 'Tên tài khoản'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
 
-                decoration: const InputDecoration(hintText: 'VD: Ví tiền mặt'),
-              ),
+              children: [
+                _label('TÊN TÀI KHOẢN'),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 8),
 
-              _label('LOẠI TÀI KHOẢN'),
+                TextFormField(
+                  controller: _nameController,
 
-              const SizedBox(height: 8),
+                  validator: (v) => Validators.entityName(v, 'Tên tài khoản'),
 
-              _buildAccountTypeDropdown(theme),
-              const SizedBox(height: 20),
-
-              _label('SỐ DƯ BAN ĐẦU'),
-
-              const SizedBox(height: 8),
-
-              MoneyAmountField(
-                controller: _balanceController,
-                focusNode: _balanceFocusNode,
-                validator: Validators.amount,
-              ),
-
-              const SizedBox(height: 20),
-
-              SwitchListTile(
-                title: const Text('Tính vào tổng số dư'),
-
-                value: _includeInTotal,
-
-                onChanged: (v) => setState(() => _includeInTotal = v),
-
-                activeTrackColor: AppTheme.primary,
-
-                contentPadding: EdgeInsets.zero,
-              ),
-
-              const SizedBox(height: 28),
-
-              SizedBox(
-                height: 52,
-
-                child: ElevatedButton(
-                  onPressed: _save,
-
-                  child: Text(_isEditing ? 'Cập nhật' : 'Thêm tài khoản'),
+                  decoration: const InputDecoration(
+                    hintText: 'VD: Ví tiền mặt',
+                  ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 20),
+
+                _label('LOẠI TÀI KHOẢN'),
+
+                const SizedBox(height: 8),
+
+                _buildAccountTypeDropdown(theme),
+                const SizedBox(height: 20),
+
+                _label('SỐ DƯ BAN ĐẦU'),
+
+                const SizedBox(height: 8),
+
+                MoneyAmountField(
+                  controller: _balanceController,
+                  focusNode: _balanceFocusNode,
+                  validator: Validators.amount,
+                ),
+
+                const SizedBox(height: 20),
+
+                SwitchListTile(
+                  title: const Text('Tính vào tổng số dư'),
+
+                  value: _includeInTotal,
+
+                  onChanged: (v) => setState(() => _includeInTotal = v),
+
+                  activeTrackColor: AppTheme.primary,
+
+                  contentPadding: EdgeInsets.zero,
+                ),
+
+                const SizedBox(height: 28),
+
+                SizedBox(
+                  height: 52,
+
+                  child: ElevatedButton(
+                    onPressed: _save,
+
+                    child: Text(_isEditing ? 'Cập nhật' : 'Thêm tài khoản'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

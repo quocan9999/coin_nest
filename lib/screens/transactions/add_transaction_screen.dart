@@ -465,260 +465,263 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
 
     final accProv = context.watch<AccountProvider>();
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-
-      bottomNavigationBar: _buildReceiptScanAccessory(theme),
-
-      appBar: AppBar(
+    return MoneyAmountKeyboardBackGuard(
+      focusNode: _amountFocusNode,
+      child: Scaffold(
         backgroundColor: colorScheme.surface,
 
-        elevation: 0,
+        bottomNavigationBar: _buildReceiptScanAccessory(theme),
 
-        centerTitle: true,
+        appBar: AppBar(
+          backgroundColor: colorScheme.surface,
 
-        title: Text(isEditMode ? 'Sửa ghi chép' : 'Ghi chép giao dịch'),
+          elevation: 0,
 
-        leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          centerTitle: true,
 
-          onPressed: () => Navigator.pop(context),
+          title: Text(isEditMode ? 'Sửa ghi chép' : 'Ghi chép giao dịch'),
+
+          leading: IconButton(
+            icon: const Icon(Icons.close_rounded),
+
+            onPressed: () => Navigator.pop(context),
+          ),
+
+          bottom: TabBar(
+            controller: _tabController,
+
+            onTap: (index) {
+              if (_previousTabIndex != index) {
+                setState(() {
+                  _selectedCategoryId = null;
+
+                  _previousTabIndex = index;
+                });
+              }
+            },
+
+            tabs: const [
+              Tab(text: 'Chi tiêu'),
+              Tab(text: 'Thu nhập'),
+              Tab(text: 'Chuyển khoản'),
+            ],
+
+            labelColor: AppTheme.primary,
+
+            unselectedLabelColor: colorScheme.onSurfaceVariant,
+
+            indicatorColor: AppTheme.primary,
+          ),
         ),
 
-        bottom: TabBar(
-          controller: _tabController,
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
 
-          onTap: (index) {
-            if (_previousTabIndex != index) {
-              setState(() {
-                _selectedCategoryId = null;
+          child: Form(
+            key: _formKey,
 
-                _previousTabIndex = index;
-              });
-            }
-          },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
 
-          tabs: const [
-            Tab(text: 'Chi tiêu'),
-            Tab(text: 'Thu nhập'),
-            Tab(text: 'Chuyển khoản'),
-          ],
-
-          labelColor: AppTheme.primary,
-
-          unselectedLabelColor: colorScheme.onSurfaceVariant,
-
-          indicatorColor: AppTheme.primary,
-        ),
-      ),
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-
-        child: Form(
-          key: _formKey,
-
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-
-            children: [
-              // SỐ TIỀN
-              _sectionLabel(context, 'SỐ TIỀN'),
-
-              const SizedBox(height: 8),
-
-              MoneyAmountField(
-                controller: _amountController,
-
-                focusNode: _amountFocusNode,
-
-                validator: Validators.amount,
-
-                textStyle: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // CATEGORY
-              if (_currentType != 'transfer') ...[
-                _sectionLabel(context, 'HẠNG MỤC'),
+              children: [
+                // SỐ TIỀN
+                _sectionLabel(context, 'SỐ TIỀN'),
 
                 const SizedBox(height: 8),
 
-                _buildCategoryDropdown(
-                  _currentType == 'expense'
-                      ? catProv.expenseCategories
-                      : catProv.incomeCategories,
+                MoneyAmountField(
+                  controller: _amountController,
+
+                  focusNode: _amountFocusNode,
+
+                  validator: Validators.amount,
+
+                  textStyle: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
 
                 const SizedBox(height: 20),
-              ],
 
-              // ACCOUNT
-              _sectionLabel(
-                context,
-                _currentType == 'transfer' ? 'TỪ TÀI KHOẢN' : 'TÀI KHOẢN',
-              ),
+                // CATEGORY
+                if (_currentType != 'transfer') ...[
+                  _sectionLabel(context, 'HẠNG MỤC'),
 
-              const SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
-              _buildAccountDropdown(accProv, isSource: true),
+                  _buildCategoryDropdown(
+                    _currentType == 'expense'
+                        ? catProv.expenseCategories
+                        : catProv.incomeCategories,
+                  ),
 
-              if (_currentType == 'transfer') ...[
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
+                ],
 
-                _sectionLabel(context, 'ĐẾN TÀI KHOẢN'),
+                // ACCOUNT
+                _sectionLabel(
+                  context,
+                  _currentType == 'transfer' ? 'TỪ TÀI KHOẢN' : 'TÀI KHOẢN',
+                ),
 
                 const SizedBox(height: 8),
 
-                _buildAccountDropdown(accProv, isSource: false),
-              ],
+                _buildAccountDropdown(accProv, isSource: true),
 
-              const SizedBox(height: 20),
+                if (_currentType == 'transfer') ...[
+                  const SizedBox(height: 20),
 
-              // DATE
-              _sectionLabel(context, 'NGÀY'),
+                  _sectionLabel(context, 'ĐẾN TÀI KHOẢN'),
 
-              const SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
-              GestureDetector(
-                onTap: _pickDate,
+                  _buildAccountDropdown(accProv, isSource: false),
+                ],
 
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+                const SizedBox(height: 20),
+
+                // DATE
+                _sectionLabel(context, 'NGÀY'),
+
+                const SizedBox(height: 8),
+
+                GestureDetector(
+                  onTap: _pickDate,
+
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    ),
+
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today_outlined,
+
+                          size: 18,
+
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        Text(
+                          Formatters.date(_selectedDate),
+
+                          style: TextStyle(color: colorScheme.onSurface),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
 
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
+                const SizedBox(height: 20),
 
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                // NOTE
+                _sectionLabel(context, 'GHI CHÚ'),
+
+                const SizedBox(height: 8),
+
+                TextFormField(
+                  controller: _noteController,
+
+                  maxLines: 2,
+
+                  validator: Validators.note,
+
+                  decoration: const InputDecoration(
+                    hintText: 'Nhập ghi chú (tùy chọn)',
                   ),
+                ),
 
-                  child: Row(
+                const SizedBox(height: 28),
+
+                // BUTTON
+                if (isEditMode)
+                  Row(
                     children: [
-                      Icon(
-                        Icons.calendar_today_outlined,
+                      Expanded(
+                        child: SizedBox(
+                          height: 52,
 
-                        size: 18,
+                          child: OutlinedButton(
+                            onPressed: _delete,
 
-                        color: colorScheme.onSurfaceVariant,
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: AppTheme.tertiary,
+                                width: 1.5,
+                              ),
+
+                              backgroundColor: colorScheme.surface,
+
+                              foregroundColor: AppTheme.tertiary,
+
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusFull,
+                                ),
+                              ),
+                            ),
+
+                            child: const Text(
+                              'Xoá',
+
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
                       ),
 
                       const SizedBox(width: 12),
 
-                      Text(
-                        Formatters.date(_selectedDate),
+                      Expanded(
+                        child: SizedBox(
+                          height: 52,
 
-                        style: TextStyle(color: colorScheme.onSurface),
+                          child: ElevatedButton(
+                            onPressed: _save,
+
+                            style: ElevatedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusFull,
+                                ),
+                              ),
+                            ),
+
+                            child: const Text('Lưu lại'),
+                          ),
+                        ),
                       ),
                     ],
+                  )
+                else
+                  SizedBox(
+                    height: 52,
+
+                    child: ElevatedButton(
+                      onPressed: _save,
+
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusFull,
+                          ),
+                        ),
+                      ),
+                      child: const Text('Lưu ghi chép'),
+                    ),
                   ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // NOTE
-              _sectionLabel(context, 'GHI CHÚ'),
-
-              const SizedBox(height: 8),
-
-              TextFormField(
-                controller: _noteController,
-
-                maxLines: 2,
-
-                validator: Validators.note,
-
-                decoration: const InputDecoration(
-                  hintText: 'Nhập ghi chú (tùy chọn)',
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // BUTTON
-              if (isEditMode)
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 52,
-
-                        child: OutlinedButton(
-                          onPressed: _delete,
-
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(
-                              color: AppTheme.tertiary,
-                              width: 1.5,
-                            ),
-
-                            backgroundColor: colorScheme.surface,
-
-                            foregroundColor: AppTheme.tertiary,
-
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppTheme.radiusFull,
-                              ),
-                            ),
-                          ),
-
-                          child: const Text(
-                            'Xoá',
-
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 12),
-
-                    Expanded(
-                      child: SizedBox(
-                        height: 52,
-
-                        child: ElevatedButton(
-                          onPressed: _save,
-
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppTheme.radiusFull,
-                              ),
-                            ),
-                          ),
-
-                          child: const Text('Lưu lại'),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              else
-                SizedBox(
-                  height: 52,
-
-                  child: ElevatedButton(
-                    onPressed: _save,
-
-                    style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppTheme.radiusFull,
-                        ),
-                      ),
-                    ),
-                    child: const Text('Lưu ghi chép'),
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
