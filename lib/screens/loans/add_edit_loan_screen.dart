@@ -7,6 +7,7 @@ import '../../providers/loan_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/validators.dart';
+import '../../widgets/money_amount_input.dart';
 
 class AddEditLoanScreen extends StatefulWidget {
   final Loan? loan;
@@ -24,6 +25,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
   final _personController = TextEditingController();
 
   final _amountController = TextEditingController();
+  final _amountFocusNode = FocusNode();
 
   final _noteController = TextEditingController();
 
@@ -42,11 +44,14 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
   @override
   void initState() {
     super.initState();
+    _amountFocusNode.addListener(() {
+      if (mounted) setState(() {});
+    });
     final loan = widget.loan;
     if (loan != null) {
       _type = loan.type;
       _personController.text = loan.personName;
-      _amountController.text = _formatInputAmount(loan.amount);
+      _amountController.text = MoneyAmountInput.formatAmount(loan.amount);
       _interestController.text = loan.interestRate == 0
           ? ''
           : loan.interestRate.toString();
@@ -67,6 +72,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
   void dispose() {
     _personController.dispose();
     _amountController.dispose();
+    _amountFocusNode.dispose();
     _noteController.dispose();
     _interestController.dispose();
 
@@ -74,21 +80,29 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
   }
 
   Future<void> _save() async {
+    if (!_finalizeAmountExpression(showError: true)) return;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     if (_accountId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Vui lòng chọn tài khoản')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui l\u00f2ng ch\u1ecdn t\u00e0i kho\u1ea3n'),
+        ),
+      );
 
       return;
     }
 
     if (_dueDate != null && _dueDate!.isBefore(_startDate)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Hạn trả không được trước ngày bắt đầu')),
+        const SnackBar(
+          content: Text(
+            'H\u1ea1n tr\u1ea3 kh\u00f4ng \u0111\u01b0\u1ee3c tr\u01b0\u1edbc ng\u00e0y b\u1eaft \u0111\u1ea7u',
+          ),
+        ),
       );
 
       return;
@@ -135,7 +149,9 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
         Navigator.pop(context, true);
       }
     } else {
-      final message = loanProvider.errorMessage ?? 'Không thể lưu khoản vay';
+      final message =
+          loanProvider.errorMessage ??
+          'Kh\u00f4ng th\u1ec3 l\u01b0u kho\u1ea3n vay';
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
@@ -150,9 +166,18 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      bottomNavigationBar: MoneyAmountKeyboardPanel(
+        isVisible: _amountFocusNode.hasFocus,
+        onKeyPressed: _handleAmountKeyboardKey,
+        shouldEvaluate: MoneyAmountInput.needsEvaluation(
+          _amountController.text,
+        ),
+      ),
 
       appBar: AppBar(
-        title: Text(_isEditMode ? 'Sửa vay/cho vay' : 'Thêm vay/cho vay'),
+        title: Text(
+          _isEditMode ? 'S\u1eeda vay/cho vay' : 'Th\u00eam vay/cho vay',
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded),
 
@@ -187,20 +212,13 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
               const SizedBox(height: AppTheme.spacing10),
               _label('SỐ TIỀN'),
               const SizedBox(height: AppTheme.spacing4),
-              TextFormField(
+              MoneyAmountField(
                 controller: _amountController,
-
-                keyboardType: TextInputType.number,
-
+                focusNode: _amountFocusNode,
                 validator: Validators.amount,
-
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  suffixText: 'đ',
-                ),
               ),
               const SizedBox(height: AppTheme.spacing10),
-              _label('LÃI SUẤT (%/NĂM)'),
+              _label('Lãi suất (%/năm)'.toUpperCase()),
               const SizedBox(height: AppTheme.spacing4),
               TextFormField(
                 controller: _interestController,
@@ -301,7 +319,9 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                 height: AppTheme.spacing24 + AppTheme.spacing2,
                 child: ElevatedButton(
                   onPressed: _save,
-                  child: Text(_isEditMode ? 'Lưu thay đổi' : 'Lưu'),
+                  child: Text(
+                    _isEditMode ? 'L\u01b0u thay \u0111\u1ed5i' : 'L\u01b0u',
+                  ),
                 ),
               ),
             ],
@@ -426,15 +446,22 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
     );
   }
 
-  String _formatInputAmount(double value) {
-    final raw = value.toStringAsFixed(0);
-    final buffer = StringBuffer();
-    for (var i = 0; i < raw.length; i++) {
-      if (i > 0 && (raw.length - i) % 3 == 0) {
-        buffer.write('.');
-      }
-      buffer.write(raw[i]);
-    }
-    return buffer.toString();
+  void _handleAmountKeyboardKey(MoneyAmountKeyboardKey key) {
+    MoneyAmountInput.handleKey(
+      context: context,
+      controller: _amountController,
+      focusNode: _amountFocusNode,
+      key: key,
+      refresh: () => setState(() {}),
+    );
+  }
+
+  bool _finalizeAmountExpression({required bool showError}) {
+    return MoneyAmountInput.finalizeExpression(
+      context: context,
+      controller: _amountController,
+      refresh: () => setState(() {}),
+      showError: showError,
+    );
   }
 }

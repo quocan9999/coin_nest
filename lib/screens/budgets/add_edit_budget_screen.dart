@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/budget.dart';
@@ -10,6 +9,7 @@ import '../../providers/category_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/validators.dart';
+import '../../widgets/money_amount_input.dart';
 
 class AddEditBudgetScreen extends StatefulWidget {
   final Budget? budget;
@@ -24,6 +24,7 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
+  final _amountFocusNode = FocusNode();
 
   int? _categoryId;
   int? _accountId;
@@ -48,12 +49,15 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
   @override
   void initState() {
     super.initState();
+    _amountFocusNode.addListener(() {
+      if (mounted) setState(() {});
+    });
     _loadAccounts();
 
     if (isEditMode) {
       final budget = widget.budget!;
       _nameController.text = budget.name;
-      _amountController.text = _formatAmountForInput(budget.amount);
+      _amountController.text = MoneyAmountInput.formatAmount(budget.amount);
       _categoryId = budget.categoryId;
       _accountId = budget.accountId;
       _period = budget.period;
@@ -87,20 +91,8 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
   void dispose() {
     _nameController.dispose();
     _amountController.dispose();
+    _amountFocusNode.dispose();
     super.dispose();
-  }
-
-  String _formatAmountForInput(double amount) {
-    final digits = amount.toInt().toString();
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      final reverseIndex = digits.length - i;
-      buffer.write(digits[i]);
-      if (reverseIndex > 1 && reverseIndex % 3 == 1) {
-        buffer.write('.');
-      }
-    }
-    return buffer.toString();
   }
 
   void _showConfirmDialog({
@@ -188,6 +180,8 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
   }
 
   Future<void> _save() async {
+    if (!_finalizeAmountExpression(showError: true)) return;
+
     if (!_formKey.currentState!.validate()) return;
 
     if (_accountId == null) {
@@ -286,6 +280,13 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
+      bottomNavigationBar: MoneyAmountKeyboardPanel(
+        isVisible: _amountFocusNode.hasFocus,
+        onKeyPressed: _handleAmountKeyboardKey,
+        shouldEvaluate: MoneyAmountInput.needsEvaluation(
+          _amountController.text,
+        ),
+      ),
       appBar: AppBar(
         backgroundColor: colorScheme.surface,
         elevation: 0,
@@ -305,21 +306,13 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
             children: [
               _label('SỐ TIỀN'),
               const SizedBox(height: AppTheme.spacing4),
-              TextFormField(
+              MoneyAmountField(
                 controller: _amountController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  CurrencyInputFormatter(),
-                ],
+                focusNode: _amountFocusNode,
                 validator: Validators.amount,
-                style: theme.textTheme.headlineSmall?.copyWith(
+                textStyle: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: colorScheme.onSurface,
-                ),
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  suffixText: 'đ',
                 ),
               ),
               const SizedBox(height: AppTheme.spacing10),
@@ -563,6 +556,25 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
     );
   }
 
+  void _handleAmountKeyboardKey(MoneyAmountKeyboardKey key) {
+    MoneyAmountInput.handleKey(
+      context: context,
+      controller: _amountController,
+      focusNode: _amountFocusNode,
+      key: key,
+      refresh: () => setState(() {}),
+    );
+  }
+
+  bool _finalizeAmountExpression({required bool showError}) {
+    return MoneyAmountInput.finalizeExpression(
+      context: context,
+      controller: _amountController,
+      refresh: () => setState(() {}),
+      showError: showError,
+    );
+  }
+
   Widget _label(String text) {
     return Text(
       text,
@@ -570,38 +582,6 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
         fontWeight: FontWeight.w600,
         letterSpacing: 0.8,
       ),
-    );
-  }
-}
-
-class CurrencyInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    if (newValue.text.isEmpty) {
-      return newValue.copyWith(text: '');
-    }
-
-    final digitsOnly = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digitsOnly.isEmpty) {
-      return newValue.copyWith(text: '');
-    }
-
-    final buffer = StringBuffer();
-    for (var i = 0; i < digitsOnly.length; i++) {
-      final reverseIndex = digitsOnly.length - i;
-      buffer.write(digitsOnly[i]);
-      if (reverseIndex > 1 && reverseIndex % 3 == 1) {
-        buffer.write('.');
-      }
-    }
-
-    final formatted = buffer.toString();
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

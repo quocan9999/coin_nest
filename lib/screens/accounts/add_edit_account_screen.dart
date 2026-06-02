@@ -11,6 +11,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/constants.dart';
 import '../../utils/validators.dart';
 import '../../utils/category_icons.dart';
+import '../../widgets/money_amount_input.dart';
 
 class AddEditAccountScreen extends StatefulWidget {
   final Account? account;
@@ -27,6 +28,7 @@ class _AddEditAccountScreenState extends State<AddEditAccountScreen> {
   final _nameController = TextEditingController();
 
   final _balanceController = TextEditingController();
+  final _balanceFocusNode = FocusNode();
 
   String _selectedType = 'cash';
 
@@ -37,11 +39,16 @@ class _AddEditAccountScreenState extends State<AddEditAccountScreen> {
   @override
   void initState() {
     super.initState();
+    _balanceFocusNode.addListener(() {
+      if (mounted) setState(() {});
+    });
 
     if (_isEditing) {
       _nameController.text = widget.account!.name;
 
-      _balanceController.text = widget.account!.balance.toStringAsFixed(0);
+      _balanceController.text = MoneyAmountInput.formatAmount(
+        widget.account!.balance,
+      );
 
       _selectedType = widget.account!.type;
 
@@ -54,11 +61,14 @@ class _AddEditAccountScreenState extends State<AddEditAccountScreen> {
     _nameController.dispose();
 
     _balanceController.dispose();
+    _balanceFocusNode.dispose();
 
     super.dispose();
   }
 
   Future<void> _save() async {
+    if (!_finalizeBalanceExpression(showError: true)) return;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -110,6 +120,13 @@ class _AddEditAccountScreenState extends State<AddEditAccountScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      bottomNavigationBar: MoneyAmountKeyboardPanel(
+        isVisible: _balanceFocusNode.hasFocus,
+        onKeyPressed: _handleBalanceKeyboardKey,
+        shouldEvaluate: MoneyAmountInput.needsEvaluation(
+          _balanceController.text,
+        ),
+      ),
 
       appBar: AppBar(
         backgroundColor: theme.scaffoldBackgroundColor,
@@ -151,83 +168,17 @@ class _AddEditAccountScreenState extends State<AddEditAccountScreen> {
 
               const SizedBox(height: 8),
 
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-
-                children: AppConstants.accountTypes.map((type) {
-                  final isSelected = _selectedType == type;
-
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedType = type),
-
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.primary : theme.cardColor,
-
-                        borderRadius: BorderRadius.circular(
-                          AppTheme.radiusFull,
-                        ),
-                      ),
-
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-
-                        children: [
-                          Icon(
-                            CategoryIcons.getIcon(type),
-
-                            size: 18,
-
-                            color: isSelected
-                                ? Colors.white
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-
-                          const SizedBox(width: 6),
-
-                          Text(
-                            AppConstants.accountTypeLabels[type]!,
-
-                            style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : theme.colorScheme.onSurface,
-
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
+              _buildAccountTypeDropdown(theme),
               const SizedBox(height: 20),
 
               _label('SỐ DƯ BAN ĐẦU'),
 
               const SizedBox(height: 8),
 
-              TextFormField(
+              MoneyAmountField(
                 controller: _balanceController,
-
-                keyboardType: TextInputType.number,
-
-                decoration: const InputDecoration(
-                  hintText: '0',
-                  suffixText: 'đ',
-                ),
+                focusNode: _balanceFocusNode,
+                validator: Validators.amount,
               ),
 
               const SizedBox(height: 20),
@@ -257,6 +208,62 @@ class _AddEditAccountScreenState extends State<AddEditAccountScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _handleBalanceKeyboardKey(MoneyAmountKeyboardKey key) {
+    MoneyAmountInput.handleKey(
+      context: context,
+      controller: _balanceController,
+      focusNode: _balanceFocusNode,
+      key: key,
+      refresh: () => setState(() {}),
+    );
+  }
+
+  bool _finalizeBalanceExpression({required bool showError}) {
+    return MoneyAmountInput.finalizeExpression(
+      context: context,
+      controller: _balanceController,
+      refresh: () => setState(() {}),
+      showError: showError,
+    );
+  }
+
+  Widget _buildAccountTypeDropdown(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedType,
+          isExpanded: true,
+          dropdownColor: theme.colorScheme.surface,
+          items: AppConstants.accountTypes.map((type) {
+            return DropdownMenuItem<String>(
+              value: type,
+              child: Row(
+                children: [
+                  Icon(
+                    CategoryIcons.getIcon(type),
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(AppConstants.accountTypeLabels[type] ?? type),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _selectedType = value);
+          },
         ),
       ),
     );
