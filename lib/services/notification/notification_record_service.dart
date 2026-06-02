@@ -41,6 +41,11 @@ class NotificationRecordService {
   static bool get isSupported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
+  static Future<bool> hasNotificationPermission() async {
+    if (!isSupported) return false;
+    return await NotificationsListener.hasPermission ?? false;
+  }
+
   static Future<bool> syncFromPreferences({
     bool requestPermission = false,
   }) async {
