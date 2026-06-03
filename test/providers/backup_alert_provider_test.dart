@@ -38,4 +38,16 @@ void main() {
 
     expect(provider.badgeLabel, '99+');
   });
+
+  test('cap nhat badge khi service danh dau giao dich tu dong', () async {
+    final provider = BackupAlertProvider();
+
+    await provider.loadForUser(1);
+    await BackupAlertProvider.markUserChanged(1, source: 'transaction');
+    await BackupAlertProvider.markUserChanged(1, source: 'transaction');
+
+    expect(provider.pendingCount, 2);
+    expect(provider.pendingTransactionCount, 2);
+    expect(provider.badgeLabel, '2');
+  });
 }
