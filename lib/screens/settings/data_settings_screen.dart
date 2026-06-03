@@ -21,6 +21,8 @@ class DataSettingsScreen extends StatefulWidget {
 }
 
 class _DataSettingsScreenState extends State<DataSettingsScreen> {
+  bool _didRestore = false;
+
   @override
   void initState() {
     super.initState();
@@ -37,72 +39,79 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(context, _didRestore);
+      },
+      child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
-        title: const Text('Sao lưu & Phục hồi'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () => Navigator.pop(context),
+        appBar: AppBar(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          title: const Text('Sao lưu & Phục hồi'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded),
+            onPressed: () => Navigator.pop(context, _didRestore),
+          ),
         ),
-      ),
-      body: Consumer<BackupProvider>(
-        builder: (context, backupProvider, _) {
-          final backupAlert = context.watch<BackupAlertProvider>();
+        body: Consumer<BackupProvider>(
+          builder: (context, backupProvider, _) {
+            final backupAlert = context.watch<BackupAlertProvider>();
 
-          return ListView(
-            padding: const EdgeInsets.all(AppTheme.spacing10),
-            children: [
-              _StatusPanel(provider: backupProvider),
-              if (backupAlert.hasPendingTransactions) ...[
+            return ListView(
+              padding: const EdgeInsets.all(AppTheme.spacing10),
+              children: [
+                _StatusPanel(provider: backupProvider),
+                if (backupAlert.hasPendingTransactions) ...[
+                  const SizedBox(height: AppTheme.spacing8),
+                  _PendingTransactionsPanel(
+                    pendingCount: backupAlert.pendingTransactionCount,
+                  ),
+                ],
                 const SizedBox(height: AppTheme.spacing8),
-                _PendingTransactionsPanel(
-                  pendingCount: backupAlert.pendingTransactionCount,
+                _ActionPanel(
+                  icon: Icons.cloud_upload_outlined,
+                  iconColor: AppTheme.primary,
+                  title: 'Sao lưu dữ liệu',
+                  description:
+                      'Lưu snapshot dữ liệu tài chính của tài khoản hiện tại lên Cloud Firestore.',
+                  buttonLabel: 'Sao lưu ngay',
+                  isLoading: backupProvider.isLoading,
+                  onPressed: () => _confirmBackup(context),
                 ),
-              ],
-              const SizedBox(height: AppTheme.spacing8),
-              _ActionPanel(
-                icon: Icons.cloud_upload_outlined,
-                iconColor: AppTheme.primary,
-                title: 'Sao lưu dữ liệu',
-                description:
-                    'Lưu snapshot dữ liệu tài chính của tài khoản hiện tại lên Cloud Firestore.',
-                buttonLabel: 'Sao lưu ngay',
-                isLoading: backupProvider.isLoading,
-                onPressed: () => _confirmBackup(context),
-              ),
-              const SizedBox(height: AppTheme.spacing8),
-              _ActionPanel(
-                icon: Icons.cloud_download_outlined,
-                iconColor: AppTheme.loanColor,
-                title: 'Khôi phục dữ liệu',
-                description:
-                    'Tải bản sao lưu cloud và ghi đè accounts, categories, transactions, loans, loan payments và budgets cục bộ.',
-                buttonLabel: 'Khôi phục',
-                isLoading: backupProvider.isLoading,
-                style: _ActionPanelStyle.secondary,
-                onPressed: () => _confirmRestore(context),
-              ),
-              const SizedBox(height: AppTheme.spacing8),
-              _ActionPanel(
-                icon: Icons.delete_outline_rounded,
-                iconColor: AppTheme.tertiary,
-                title: 'Xóa bản sao lưu cloud',
-                description:
-                    'Xóa bản sao lưu hiện tại trên Firestore. Dữ liệu tài chính trên thiết bị vẫn được giữ nguyên.',
-                buttonLabel: 'Xóa bản sao lưu cloud',
-                isLoading: backupProvider.isLoading,
-                style: _ActionPanelStyle.danger,
-                onPressed: () => _confirmDeleteBackup(context),
-              ),
-              if (backupProvider.errorMessage != null) ...[
                 const SizedBox(height: AppTheme.spacing8),
-                _ErrorPanel(message: backupProvider.errorMessage!),
+                _ActionPanel(
+                  icon: Icons.cloud_download_outlined,
+                  iconColor: AppTheme.loanColor,
+                  title: 'Khôi phục dữ liệu',
+                  description:
+                      'Tải bản sao lưu cloud và ghi đè accounts, categories, transactions, loans, loan payments và budgets cục bộ.',
+                  buttonLabel: 'Khôi phục',
+                  isLoading: backupProvider.isLoading,
+                  style: _ActionPanelStyle.secondary,
+                  onPressed: () => _confirmRestore(context),
+                ),
+                const SizedBox(height: AppTheme.spacing8),
+                _ActionPanel(
+                  icon: Icons.delete_outline_rounded,
+                  iconColor: AppTheme.tertiary,
+                  title: 'Xóa bản sao lưu cloud',
+                  description:
+                      'Xóa bản sao lưu hiện tại trên Firestore. Dữ liệu tài chính trên thiết bị vẫn được giữ nguyên.',
+                  buttonLabel: 'Xóa bản sao lưu cloud',
+                  isLoading: backupProvider.isLoading,
+                  style: _ActionPanelStyle.danger,
+                  onPressed: () => _confirmDeleteBackup(context),
+                ),
+                if (backupProvider.errorMessage != null) ...[
+                  const SizedBox(height: AppTheme.spacing8),
+                  _ErrorPanel(message: backupProvider.errorMessage!),
+                ],
               ],
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -179,6 +188,7 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
     if (!context.mounted) return;
     if (success) {
       await _reloadFinancialProviders(context, authProvider.currentUserId);
+      _didRestore = true;
     }
 
     if (!context.mounted) return;
@@ -237,6 +247,7 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
       context.read<AccountProvider>().loadAccounts(userId),
       context.read<CategoryProvider>().loadCategories(userId),
       context.read<TransactionProvider>().loadTransactions(userId),
+      context.read<TransactionProvider>().loadRecentTransactions(userId),
       context.read<LoanProvider>().loadLoans(userId),
       context.read<BudgetProvider>().loadBudgets(userId),
       context.read<ReportProvider>().loadReport(userId),

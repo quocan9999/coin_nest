@@ -37,7 +37,7 @@ void main() {
   // Mỗi case chạy trên database in-memory riêng để không chia sẻ số dư/giao dịch.
   setUp(() async {
     fixture = await openFfiDebtDatabaseFixture(initialBalance: 1000);
-    loanDao = LoanDao();
+    loanDao = LoanDao(now: () => DateTime(2026, 5, 24, 14, 35));
   });
 
   tearDown(() async {
@@ -61,6 +61,7 @@ void main() {
     expect(await fixture.accountBalance(), 1500);
     expect(txns, hasLength(1));
     expect(txns.single['type'], 'loan');
+    expect(txns.single['time'], '14:35');
     expect(txns.single['category_id'], fixture.borrowInitialCategoryId);
     expect((await loanDao.getSummary(fixture.userId))['borrowed'], 500);
   });
@@ -81,6 +82,7 @@ void main() {
 
     expect(await fixture.accountBalance(), 700);
     expect(txns.single['type'], 'lend');
+    expect(txns.single['time'], '14:35');
     expect(txns.single['category_id'], fixture.lendInitialCategoryId);
     expect((await loanDao.getSummary(fixture.userId))['lent'], 300);
   });
@@ -112,6 +114,7 @@ void main() {
     expect(history.single.amount, 200);
     expect(txns, hasLength(2));
     expect(txns.last['type'], 'expense');
+    expect(txns.last['time'], '14:35');
     expect(txns.last['category_id'], fixture.borrowPaymentCategoryId);
     expect(await fixture.accountBalance(), 1300);
   });
