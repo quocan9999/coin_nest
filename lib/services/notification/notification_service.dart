@@ -151,13 +151,11 @@ class NotificationService {
       );
       tz.setLocalLocation(tz.getLocation(timezoneIdentifier));
     } on MissingPluginException catch (error, stackTrace) {
-      debugPrint('KhÃ´ng thá»ƒ láº¥y timezone cá»¥c bá»™: $error\n$stackTrace');
+      debugPrint('Không thể lấy timezone cục bộ: $error\n$stackTrace');
     } on PlatformException catch (error, stackTrace) {
-      debugPrint(
-        'KhÃ´ng thá»ƒ cáº¥u hÃ¬nh timezone cá»¥c bá»™: $error\n$stackTrace',
-      );
+      debugPrint('Không thể cấu hình timezone cục bộ: $error\n$stackTrace');
     } catch (error, stackTrace) {
-      debugPrint('Timezone cá»¥c bá»™ khÃ´ng há»£p lá»‡: $error\n$stackTrace');
+      debugPrint('Timezone cục bộ không hợp lệ: $error\n$stackTrace');
     }
   }
 
