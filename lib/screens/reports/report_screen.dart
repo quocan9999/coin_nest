@@ -157,6 +157,44 @@ class _ReportScreenState extends State<ReportScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
 
           children: [
+            _buildMenuCard(
+              context: context,
+
+              icon: Icons.auto_awesome_rounded,
+
+              iconBgColor: colorScheme.primaryContainer,
+
+              iconColor: colorScheme.primary,
+
+              title: 'Trợ lý tài chính AI',
+
+              subtitle: 'Hỏi nhanh về thu chi, ngân sách và khoản vay',
+
+              previewKey: 'financial_assistant',
+
+              preview: Text(
+                'Dựa trên dữ liệu tháng hiện tại',
+
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+
+              onTap: () {
+                Navigator.push(
+                  context,
+
+                  MaterialPageRoute(
+                    builder: (_) => const FinancialAssistantScreen(),
+                  ),
+                ).then((_) {
+                  if (mounted) {
+                    _loadPreviewData();
+                  }
+                });
+              },
+            ),
+
             // TÀI CHÍNH
             _buildMenuCard(
               context: context,
@@ -258,44 +296,6 @@ class _ReportScreenState extends State<ReportScreen> {
 
                   MaterialPageRoute(
                     builder: (_) => const IncomeExpenseScreen(),
-                  ),
-                ).then((_) {
-                  if (mounted) {
-                    _loadPreviewData();
-                  }
-                });
-              },
-            ),
-
-            _buildMenuCard(
-              context: context,
-
-              icon: Icons.auto_awesome_rounded,
-
-              iconBgColor: colorScheme.primaryContainer,
-
-              iconColor: colorScheme.primary,
-
-              title: 'Trợ lý tài chính AI',
-
-              subtitle: 'Hỏi nhanh về thu chi, ngân sách và khoản vay',
-
-              previewKey: 'financial_assistant',
-
-              preview: Text(
-                'Dựa trên dữ liệu tháng hiện tại',
-
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-
-              onTap: () {
-                Navigator.push(
-                  context,
-
-                  MaterialPageRoute(
-                    builder: (_) => const FinancialAssistantScreen(),
                   ),
                 ).then((_) {
                   if (mounted) {
