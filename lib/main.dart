@@ -11,6 +11,7 @@ import 'providers/backup_provider.dart';
 import 'providers/account_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/category_provider.dart';
+import 'providers/financial_assistant_provider.dart';
 import 'providers/loan_provider.dart';
 import 'providers/budget_provider.dart';
 import 'providers/report_provider.dart';
@@ -130,6 +131,7 @@ void main() async {
         ),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
         ChangeNotifierProvider(create: (_) => AiSpendingInsightProvider()),
+        ChangeNotifierProvider(create: (_) => FinancialAssistantProvider()),
       ],
       child: const CoinNestApp(),
     ),
