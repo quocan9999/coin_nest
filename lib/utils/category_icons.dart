@@ -39,6 +39,7 @@ class CategoryIcons {
     'loan': Icons.handshake_rounded,
     'lend': Icons.volunteer_activism_rounded,
     'balance_adjust': Icons.tune_rounded,
+    'auto_record': Icons.receipt_long_rounded,
 
     // Account types
     'cash': Icons.payments_rounded,
@@ -78,6 +79,7 @@ class CategoryIcons {
     'loan': Color(0xFFFF7043),
     'lend': Color(0xFFAB47BC),
     'balance_adjust': Color(0xFF78909C),
+    'auto_record': Color(0xFF78909C),
 
     'cash': Color(0xFF66BB6A),
     'bank': Color(0xFF42A5F5),

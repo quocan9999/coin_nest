@@ -20,6 +20,13 @@ void main() {
       expect(Validators.amount('0'), isNotNull);
       expect(Validators.amount('1000000000000'), isNotNull);
     });
+
+    test('so du ban dau chap nhan gia tri khong am', () {
+      expect(Validators.nonNegativeAmount('0'), isNull);
+      expect(Validators.nonNegativeAmount('500.000'), isNull);
+      expect(Validators.nonNegativeAmount('abc'), isNotNull);
+      expect(Validators.nonNegativeAmount('-1'), isNotNull);
+    });
   });
 
   // Lãi suất là tùy chọn nhưng khi có giá trị phải nằm trong miền phần trăm.

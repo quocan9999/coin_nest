@@ -114,9 +114,7 @@ class Validators {
     final req = required(value, 'Số tiền');
     if (req != null) return req;
 
-    // Strip thousand separators that the user might type
-    final cleaned = value!.replaceAll(RegExp(r'[.\s,]'), '');
-    final parsed = double.tryParse(cleaned);
+    final parsed = _parseUserAmount(value!);
 
     if (parsed == null) {
       return 'Số tiền không hợp lệ';
@@ -130,11 +128,34 @@ class Validators {
     return null;
   }
 
+  static String? nonNegativeAmount(String? value) {
+    final req = required(value, 'Số tiền');
+    if (req != null) return req;
+
+    final parsed = _parseUserAmount(value!);
+
+    if (parsed == null) {
+      return 'Số tiền không hợp lệ';
+    }
+    if (parsed < 0) {
+      return 'Số tiền không được âm';
+    }
+    if (parsed > AppConstants.maxAmount) {
+      return 'Số tiền quá lớn (tối đa 999 tỷ)';
+    }
+    return null;
+  }
+
   /// Parse a user-typed amount string into a [double].
   /// Returns 0 if unparseable (caller should validate first).
   static double parseAmount(String value) {
     final cleaned = value.replaceAll(RegExp(r'[.\s,đ₫]'), '');
     return double.tryParse(cleaned) ?? 0;
+  }
+
+  static double? _parseUserAmount(String value) {
+    final cleaned = value.replaceAll(RegExp(r'[.\s,đ₫]'), '');
+    return double.tryParse(cleaned);
   }
 
   // ─── Account / Category Name ───────────────────────────────────

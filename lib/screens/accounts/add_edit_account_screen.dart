@@ -182,7 +182,7 @@ class _AddEditAccountScreenState extends State<AddEditAccountScreen> {
                 MoneyAmountField(
                   controller: _balanceController,
                   focusNode: _balanceFocusNode,
-                  validator: Validators.amount,
+                  validator: Validators.nonNegativeAmount,
                 ),
 
                 const SizedBox(height: 20),
