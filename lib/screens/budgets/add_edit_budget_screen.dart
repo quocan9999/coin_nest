@@ -32,9 +32,6 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
   DateTime _startDate = DateTime.now();
   DateTime? _endDate;
 
-  // NOTE: none/quarterly đang được giữ để resolve conflict theo tính năng hiện tại.
-  // DB chưa chấp nhận hai giá trị này trong CHECK constraint của bảng budgets.
-  // Người sửa tiếp cần đồng bộ AppConstants, DatabaseHelper, BudgetDao và BudgetListScreen.
   final Map<String, String> _periodOptions = {
     'none': 'Không lặp lại',
     'daily': 'Theo ngày',
@@ -63,14 +60,6 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
       _period = budget.period;
       _startDate = budget.startDate;
       _endDate = budget.endDate;
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || _accountId != null) return;
-        final accounts = context.read<AccountProvider>().accounts;
-        if (accounts.isNotEmpty) {
-          setState(() => _accountId = accounts.first.id);
-        }
-      });
     }
   }
 
@@ -79,11 +68,6 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
       if (!mounted) return;
       final userId = context.read<AuthProvider>().currentUserId;
       await context.read<AccountProvider>().loadAccounts(userId);
-      if (!mounted || isEditMode || _accountId != null) return;
-      final accounts = context.read<AccountProvider>().accounts;
-      if (accounts.isNotEmpty) {
-        setState(() => _accountId = accounts.first.id);
-      }
     });
   }
 
@@ -184,15 +168,6 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
 
     if (!_formKey.currentState!.validate()) return;
 
-    if (_accountId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng chọn tài khoản áp dụng hạn mức'),
-        ),
-      );
-      return;
-    }
-
     final startDay = DateTime(
       _startDate.year,
       _startDate.month,
@@ -207,8 +182,6 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
       return;
     }
 
-    // NOTE: Nếu _period là none hoặc quarterly, luồng lưu vẫn có thể lỗi SQLite
-    // cho tới khi DB/DAO được đồng bộ theo note bàn giao sau conflict.
     if (isEditMode) {
       _showConfirmDialog(
         message:
@@ -425,15 +398,19 @@ class _AddEditBudgetScreenState extends State<AddEditBudgetScreen> {
           value: _accountId,
           isExpanded: true,
           dropdownColor: colorScheme.surface,
-          hint: const Text('Chọn tài khoản'),
-          items: accounts
-              .map(
-                (account) => DropdownMenuItem<int?>(
-                  value: account.id,
-                  child: Text(account.name),
-                ),
-              )
-              .toList(),
+          hint: const Text('Tất cả tài khoản'),
+          items: [
+            const DropdownMenuItem<int?>(
+              value: null,
+              child: Text('Tất cả tài khoản'),
+            ),
+            ...accounts.map(
+              (account) => DropdownMenuItem<int?>(
+                value: account.id,
+                child: Text(account.name),
+              ),
+            ),
+          ],
           onChanged: (value) => setState(() => _accountId = value),
         ),
       ),
