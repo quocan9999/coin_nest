@@ -60,9 +60,10 @@ class AiSpendingInsightProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_cacheKey(userId), result.encode());
     } catch (_) {
-      _errorMessage = isConfigured
+      final configured = await _service.isConfiguredAsync();
+      _errorMessage = configured
           ? 'Không kết nối được AI. Vui lòng thử lại sau.'
-          : 'Chưa cấu hình AI_API_BASE_URL cho API AI.';
+          : 'Chưa cấu hình API AI trong Cài đặt chung.';
     } finally {
       _isLoading = false;
       notifyListeners();

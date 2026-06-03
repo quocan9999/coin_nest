@@ -6,6 +6,7 @@ import '../../providers/loan_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/notification/reminder_coordinator.dart';
 import '../../theme/app_theme.dart';
+import 'ai_api_settings_screen.dart';
 import 'support_map_screen.dart';
 
 class GeneralSettingsScreen extends StatelessWidget {
@@ -46,6 +47,36 @@ class GeneralSettingsScreen extends StatelessWidget {
                 subtitle: const Text('Bật chế độ nền tối'),
                 value: settings.isDarkMode,
                 onChanged: settings.setDarkMode,
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _sectionTitle(context, 'AI'),
+          const SizedBox(height: 8),
+          _settingsCard(
+            context,
+            children: [
+              ListTile(
+                leading: Icon(
+                  Icons.auto_awesome_rounded,
+                  color: colorScheme.primary,
+                ),
+                title: const Text('Cấu hình AI'),
+                subtitle: const Text(
+                  'API cho gợi ý tiết kiệm và trợ lý tài chính',
+                ),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: colorScheme.outline,
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AiApiSettingsScreen(),
+                    ),
+                  );
+                },
               ),
             ],
           ),
