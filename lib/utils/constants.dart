@@ -7,7 +7,7 @@ class AppConstants {
 
   // ─── App Metadata ──────────────────────────────────────────────
   static const String appName = 'CoinNest';
-  static const String appTagline = 'THE FINANCIAL ARCHITECT';
+  static const String appTagline = 'ỨNG DỤNG HỖ TRỢ THU CHI';
   static const String appVersion = '1.0.0';
   static const String buildNumber = '1';
   static const String copyright = '© 2024 CoinNest Financial Ltd.';
