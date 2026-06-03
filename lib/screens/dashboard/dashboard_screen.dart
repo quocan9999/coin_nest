@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../providers/account_provider.dart';
+import '../../providers/ai_spending_insight_provider.dart';
+import '../../providers/budget_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../models/transaction_model.dart';
@@ -39,6 +41,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final authProv = context.read<AuthProvider>();
     final txnProv = context.read<TransactionProvider>();
     final accProv = context.read<AccountProvider>();
+    final loanProv = context.read<LoanProvider>();
+    final budgetProv = context.read<BudgetProvider>();
+    final aiProv = context.read<AiSpendingInsightProvider>();
 
     final userId = authProv.currentUserId;
 
@@ -51,7 +56,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (mounted) {
       await accProv.loadAccounts(userId);
+      await loanProv.loadLoans(userId);
+      await budgetProv.loadBudgets(userId);
+      await aiProv.loadCachedInsight(userId);
     }
+  }
+
+  Future<void> _refreshAiInsight() async {
+    final userId = context.read<AuthProvider>().currentUserId;
+
+    await context.read<AiSpendingInsightProvider>().refreshInsight(
+      userId: userId,
+      totalBalance: context.read<AccountProvider>().totalBalance,
+      transactions: context.read<TransactionProvider>().transactions,
+      loans: context.read<LoanProvider>().loans,
+      budgets: context.read<BudgetProvider>().budgets,
+    );
   }
 
   // Hàm chuyển đổi loại giao dịch sang tiếng Việt
@@ -84,6 +104,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final accounts = context.watch<AccountProvider>();
 
     final txnProv = context.watch<TransactionProvider>();
+    final aiProv = context.watch<AiSpendingInsightProvider>();
 
     final theme = Theme.of(context);
 
@@ -242,6 +263,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 const SizedBox(height: 24),
 
+                _buildAiInsightCard(context, aiProv),
+
+                const SizedBox(height: 24),
+
                 // Recent transactions
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -327,6 +352,252 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildAiInsightCard(
+    BuildContext context,
+    AiSpendingInsightProvider provider,
+  ) {
+    final theme = Theme.of(context);
+    final colors = AppTheme.colors(context);
+    final insight = provider.insight;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppTheme.spacing8),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppTheme.spacing4),
+                decoration: BoxDecoration(
+                  color: colors.transferBg,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  color: colors.transfer,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppTheme.spacing6),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Gợi ý tiết kiệm AI',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      insight == null
+                          ? 'Cập nhật khi bạn muốn xem cảnh báo chi tiêu tháng này.'
+                          : 'Cập nhật lần cuối ${Formatters.dateTime(insight.generatedAt)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: provider.isLoading ? null : _refreshAiInsight,
+                child: provider.isLoading
+                    ? const SizedBox(
+                        width: AppTheme.spacing8,
+                        height: AppTheme.spacing8,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Cập nhật'),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spacing8),
+          if (provider.errorMessage != null)
+            _buildAiStateBox(
+              context,
+              provider.errorMessage!,
+              Icons.wifi_off_rounded,
+              colors.warning,
+              colors.warningBg,
+            )
+          else if (insight == null)
+            _buildAiStateBox(
+              context,
+              'Chưa có gợi ý. CoinNest chỉ gửi tóm tắt tháng, không gửi toàn bộ lịch sử giao dịch.',
+              Icons.lightbulb_outline_rounded,
+              colors.textSecondary,
+              theme.colorScheme.surfaceContainerLow,
+            )
+          else ...[
+            _buildSeverityChip(context, insight.severity),
+            const SizedBox(height: AppTheme.spacing6),
+            Text(
+              _plainText(insight.title),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacing4),
+            Text(
+              _plainText(insight.summary),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (insight.alerts.isNotEmpty) ...[
+              const SizedBox(height: AppTheme.spacing8),
+              _buildAiList(context, 'Cảnh báo', insight.alerts, colors.warning),
+            ],
+            if (insight.savingTips.isNotEmpty) ...[
+              const SizedBox(height: AppTheme.spacing8),
+              _buildAiList(
+                context,
+                'Gợi ý tiết kiệm',
+                insight.savingTips,
+                colors.income,
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiStateBox(
+    BuildContext context,
+    String message,
+    IconData icon,
+    Color iconColor,
+    Color backgroundColor,
+  ) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppTheme.spacing6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: iconColor, size: 20),
+          const SizedBox(width: AppTheme.spacing6),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeverityChip(BuildContext context, String severity) {
+    final colors = AppTheme.colors(context);
+    final normalized = severity.toLowerCase();
+    final color = normalized == 'high'
+        ? colors.expense
+        : normalized == 'medium'
+        ? colors.warning
+        : colors.income;
+    final background = normalized == 'high'
+        ? colors.expenseBg
+        : normalized == 'medium'
+        ? colors.warningBg
+        : colors.incomeBg;
+    final label = normalized == 'high'
+        ? 'Rủi ro cao'
+        : normalized == 'medium'
+        ? 'Cần chú ý'
+        : 'Ổn định';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.spacing6,
+        vertical: AppTheme.spacing2,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAiList(
+    BuildContext context,
+    String title,
+    List<String> items,
+    Color iconColor,
+  ) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacing4),
+        ...items
+            .take(3)
+            .map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: AppTheme.spacing4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: iconColor,
+                      size: 16,
+                    ),
+                    const SizedBox(width: AppTheme.spacing4),
+                    Expanded(
+                      child: Text(
+                        _plainText(item),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+      ],
+    );
+  }
+
+  String _plainText(String value) {
+    return value
+        .replaceAll('```', '')
+        .replaceAll(RegExp(r'<[^>]+>'), '')
+        .trim();
   }
 
   Widget _buildSummaryChip(
