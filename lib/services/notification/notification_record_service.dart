@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../database/account_dao.dart';
 import '../../database/category_dao.dart';
 import '../../database/transaction_dao.dart';
+import '../../providers/backup_alert_provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/notification_parser.dart';
 
@@ -177,6 +178,7 @@ class NotificationRecordService {
     }
 
     await transactionDao.insertWithBalance(draftTransaction);
+    await BackupAlertProvider.markUserChanged(userId, source: 'transaction');
     await _rememberSignature(prefs, signature);
   }
 

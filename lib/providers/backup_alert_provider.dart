@@ -2,6 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BackupAlertProvider extends ChangeNotifier {
+  BackupAlertProvider() {
+    _instances.add(this);
+  }
+
+  static final Set<BackupAlertProvider> _instances = {};
+
   int _currentUserId = 0;
   int _pendingCount = 0;
   int _pendingTransactionCount = 0;
@@ -38,6 +44,10 @@ class BackupAlertProvider extends ChangeNotifier {
   }
 
   Future<void> markChanged(int userId, {String? source}) async {
+    await markUserChanged(userId, source: source);
+  }
+
+  static Future<void> markUserChanged(int userId, {String? source}) async {
     if (userId == 0) return;
 
     final prefs = await SharedPreferences.getInstance();
@@ -51,12 +61,14 @@ class BackupAlertProvider extends ChangeNotifier {
       await prefs.setInt(_transactionKeyFor(userId), nextTransactionCount);
     }
 
-    if (_currentUserId == userId || !_isLoaded) {
-      _currentUserId = userId;
-      _pendingCount = nextCount;
-      _pendingTransactionCount = nextTransactionCount;
-      _isLoaded = true;
-      notifyListeners();
+    for (final instance in _instances) {
+      if (instance._currentUserId == userId || !instance._isLoaded) {
+        instance._currentUserId = userId;
+        instance._pendingCount = nextCount;
+        instance._pendingTransactionCount = nextTransactionCount;
+        instance._isLoaded = true;
+        instance.notifyListeners();
+      }
     }
   }
 
@@ -76,7 +88,13 @@ class BackupAlertProvider extends ChangeNotifier {
     }
   }
 
-  String _keyFor(int userId) => 'backup_pending_changes_$userId';
-  String _transactionKeyFor(int userId) =>
+  static String _keyFor(int userId) => 'backup_pending_changes_$userId';
+  static String _transactionKeyFor(int userId) =>
       'backup_pending_transaction_changes_$userId';
+
+  @override
+  void dispose() {
+    _instances.remove(this);
+    super.dispose();
+  }
 }
