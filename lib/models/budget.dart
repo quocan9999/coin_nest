@@ -1,12 +1,14 @@
-/// Represents a spending budget / limit (hạn mức chi).
+/// Represents a spending budget / limit.
 class Budget {
   final int? id;
   final int userId;
   final int? categoryId;
-  final int? accountId; // ĐÃ THÊM: Lưu ID tài khoản
+  final int? accountId;
   final String name;
   final double amount;
-  final String period; // daily, weekly, monthly, yearly, custom
+
+  /// none, daily, weekly, monthly, quarterly, yearly, custom.
+  final String period;
   final DateTime startDate;
   final DateTime? endDate;
   final bool isActive;
@@ -17,13 +19,13 @@ class Budget {
   final double? spentAmount;
   final String? categoryName;
   final String? categoryIconName;
-  final String? accountName; // ĐÃ THÊM: Lưu tên tài khoản khi query
+  final String? accountName;
 
   const Budget({
     this.id,
     required this.userId,
     this.categoryId,
-    this.accountId, // ĐÃ THÊM
+    this.accountId,
     required this.name,
     required this.amount,
     this.period = 'monthly',
@@ -35,7 +37,7 @@ class Budget {
     this.spentAmount,
     this.categoryName,
     this.categoryIconName,
-    this.accountName, // ĐÃ THÊM
+    this.accountName,
   });
 
   factory Budget.fromMap(Map<String, dynamic> map) {
@@ -43,7 +45,7 @@ class Budget {
       id: map['id'] as int?,
       userId: map['user_id'] as int,
       categoryId: map['category_id'] as int?,
-      accountId: map['account_id'] as int?, // ĐÃ THÊM: Lấy dữ liệu từ DB
+      accountId: map['account_id'] as int?,
       name: map['name'] as String,
       amount: (map['amount'] as num).toDouble(),
       period: map['period'] as String? ?? 'monthly',
@@ -57,7 +59,7 @@ class Budget {
       spentAmount: (map['spent_amount'] as num?)?.toDouble(),
       categoryName: map['category_name'] as String?,
       categoryIconName: map['category_icon_name'] as String?,
-      accountName: map['account_name'] as String?, // ĐÃ THÊM
+      accountName: map['account_name'] as String?,
     );
   }
 
@@ -66,7 +68,7 @@ class Budget {
       if (id != null) 'id': id,
       'user_id': userId,
       'category_id': categoryId,
-      'account_id': accountId, // ĐÃ THÊM: Đẩy dữ liệu vào DB
+      'account_id': accountId,
       'name': name,
       'amount': amount,
       'period': period,
@@ -82,7 +84,7 @@ class Budget {
     int? id,
     int? userId,
     int? categoryId,
-    int? accountId, // ĐÃ THÊM
+    int? accountId,
     String? name,
     double? amount,
     String? period,
@@ -97,7 +99,7 @@ class Budget {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       categoryId: categoryId ?? this.categoryId,
-      accountId: accountId ?? this.accountId, // ĐÃ THÊM
+      accountId: accountId ?? this.accountId,
       name: name ?? this.name,
       amount: amount ?? this.amount,
       period: period ?? this.period,
@@ -113,7 +115,7 @@ class Budget {
   /// Remaining budget.
   double get remainingAmount => amount - (spentAmount ?? 0);
 
-  /// Usage percentage (0–100+). Can exceed 100 if overspent.
+  /// Usage percentage (0-100+). Can exceed 100 if overspent.
   double get usagePercent {
     if (amount == 0) return 0;
     return ((spentAmount ?? 0) / amount * 100);

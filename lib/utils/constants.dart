@@ -14,7 +14,7 @@ class AppConstants {
 
   // ─── Database ──────────────────────────────────────────────────
   static const String dbName = 'coinnest.db';
-  static const int dbVersion = 4;
+  static const int dbVersion = 5;
 
   // ─── Security ──────────────────────────────────────────────────
   /// Minimum password length enforced at input validation.
@@ -111,9 +111,11 @@ class AppConstants {
 
   // ─── Budget Periods ────────────────────────────────────────────
   static const Map<String, String> budgetPeriodLabels = {
+    'none': 'Không lặp lại',
     'daily': 'Hàng ngày',
     'weekly': 'Hàng tuần',
     'monthly': 'Hàng tháng',
+    'quarterly': 'Hàng quý',
     'yearly': 'Hàng năm',
     'custom': 'Tùy chọn',
   };
