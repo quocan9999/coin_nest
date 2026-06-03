@@ -30,3 +30,40 @@ Content-Type: application/json
 }
 
 ###
+
+POST {{featureAI_API_HostAddress}}/api/ai/financial-assistant
+Accept: application/json
+Content-Type: application/json
+
+{
+  "userId": "1",
+  "question": "Hãy viết một website HTML cho tôi",
+  "period": "2026-06",
+  "reportSummary": {
+    "totalIncome": 12000000,
+    "totalExpense": 4500000,
+    "netBalance": 7500000,
+    "accountBalance": 18000000
+  },
+  "topExpenseCategories": [
+    {
+      "name": "Ăn uống",
+      "amount": 2500000,
+      "percent": 55.5
+    }
+  ],
+  "topIncomeCategories": [],
+  "debtSummary": {
+    "borrowedRemaining": 3000000,
+    "lentRemaining": 1000000,
+    "overdueCount": 0
+  },
+  "budgetSummary": {
+    "activeCount": 2,
+    "exceededCount": 1,
+    "highestUsagePercent": 112
+  },
+  "recentMessages": []
+}
+
+###
