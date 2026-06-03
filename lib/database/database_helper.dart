@@ -154,6 +154,54 @@ class DatabaseHelper {
     if (oldVersion < 4) {
       await _seedDefaultCategoriesForExistingUsers(db);
     }
+    if (oldVersion < 5) {
+      await _rebuildBudgetsForExtendedPeriods(db);
+    }
+  }
+
+  Future<void> _rebuildBudgetsForExtendedPeriods(DatabaseExecutor db) async {
+    final existing = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'budgets'",
+    );
+    if (existing.isEmpty) return;
+
+    await db.execute('ALTER TABLE budgets RENAME TO budgets_old_v5');
+    await _createBudgetsTable(db);
+    await db.execute('''
+      INSERT INTO budgets (
+        id,
+        user_id,
+        category_id,
+        account_id,
+        name,
+        amount,
+        period,
+        start_date,
+        end_date,
+        is_active,
+        created_at,
+        updated_at
+      )
+      SELECT
+        id,
+        user_id,
+        category_id,
+        account_id,
+        name,
+        amount,
+        CASE
+          WHEN period IN ('none','daily','weekly','monthly','quarterly','yearly','custom')
+            THEN period
+          ELSE 'monthly'
+        END,
+        start_date,
+        end_date,
+        is_active,
+        created_at,
+        updated_at
+      FROM budgets_old_v5
+    ''');
+    await db.execute('DROP TABLE budgets_old_v5');
   }
 
   // ignore: unused_element
@@ -298,25 +346,7 @@ class DatabaseHelper {
       )
     ''');
 
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS budgets (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        category_id INTEGER,
-        account_id INTEGER,
-        name TEXT NOT NULL,
-        amount REAL NOT NULL CHECK(amount > 0),
-        period TEXT NOT NULL CHECK(period IN ('daily','weekly','monthly','yearly','custom')),
-        start_date TEXT NOT NULL,
-        end_date TEXT,
-        is_active INTEGER NOT NULL DEFAULT 1,
-        created_at TEXT NOT NULL DEFAULT (datetime('now')),
-        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
-        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL
-      )
-    ''');
+    await _createBudgetsTable(db);
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS feedbacks (
@@ -328,6 +358,28 @@ class DatabaseHelper {
         rating INTEGER CHECK(rating >= 1 AND rating <= 5),
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+  }
+
+  Future<void> _createBudgetsTable(DatabaseExecutor db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS budgets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        category_id INTEGER,
+        account_id INTEGER,
+        name TEXT NOT NULL,
+        amount REAL NOT NULL CHECK(amount > 0),
+        period TEXT NOT NULL CHECK(period IN ('none','daily','weekly','monthly','quarterly','yearly','custom')),
+        start_date TEXT NOT NULL,
+        end_date TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+        FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL
       )
     ''');
   }

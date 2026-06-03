@@ -5,6 +5,7 @@ import '../../models/budget.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/budget_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/budget_period.dart';
 import '../../utils/category_icons.dart';
 import '../../utils/formatters.dart';
 import 'add_edit_budget_screen.dart';
@@ -45,42 +46,6 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
     return '$day/$month';
-  }
-
-  DateTime _cycleStart(Budget budget, DateTime today) {
-    switch (budget.period) {
-      case 'daily':
-        return today;
-      case 'weekly':
-        return today.subtract(Duration(days: today.weekday - DateTime.monday));
-      case 'monthly':
-        return DateTime(today.year, today.month);
-      case 'yearly':
-        return DateTime(today.year);
-      default:
-        return DateTime(
-          budget.startDate.year,
-          budget.startDate.month,
-          budget.startDate.day,
-        );
-    }
-  }
-
-  DateTime? _cycleEnd(Budget budget, DateTime cycleStart, DateTime today) {
-    switch (budget.period) {
-      case 'daily':
-        return today;
-      case 'weekly':
-        return cycleStart.add(const Duration(days: 6));
-      case 'monthly':
-        return DateTime(today.year, today.month + 1, 0);
-      case 'yearly':
-        return DateTime(today.year, 12, 31);
-      default:
-        final endDate = budget.endDate;
-        if (endDate == null) return null;
-        return DateTime(endDate.year, endDate.month, endDate.day);
-    }
   }
 
   double _timePercent(DateTime start, DateTime end, DateTime today) {
@@ -176,8 +141,14 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
   ) {
     final today = DateTime.now();
     final normalizedToday = DateTime(today.year, today.month, today.day);
-    final cycleStart = _cycleStart(budget, normalizedToday);
-    final cycleEnd = _cycleEnd(budget, cycleStart, normalizedToday);
+    final cycleRange = BudgetPeriod.currentRange(
+      period: budget.period,
+      startDate: budget.startDate,
+      endDate: budget.endDate,
+      now: normalizedToday,
+    );
+    final cycleStart = cycleRange.start;
+    final cycleEnd = cycleRange.end;
     final hasCycleEnd = cycleEnd != null;
     final timePercent = hasCycleEnd
         ? _timePercent(cycleStart, cycleEnd, normalizedToday)
@@ -186,8 +157,10 @@ class _BudgetListScreenState extends State<BudgetListScreen> {
         ? _remainingDays(cycleEnd, normalizedToday, budget.period)
         : 0;
     final subtitleParts = [
-      if (budget.categoryName != null) budget.categoryName!,
-      if (budget.accountName != null) budget.accountName!,
+      budget.categoryName ?? 'Tất cả hạng mục',
+      budget.accountId == null
+          ? 'Tất cả tài khoản'
+          : budget.accountName ?? 'Tài khoản đã xóa',
     ];
 
     return GestureDetector(
