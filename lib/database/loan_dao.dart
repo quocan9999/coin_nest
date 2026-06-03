@@ -7,7 +7,10 @@ import 'database_helper.dart';
 
 /// Data access object for the [Loan] table.
 class LoanDao {
+  LoanDao({DateTime Function()? now}) : _now = now ?? DateTime.now;
+
   final _dbHelper = DatabaseHelper.instance;
+  final DateTime Function() _now;
 
   Future<int> insert(Loan loan) async {
     final db = await _dbHelper.database;
@@ -109,7 +112,7 @@ class LoanDao {
 
     await db.transaction((txn) async {
       loanId = await txn.insert('loans', loan.toMap());
-      final now = DateTime.now();
+      final now = _now();
       final initialTransaction = TransactionModel(
         userId: loan.userId,
         accountId: loan.accountId!,
@@ -118,6 +121,7 @@ class LoanDao {
         amount: loan.amount,
         note: loan.note,
         date: loan.startDate,
+        time: _formatTime(now),
         loanId: loanId,
         createdAt: now,
         updatedAt: now,
@@ -188,7 +192,7 @@ class LoanDao {
         throw ArgumentError('Ngày bắt đầu vay không được sau ngày thanh toán');
       }
 
-      final now = DateTime.now();
+      final now = _now();
       final remainingAmount = loan.amount - totalPaid;
       final initialTransactionId = await _resolveInitialTransactionId(
         txn,
@@ -209,7 +213,7 @@ class LoanDao {
         amount: loan.amount,
         note: loan.note,
         date: loan.startDate,
-        time: existingInitialTransaction?.time,
+        time: existingInitialTransaction?.time ?? _formatTime(now),
         loanId: loan.id,
         createdAt: existingInitialTransaction?.createdAt ?? now,
         updatedAt: now,
@@ -250,7 +254,7 @@ class LoanDao {
           amount: payment.amount,
           note: payment.note,
           date: payment.paymentDate,
-          time: existingPaymentTxn.time,
+          time: existingPaymentTxn.time ?? _formatTime(now),
           loanId: loan.id,
           createdAt: existingPaymentTxn.createdAt,
           updatedAt: now,
@@ -301,7 +305,8 @@ class LoanDao {
       if (amount <= 0) {
         throw ArgumentError('Payment amount must be greater than 0');
       }
-      if (paymentDate.isAfter(DateTime.now())) {
+      final now = _now();
+      if (paymentDate.isAfter(now)) {
         throw ArgumentError('Payment date cannot be in the future');
       }
 
@@ -326,7 +331,6 @@ class LoanDao {
         throw ArgumentError('Payment date cannot be before loan start date');
       }
 
-      final now = DateTime.now();
       final paymentTransaction = TransactionModel(
         userId: userId,
         accountId: accountId,
@@ -335,6 +339,7 @@ class LoanDao {
         amount: amount,
         note: note,
         date: paymentDate,
+        time: _formatTime(now),
         loanId: loanId,
         createdAt: now,
         updatedAt: now,
@@ -562,7 +567,7 @@ class LoanDao {
   ) async {
     await db.rawUpdate(
       'UPDATE accounts SET balance = balance + ?, updated_at = ? WHERE id = ?',
-      [delta, DateTime.now().toIso8601String(), accountId],
+      [delta, _now().toIso8601String(), accountId],
     );
   }
 
@@ -580,7 +585,8 @@ class LoanDao {
       if (amount <= 0) {
         throw ArgumentError('Payment amount must be greater than 0');
       }
-      if (paymentDate.isAfter(DateTime.now())) {
+      final now = _now();
+      if (paymentDate.isAfter(now)) {
         throw ArgumentError('Payment date cannot be in the future');
       }
 
@@ -605,7 +611,7 @@ class LoanDao {
         throw ArgumentError('Payment date cannot be before loan start date');
       }
 
-      final nowIso = DateTime.now().toIso8601String();
+      final nowIso = now.toIso8601String();
       await txn.insert('loan_payments', {
         'loan_id': loanId,
         'user_id': userId,
@@ -703,5 +709,11 @@ class LoanDao {
       'borrowed': (borrowed.first['total'] as num).toDouble(),
       'lent': (lent.first['total'] as num).toDouble(),
     };
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 }
