@@ -1,0 +1,37 @@
+using System.Text.Json.Serialization;
+
+namespace featureAI_API.Models;
+
+public sealed record SpendingInsightRequest(
+    [property: JsonPropertyName("userId")] string UserId,
+    [property: JsonPropertyName("period")] string Period,
+    [property: JsonPropertyName("totalIncome")] decimal TotalIncome,
+    [property: JsonPropertyName("totalExpense")] decimal TotalExpense,
+    [property: JsonPropertyName("balance")] decimal Balance,
+    [property: JsonPropertyName("topExpenseCategories")] IReadOnlyList<CategoryExpenseSummary> TopExpenseCategories,
+    [property: JsonPropertyName("debtSummary")] DebtSummary? DebtSummary,
+    [property: JsonPropertyName("budgetSummary")] BudgetSummary? BudgetSummary);
+
+public sealed record CategoryExpenseSummary(
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("amount")] decimal Amount,
+    [property: JsonPropertyName("percent")] decimal Percent);
+
+public sealed record DebtSummary(
+    [property: JsonPropertyName("borrowedRemaining")] decimal BorrowedRemaining,
+    [property: JsonPropertyName("lentRemaining")] decimal LentRemaining,
+    [property: JsonPropertyName("overdueCount")] int OverdueCount);
+
+public sealed record BudgetSummary(
+    [property: JsonPropertyName("activeCount")] int ActiveCount,
+    [property: JsonPropertyName("exceededCount")] int ExceededCount,
+    [property: JsonPropertyName("highestUsagePercent")] decimal HighestUsagePercent);
+
+public sealed record SpendingInsightResponse(
+    [property: JsonPropertyName("title")] string Title,
+    [property: JsonPropertyName("summary")] string Summary,
+    [property: JsonPropertyName("severity")] string Severity,
+    [property: JsonPropertyName("alerts")] IReadOnlyList<string> Alerts,
+    [property: JsonPropertyName("savingTips")] IReadOnlyList<string> SavingTips,
+    [property: JsonPropertyName("model")] string Model,
+    [property: JsonPropertyName("generatedAt")] DateTimeOffset GeneratedAt);

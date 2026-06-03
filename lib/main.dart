@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'providers/auth_provider.dart';
+import 'providers/ai_spending_insight_provider.dart';
 import 'providers/backup_alert_provider.dart';
 import 'providers/backup_provider.dart';
 import 'providers/account_provider.dart';
@@ -128,6 +129,7 @@ void main() async {
                 ..setBackupAlertProvider(backupAlertProvider),
         ),
         ChangeNotifierProvider(create: (_) => ReportProvider()),
+        ChangeNotifierProvider(create: (_) => AiSpendingInsightProvider()),
       ],
       child: const CoinNestApp(),
     ),
