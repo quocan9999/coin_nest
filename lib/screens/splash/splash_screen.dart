@@ -138,7 +138,7 @@ class _SplashScreenState extends State<SplashScreen>
               builder: (context, child) =>
                   Opacity(opacity: _fadeIn.value, child: child),
               child: Text(
-                'SECURE BANKING ENVIRONMENT',
+                'HÃY ĐỂ CHÚNG TÔI GIÚP BẠN QUẢN LÝ CHI TIÊU',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: AppTheme.outline,
