@@ -47,6 +47,31 @@ public sealed class AiController : ControllerBase
         }
     }
 
+    [HttpPost("financial-assistant")]
+    public async Task<ActionResult<FinancialAssistantResponse>> CreateFinancialAssistantAnswer(
+        [FromBody] FinancialAssistantRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var answer = await _openRouterService.GenerateFinancialAssistantAsync(request, cancellationToken);
+            return Ok(answer);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "AI financial assistant failed");
+            return StatusCode(StatusCodes.Status502BadGateway, new
+            {
+                message = "Không thể tạo câu trả lời tài chính lúc này. Vui lòng thử lại sau.",
+                detail = _environment.IsDevelopment() ? BuildDebugDetail(ex) : null
+            });
+        }
+    }
+
     private static string BuildDebugDetail(Exception exception)
     {
         var messages = new List<string>();
