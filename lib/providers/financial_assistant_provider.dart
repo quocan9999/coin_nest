@@ -124,9 +124,10 @@ class FinancialAssistantProvider extends ChangeNotifier {
           : response.suggestedQuestions;
       await _saveHistory(userId);
     } catch (_) {
-      _errorMessage = isConfigured
+      final configured = await _service.isConfiguredAsync();
+      _errorMessage = configured
           ? 'Không kết nối được trợ lý AI. Vui lòng thử lại sau.'
-          : 'Chưa cấu hình AI_API_BASE_URL cho API AI.';
+          : 'Chưa cấu hình API AI trong Cài đặt chung.';
       _messages = _messages.takeLast(_maxStoredMessages);
       await _saveHistory(userId);
     } finally {
