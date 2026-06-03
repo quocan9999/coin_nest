@@ -87,6 +87,18 @@ fix_warnings.py
 .agents/
 .vscode/
 
+# Local AI/code graph tooling
+.codegraph/
+
+# Local screenshots generated during Flutter UI checks
+flutter_*.png
+
+# .NET / ASP.NET Core local artifacts
+**/bin/
+**/obj/
+**/.vs/
+*.csproj.user
+
 # Firebase sensitive configs
 /android/app/google-services.json
 /lib/firebase_options.dart
