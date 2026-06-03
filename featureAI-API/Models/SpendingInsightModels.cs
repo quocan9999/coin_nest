@@ -35,3 +35,30 @@ public sealed record SpendingInsightResponse(
     [property: JsonPropertyName("savingTips")] IReadOnlyList<string> SavingTips,
     [property: JsonPropertyName("model")] string Model,
     [property: JsonPropertyName("generatedAt")] DateTimeOffset GeneratedAt);
+
+public sealed record FinancialAssistantRequest(
+    [property: JsonPropertyName("userId")] string UserId,
+    [property: JsonPropertyName("question")] string Question,
+    [property: JsonPropertyName("period")] string Period,
+    [property: JsonPropertyName("reportSummary")] AssistantReportSummary ReportSummary,
+    [property: JsonPropertyName("topExpenseCategories")] IReadOnlyList<CategoryExpenseSummary> TopExpenseCategories,
+    [property: JsonPropertyName("topIncomeCategories")] IReadOnlyList<CategoryExpenseSummary> TopIncomeCategories,
+    [property: JsonPropertyName("debtSummary")] DebtSummary? DebtSummary,
+    [property: JsonPropertyName("budgetSummary")] BudgetSummary? BudgetSummary,
+    [property: JsonPropertyName("recentMessages")] IReadOnlyList<AssistantChatMessage>? RecentMessages);
+
+public sealed record AssistantReportSummary(
+    [property: JsonPropertyName("totalIncome")] decimal TotalIncome,
+    [property: JsonPropertyName("totalExpense")] decimal TotalExpense,
+    [property: JsonPropertyName("netBalance")] decimal NetBalance,
+    [property: JsonPropertyName("accountBalance")] decimal AccountBalance);
+
+public sealed record AssistantChatMessage(
+    [property: JsonPropertyName("role")] string Role,
+    [property: JsonPropertyName("content")] string Content);
+
+public sealed record FinancialAssistantResponse(
+    [property: JsonPropertyName("answer")] string Answer,
+    [property: JsonPropertyName("suggestedQuestions")] IReadOnlyList<string> SuggestedQuestions,
+    [property: JsonPropertyName("model")] string Model,
+    [property: JsonPropertyName("generatedAt")] DateTimeOffset GeneratedAt);

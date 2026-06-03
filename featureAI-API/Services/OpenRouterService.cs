@@ -12,6 +12,10 @@ public interface IOpenRouterService
     Task<SpendingInsightResponse> GenerateSpendingInsightAsync(
         SpendingInsightRequest request,
         CancellationToken cancellationToken);
+
+    Task<FinancialAssistantResponse> GenerateFinancialAssistantAsync(
+        FinancialAssistantRequest request,
+        CancellationToken cancellationToken);
 }
 
 public sealed class OpenRouterService : IOpenRouterService
@@ -68,6 +72,44 @@ public sealed class OpenRouterService : IOpenRouterService
         throw new InvalidOperationException("AI spending insight could not be generated.", lastError);
     }
 
+    public async Task<FinancialAssistantResponse> GenerateFinancialAssistantAsync(
+        FinancialAssistantRequest request,
+        CancellationToken cancellationToken)
+    {
+        ValidateAssistantRequest(request);
+
+        if (IsLikelyOutOfScopeQuestion(request.Question))
+        {
+            return BuildSafeAssistantRefusal();
+        }
+
+        Exception? lastError = null;
+
+        var attempts = BuildProviderAttempts();
+        for (var attempt = 0; attempt < attempts.Count; attempt++)
+        {
+            var providerModel = attempts[attempt];
+            try
+            {
+                var response = await CallProviderForAssistantAsync(providerModel, request, cancellationToken);
+                MarkModelSuccessful(providerModel.Provider, providerModel.Model);
+                return response;
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException or JsonException)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "AI assistant provider {Provider} model {Model} failed on attempt {Attempt}",
+                    providerModel.Provider,
+                    providerModel.Model,
+                    attempt + 1);
+                lastError = ex;
+            }
+        }
+
+        throw new InvalidOperationException("AI financial assistant could not be generated.", lastError);
+    }
+
     private Task<SpendingInsightResponse> CallProviderAsync(
         ProviderModel providerModel,
         SpendingInsightRequest request,
@@ -94,6 +136,46 @@ public sealed class OpenRouterService : IOpenRouterService
                 }),
             "Gemini" => CallGeminiAsync(providerModel, request, cancellationToken),
             "OpenRouter" => CallOpenAiCompatibleAsync(
+                providerModel,
+                _configuration["OpenRouter:ApiKey"],
+                new Uri("https://openrouter.ai/api/v1/chat/completions"),
+                request,
+                cancellationToken,
+                requestMessage =>
+                {
+                    requestMessage.Headers.TryAddWithoutValidation("HTTP-Referer", "https://coinnest.local");
+                    requestMessage.Headers.TryAddWithoutValidation("X-Title", "CoinNest");
+                }),
+            _ => throw new InvalidOperationException($"Unsupported AI provider: {providerModel.Provider}")
+        };
+    }
+
+    private Task<FinancialAssistantResponse> CallProviderForAssistantAsync(
+        ProviderModel providerModel,
+        FinancialAssistantRequest request,
+        CancellationToken cancellationToken)
+    {
+        return providerModel.Provider switch
+        {
+            "Groq" => CallOpenAiCompatibleAssistantAsync(
+                providerModel,
+                _configuration["Groq:ApiKey"],
+                new Uri("https://api.groq.com/openai/v1/chat/completions"),
+                request,
+                cancellationToken),
+            "GitHub Models" => CallOpenAiCompatibleAssistantAsync(
+                providerModel,
+                _configuration["GitHubModels:Token"],
+                new Uri("https://models.github.ai/inference/chat/completions"),
+                request,
+                cancellationToken,
+                requestMessage =>
+                {
+                    requestMessage.Headers.TryAddWithoutValidation("Accept", "application/vnd.github+json");
+                    requestMessage.Headers.TryAddWithoutValidation("X-GitHub-Api-Version", "2026-03-10");
+                }),
+            "Gemini" => CallGeminiAssistantAsync(providerModel, request, cancellationToken),
+            "OpenRouter" => CallOpenAiCompatibleAssistantAsync(
                 providerModel,
                 _configuration["OpenRouter:ApiKey"],
                 new Uri("https://openrouter.ai/api/v1/chat/completions"),
@@ -248,6 +330,124 @@ public sealed class OpenRouterService : IOpenRouterService
         return NormalizeInsight(insight, $"Gemini: {providerModel.Model}");
     }
 
+    private async Task<FinancialAssistantResponse> CallOpenAiCompatibleAssistantAsync(
+        ProviderModel providerModel,
+        string? apiKey,
+        Uri endpoint,
+        FinancialAssistantRequest request,
+        CancellationToken cancellationToken,
+        Action<HttpRequestMessage>? configureRequest = null)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            throw new InvalidOperationException($"{providerModel.Provider} API key is not configured.");
+        }
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "chat/completions");
+        httpRequest.RequestUri = endpoint;
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        configureRequest?.Invoke(httpRequest);
+
+        var promptPayload = JsonSerializer.Serialize(request, JsonOptions);
+        var payload = new
+        {
+            model = providerModel.Model,
+            messages = BuildAssistantChatMessages(promptPayload),
+            temperature = 0.25,
+            max_tokens = 900
+        };
+
+        httpRequest.Content = new StringContent(
+            JsonSerializer.Serialize(payload, JsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException(
+                $"{providerModel.Provider} model '{providerModel.Model}' returned {(int)response.StatusCode}: {TrimForLog(responseJson)}");
+        }
+
+        using var document = JsonDocument.Parse(responseJson);
+        var root = document.RootElement;
+        var actualModel = root.TryGetProperty("model", out var modelElement)
+            ? modelElement.GetString() ?? providerModel.Model
+            : providerModel.Model;
+        var content = root
+            .GetProperty("choices")[0]
+            .GetProperty("message")
+            .GetProperty("content")
+            .GetString();
+
+        return NormalizeAssistantResponse(content, $"{providerModel.Provider}: {actualModel}");
+    }
+
+    private async Task<FinancialAssistantResponse> CallGeminiAssistantAsync(
+        ProviderModel providerModel,
+        FinancialAssistantRequest request,
+        CancellationToken cancellationToken)
+    {
+        var apiKey = _configuration["Gemini:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            throw new InvalidOperationException("Gemini API key is not configured.");
+        }
+
+        var endpoint = new Uri(
+            $"https://generativelanguage.googleapis.com/v1beta/models/{providerModel.Model}:generateContent?key={Uri.EscapeDataString(apiKey)}");
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint);
+        var promptPayload = JsonSerializer.Serialize(request, JsonOptions);
+        var payload = new
+        {
+            contents = new[]
+            {
+                new
+                {
+                    role = "user",
+                    parts = new[]
+                    {
+                        new
+                        {
+                            text = $"{AssistantSystemPrompt}\n\n{BuildAssistantUserPrompt(promptPayload)}"
+                        }
+                    }
+                }
+            },
+            generationConfig = new
+            {
+                temperature = 0.25,
+                maxOutputTokens = 900
+            }
+        };
+
+        httpRequest.Content = new StringContent(
+            JsonSerializer.Serialize(payload, JsonOptions),
+            Encoding.UTF8,
+            "application/json");
+
+        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException(
+                $"Gemini model '{providerModel.Model}' returned {(int)response.StatusCode}: {TrimForLog(responseJson)}");
+        }
+
+        using var document = JsonDocument.Parse(responseJson);
+        var content = document.RootElement
+            .GetProperty("candidates")[0]
+            .GetProperty("content")
+            .GetProperty("parts")[0]
+            .GetProperty("text")
+            .GetString();
+
+        return NormalizeAssistantResponse(content, $"Gemini: {providerModel.Model}");
+    }
+
     private static SpendingInsightResponse NormalizeInsight(AiContent insight, string model)
     {
         var title = string.IsNullOrWhiteSpace(insight.Title)
@@ -307,6 +507,8 @@ public sealed class OpenRouterService : IOpenRouterService
         return value.Contains("```", StringComparison.Ordinal) ||
                value.Contains("function ", StringComparison.OrdinalIgnoreCase) ||
                value.Contains("class ", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("import ", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("SELECT ", StringComparison.OrdinalIgnoreCase) ||
                value.Contains("<html", StringComparison.OrdinalIgnoreCase) ||
                value.Contains("<script", StringComparison.OrdinalIgnoreCase);
     }
@@ -324,6 +526,12 @@ public sealed class OpenRouterService : IOpenRouterService
     private static string BuildUserPrompt(string promptPayload) =>
         $"Analyze this monthly finance summary and return Vietnamese JSON only. Example shape: {{\"title\":\"...\",\"summary\":\"...\",\"severity\":\"medium\",\"alerts\":[\"...\"],\"savingTips\":[\"...\"]}}. Data: {promptPayload}";
 
+    private static string AssistantSystemPrompt =>
+        "You are CoinNest financial assistant for Vietnamese personal finance. Only answer questions about the user's CoinNest report, spending, income, budgets, accounts, debts, loans, saving, and cash-flow. Refuse coding, website, HTML, scripts, SQL, legal, medical, investing speculation, and unrelated tasks. Return exactly one JSON object, no markdown, no code fence, no prose. Required keys: answer, suggestedQuestions. answer must be natural Vietnamese, concise, and based only on the provided CoinNest summaries. suggestedQuestions must be 2 to 4 Vietnamese finance questions. Never output code, HTML, CSS, JavaScript, SQL, or step-by-step programming instructions. Format every money value as Vietnamese currency with dot thousands and the đ suffix.";
+
+    private static string BuildAssistantUserPrompt(string promptPayload) =>
+        $"Answer the user's finance question using only this CoinNest context. Return Vietnamese JSON only. Example shape: {{\"answer\":\"...\",\"suggestedQuestions\":[\"...\",\"...\"]}}. Data: {promptPayload}";
+
     private static object[] BuildChatMessages(string promptPayload)
     {
         return new object[]
@@ -339,6 +547,65 @@ public sealed class OpenRouterService : IOpenRouterService
                 content = BuildUserPrompt(promptPayload)
             }
         };
+    }
+
+    private static object[] BuildAssistantChatMessages(string promptPayload)
+    {
+        return new object[]
+        {
+            new
+            {
+                role = "system",
+                content = AssistantSystemPrompt
+            },
+            new
+            {
+                role = "user",
+                content = BuildAssistantUserPrompt(promptPayload)
+            }
+        };
+    }
+
+    private static FinancialAssistantResponse NormalizeAssistantResponse(string? content, string model)
+    {
+        if (string.IsNullOrWhiteSpace(content) ||
+            content.Contains("<script", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"AI response was outside the allowed assistant JSON format: {TrimForLog(content)}");
+        }
+
+        var jsonContent = ExtractJsonObject(content);
+        using var document = JsonDocument.Parse(jsonContent);
+        var root = document.RootElement;
+        var answer = GetString(root, "answer", "message", "reply")?.Trim();
+        var suggestions = GetStringList(root, "suggestedQuestions", "suggested_questions", "suggestions")
+            .Select(item => FormatMoneyText(item.Trim()))
+            .Where(item => item.Length > 0)
+            .Take(4)
+            .ToArray();
+
+        if (string.IsNullOrWhiteSpace(answer))
+        {
+            throw new InvalidOperationException("AI response does not contain an answer.");
+        }
+
+        answer = FormatMoneyText(answer);
+        if (LooksUnsafe(answer) || suggestions.Any(LooksUnsafe))
+        {
+            throw new InvalidOperationException("AI response contains unsupported content.");
+        }
+
+        if (suggestions.Length == 0)
+        {
+            suggestions = DefaultAssistantQuestions;
+        }
+
+        return new FinancialAssistantResponse(
+            answer,
+            suggestions,
+            model,
+            DateTimeOffset.UtcNow);
     }
 
     private static string FormatMoneyText(string value)
@@ -472,6 +739,71 @@ public sealed class OpenRouterService : IOpenRouterService
             throw new ArgumentException("Too many expense categories.");
         }
     }
+
+    private static void ValidateAssistantRequest(FinancialAssistantRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.UserId) ||
+            string.IsNullOrWhiteSpace(request.Period) ||
+            string.IsNullOrWhiteSpace(request.Question))
+        {
+            throw new ArgumentException("userId, period and question are required.");
+        }
+
+        if (request.Question.Trim().Length > 600)
+        {
+            throw new ArgumentException("Question is too long.");
+        }
+
+        if (request.TopExpenseCategories.Count > 8 || request.TopIncomeCategories.Count > 8)
+        {
+            throw new ArgumentException("Too many category summaries.");
+        }
+
+        if ((request.RecentMessages?.Count ?? 0) > 8)
+        {
+            throw new ArgumentException("Too many recent messages.");
+        }
+
+        if ((request.RecentMessages ?? Array.Empty<AssistantChatMessage>())
+            .Any(message => message.Content.Length > 800))
+        {
+            throw new ArgumentException("Recent message is too long.");
+        }
+    }
+
+    private static bool IsLikelyOutOfScopeQuestion(string question)
+    {
+        var normalized = question.ToLowerInvariant();
+        var blocked = new[]
+        {
+            "code", "html", "css", "javascript", "script", "website", "web site",
+            "sql", "python", "flutter", "dart", "api", "function", "class"
+        };
+        var finance = new[]
+        {
+            "chi", "thu", "tiết kiệm", "tài chính", "ngân sách", "vay", "nợ",
+            "tiền", "lương", "danh mục", "giao dịch", "số dư", "cash", "budget",
+            "income", "expense", "debt", "loan", "saving"
+        };
+
+        return blocked.Any(normalized.Contains) && !finance.Any(normalized.Contains);
+    }
+
+    private static FinancialAssistantResponse BuildSafeAssistantRefusal()
+    {
+        return new FinancialAssistantResponse(
+            "Mình chỉ hỗ trợ phân tích tài chính cá nhân dựa trên dữ liệu CoinNest. Bạn có thể hỏi về chi tiêu, thu nhập, ngân sách, khoản vay hoặc cách tiết kiệm trong tháng này.",
+            DefaultAssistantQuestions,
+            "guardrail",
+            DateTimeOffset.UtcNow);
+    }
+
+    private static string[] DefaultAssistantQuestions => new[]
+    {
+        "Tháng này tôi chi nhiều nhất vào đâu?",
+        "Tôi có đang chi quá nhiều không?",
+        "Tôi nên tiết kiệm ở khoản nào?"
+    };
 
     private IReadOnlyList<ProviderModel> BuildProviderAttempts()
     {
