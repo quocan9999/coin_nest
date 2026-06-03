@@ -99,6 +99,9 @@ class _FakeFinancialAssistantService implements FinancialAssistantService {
   bool get isConfigured => true;
 
   @override
+  Future<bool> isConfiguredAsync() async => true;
+
+  @override
   Future<FinancialAssistantResponse> ask(
     FinancialAssistantRequest request,
   ) async {
