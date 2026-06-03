@@ -6,6 +6,7 @@ import '../../providers/account_provider.dart';
 import '../../providers/ai_spending_insight_provider.dart';
 import '../../providers/budget_provider.dart';
 import '../../providers/loan_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../models/transaction_model.dart';
 import '../../theme/app_theme.dart';
@@ -102,6 +103,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final auth = context.watch<AuthProvider>();
 
     final accounts = context.watch<AccountProvider>();
+    final settings = context.watch<SettingsProvider>();
 
     final txnProv = context.watch<TransactionProvider>();
     final aiProv = context.watch<AiSpendingInsightProvider>();
@@ -209,7 +211,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(height: 8),
 
                       Text(
-                        Formatters.currency(accounts.totalBalance),
+                        settings.showBalance
+                            ? Formatters.currency(accounts.totalBalance)
+                            : '••••••',
 
                         style: Theme.of(context).textTheme.displaySmall
                             ?.copyWith(
