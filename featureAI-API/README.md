@@ -4,6 +4,56 @@ Backend ASP.NET Core Web API cho card **Gợi ý tiết kiệm AI** trong CoinNe
 
 API nhận tóm tắt tài chính tháng từ Flutter, gọi AI provider theo thứ tự ưu tiên, rồi trả về JSON gợi ý tiết kiệm/cảnh báo chi tiêu. Backend v1 không dùng SQL Server, không có database riêng, không lưu dữ liệu người dùng.
 
+## Trợ lý tài chính AI
+
+Feature AI hiện hỗ trợ thêm màn **Trợ lý tài chính AI** trong tab **Báo cáo**. Trong danh sách báo cáo, card này đứng đầu và nằm trên card **Tài chính hiện tại**.
+
+- Endpoint: `POST /api/ai/financial-assistant`.
+- Request gồm `userId`, `question`, `period`, `reportSummary`, `topExpenseCategories`, `topIncomeCategories`, `debtSummary`, `budgetSummary` và tối đa vài `recentMessages`.
+- Response gồm `answer`, `suggestedQuestions`, `model`, `generatedAt`.
+- Backend dùng lại hạ tầng provider/model hiện có, không có database riêng và không lưu lịch sử chat.
+- Câu hỏi ngoài phạm vi tài chính CoinNest hoặc yêu cầu code/HTML/website/script sẽ được trả lời bằng phản hồi finance-safe.
+
+Ví dụ request:
+
+```powershell
+$body = @{
+  userId = "1"
+  question = "Tháng này tôi chi nhiều nhất vào đâu?"
+  period = "2026-06"
+  reportSummary = @{
+    totalIncome = 12000000
+    totalExpense = 4500000
+    netBalance = 7500000
+    accountBalance = 18000000
+  }
+  topExpenseCategories = @(
+    @{ name = "Ăn uống"; amount = 2500000; percent = 55.5 }
+  )
+  topIncomeCategories = @()
+  debtSummary = @{
+    borrowedRemaining = 3000000
+    lentRemaining = 1000000
+    overdueCount = 0
+  }
+  budgetSummary = @{
+    activeCount = 2
+    exceededCount = 1
+    highestUsagePercent = 112
+  }
+  recentMessages = @()
+} | ConvertTo-Json -Depth 6
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://localhost:5007/api/ai/financial-assistant" `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+Flutter chỉ gửi dữ liệu tổng hợp và history ngắn, không gửi toàn bộ lịch sử giao dịch tháng, mật khẩu, token Firebase hoặc API key.
+
+
 ## Chức năng
 
 - Endpoint chính: `POST /api/ai/spending-insight`
