@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/phone_utils.dart';
 import '../../utils/validators.dart';
+import '../../widgets/register_success_dialog.dart';
 
 /// Các bước trong flow quên mật khẩu — state machine nội bộ.
 enum _ForgotStep {
@@ -382,13 +383,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => _isSubmitting = false);
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mật khẩu đã được đặt lại thành công'),
-          backgroundColor: AppTheme.secondary,
-        ),
-      );
-      Navigator.pop(context);
+      final shouldGoToLogin = await showPasswordResetSuccessDialog(context);
+      if (shouldGoToLogin && mounted) {
+        Navigator.pop(context);
+      }
     } else {
       _showErrorSnackBar(
         auth.errorMessage ?? 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.',
