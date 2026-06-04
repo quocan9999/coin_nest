@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/validators.dart';
+import '../../widgets/register_success_dialog.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
 
@@ -47,10 +48,11 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-        (route) => false,
-      );
+      await auth.logout();
+      if (!mounted) return;
+      final shouldGoToLogin = await showRegisterSuccessDialog(context);
+      if (!mounted || !shouldGoToLogin) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
