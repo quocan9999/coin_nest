@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 
 import '../../database/database_helper.dart';
 import '../../database/user_dao.dart';
@@ -15,6 +16,8 @@ class FirebaseAuthService implements AuthService {
   final UserDao _userDao;
   final DatabaseHelper _dbHelper;
   final firebase_auth.FirebaseAuth _firebaseAuth;
+  final http.Client _httpClient;
+  final String _otpApiBaseUrl;
   final StreamController<User?> _userStreamController =
       StreamController<User?>.broadcast();
 
@@ -22,9 +25,15 @@ class FirebaseAuthService implements AuthService {
     UserDao? userDao,
     DatabaseHelper? dbHelper,
     firebase_auth.FirebaseAuth? firebaseAuth,
+    http.Client? httpClient,
+    String? otpApiBaseUrl,
   }) : _userDao = userDao ?? UserDao(),
        _dbHelper = dbHelper ?? DatabaseHelper.instance,
-       _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance;
+       _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance,
+       _httpClient = httpClient ?? http.Client(),
+       _otpApiBaseUrl =
+           (otpApiBaseUrl ?? const String.fromEnvironment('AI_API_BASE_URL'))
+               .trim();
 
   @override
   Future<AuthResult> registerWithPhone({
@@ -267,29 +276,35 @@ class FirebaseAuthService implements AuthService {
       }
     }
 
-    final completer = Completer<String>();
-    await _firebaseAuth.verifyPhoneNumber(
-      phoneNumber: normalisedPhone,
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (_) {},
-      verificationFailed: (exception) {
-        if (!completer.isCompleted) {
-          completer.completeError(Exception(_mapFirebaseAuthError(exception)));
-        }
-      },
-      codeSent: (verificationId, _) {
-        if (!completer.isCompleted) {
-          completer.complete(verificationId);
-        }
-      },
-      codeAutoRetrievalTimeout: (verificationId) {
-        if (!completer.isCompleted) {
-          completer.complete(verificationId);
-        }
-      },
+    return _sendOtpViaBackend(
+      phone: normalisedPhone,
+      purpose: 'register_phone',
     );
 
-    return completer.future;
+    // Firebase PhoneAuth legacy flow:
+    // final completer = Completer<String>();
+    // await _firebaseAuth.verifyPhoneNumber(
+    //   phoneNumber: normalisedPhone,
+    //   timeout: const Duration(seconds: 60),
+    //   verificationCompleted: (_) {},
+    //   verificationFailed: (exception) {
+    //     if (!completer.isCompleted) {
+    //       completer.completeError(Exception(_mapFirebaseAuthError(exception)));
+    //     }
+    //   },
+    //   codeSent: (verificationId, _) {
+    //     if (!completer.isCompleted) {
+    //       completer.complete(verificationId);
+    //     }
+    //   },
+    //   codeAutoRetrievalTimeout: (verificationId) {
+    //     if (!completer.isCompleted) {
+    //       completer.complete(verificationId);
+    //     }
+    //   },
+    // );
+    //
+    // return completer.future;
   }
 
   @override
@@ -297,55 +312,66 @@ class FirebaseAuthService implements AuthService {
     final normalisedPhone = PhoneUtils.normaliseVnPhone(
       SecurityUtils.sanitise(phone),
     );
-    // Không kiểm tra phoneExists — luồng quên mật khẩu cần phone đã tồn tại,
-    // khác với requestPhoneOtp (register) reject phone đã đăng ký.
-    final completer = Completer<String>();
-    await _firebaseAuth.verifyPhoneNumber(
-      phoneNumber: normalisedPhone,
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (_) {},
-      verificationFailed: (exception) {
-        if (!completer.isCompleted) {
-          completer.completeError(Exception(_mapFirebaseAuthError(exception)));
-        }
-      },
-      codeSent: (verificationId, _) {
-        if (!completer.isCompleted) {
-          completer.complete(verificationId);
-        }
-      },
-      codeAutoRetrievalTimeout: (verificationId) {
-        if (!completer.isCompleted) {
-          completer.complete(verificationId);
-        }
-      },
+
+    return _sendOtpViaBackend(
+      phone: normalisedPhone,
+      purpose: 'forgot_password',
     );
 
-    return completer.future;
+    // Firebase PhoneAuth legacy flow:
+    // final completer = Completer<String>();
+    // await _firebaseAuth.verifyPhoneNumber(
+    //   phoneNumber: normalisedPhone,
+    //   timeout: const Duration(seconds: 60),
+    //   verificationCompleted: (_) {},
+    //   verificationFailed: (exception) {
+    //     if (!completer.isCompleted) {
+    //       completer.completeError(Exception(_mapFirebaseAuthError(exception)));
+    //     }
+    //   },
+    //   codeSent: (verificationId, _) {
+    //     if (!completer.isCompleted) {
+    //       completer.complete(verificationId);
+    //     }
+    //   },
+    //   codeAutoRetrievalTimeout: (verificationId) {
+    //     if (!completer.isCompleted) {
+    //       completer.complete(verificationId);
+    //     }
+    //   },
+    // );
+    //
+    // return completer.future;
   }
 
   @override
   Future<bool> confirmPhoneOtp(String verificationId, String code) async {
     try {
-      final credential = firebase_auth.PhoneAuthProvider.credential(
+      return _verifyOtpViaBackend(
         verificationId: verificationId,
-        smsCode: code,
+        otpCode: code,
       );
-      final phoneCredentialResult = await _firebaseAuth.signInWithCredential(
-        credential,
-      );
-      final phoneUser = phoneCredentialResult.user;
-      if (phoneUser == null) return false;
 
-      try {
-        await phoneUser.delete();
-      } catch (_) {
-        // Best effort cleanup of temporary phone-auth user used for OTP proof.
-      }
-
-      await _firebaseAuth.signOut();
-      return true;
-    } on firebase_auth.FirebaseAuthException {
+      // Firebase PhoneAuth legacy flow:
+      // final credential = firebase_auth.PhoneAuthProvider.credential(
+      //   verificationId: verificationId,
+      //   smsCode: code,
+      // );
+      // final phoneCredentialResult = await _firebaseAuth.signInWithCredential(
+      //   credential,
+      // );
+      // final phoneUser = phoneCredentialResult.user;
+      // if (phoneUser == null) return false;
+      //
+      // try {
+      //   await phoneUser.delete();
+      // } catch (_) {
+      //   // Best effort cleanup of temporary phone-auth user used for OTP proof.
+      // }
+      //
+      // await _firebaseAuth.signOut();
+      // return true;
+    } catch (_) {
       return false;
     }
   }
@@ -356,15 +382,21 @@ class FirebaseAuthService implements AuthService {
     String code,
   ) async {
     try {
-      final credential = firebase_auth.PhoneAuthProvider.credential(
+      return _verifyOtpViaBackend(
         verificationId: verificationId,
-        smsCode: code,
+        otpCode: code,
       );
-      final phoneCredentialResult = await _firebaseAuth.signInWithCredential(
-        credential,
-      );
-      return phoneCredentialResult.user?.phoneNumber != null;
-    } on firebase_auth.FirebaseAuthException {
+
+      // Firebase PhoneAuth legacy flow:
+      // final credential = firebase_auth.PhoneAuthProvider.credential(
+      //   verificationId: verificationId,
+      //   smsCode: code,
+      // );
+      // final phoneCredentialResult = await _firebaseAuth.signInWithCredential(
+      //   credential,
+      // );
+      // return phoneCredentialResult.user?.phoneNumber != null;
+    } catch (_) {
       return false;
     }
   }
@@ -432,27 +464,90 @@ class FirebaseAuthService implements AuthService {
     required String otpCode,
     required String newPassword,
   }) async {
-    // Bước 1: Sign-in tạm bằng PhoneAuthCredential để Firebase tạo phiên
-    // có phone_number claim trong token — Cloud Function sẽ đọc claim này.
-    if (_firebaseAuth.currentUser?.phoneNumber == null) {
-      final credential = firebase_auth.PhoneAuthProvider.credential(
-        verificationId: verificationId,
-        smsCode: otpCode,
-      );
-      await _firebaseAuth.signInWithCredential(credential);
+    await _postOtpBackend('/api/auth/reset-password-by-phone', {
+      'verificationId': verificationId,
+      'otpCode': otpCode,
+      'newPassword': newPassword,
+    });
+
+    // Firebase PhoneAuth legacy flow:
+    // if (_firebaseAuth.currentUser?.phoneNumber == null) {
+    //   final credential = firebase_auth.PhoneAuthProvider.credential(
+    //     verificationId: verificationId,
+    //     smsCode: otpCode,
+    //   );
+    //   await _firebaseAuth.signInWithCredential(credential);
+    // }
+    //
+    // try {
+    //   final callable = FirebaseFunctions.instance.httpsCallable(
+    //     'resetPasswordByPhone',
+    //   );
+    //   await callable.call<dynamic>({'newPassword': newPassword});
+    // } finally {
+    //   await _firebaseAuth.signOut();
+    // }
+  }
+
+  Future<String> _sendOtpViaBackend({
+    required String phone,
+    required String purpose,
+  }) async {
+    final json = await _postOtpBackend('/api/otp/send', {
+      'phone': phone,
+      'purpose': purpose,
+    });
+    final verificationId = json['verificationId'] as String?;
+    if (verificationId == null || verificationId.trim().isEmpty) {
+      throw Exception('Không thể gửi mã OTP. Vui lòng thử lại.');
+    }
+    return verificationId;
+  }
+
+  Future<bool> _verifyOtpViaBackend({
+    required String verificationId,
+    required String otpCode,
+  }) async {
+    final json = await _postOtpBackend('/api/otp/verify', {
+      'verificationId': verificationId,
+      'otpCode': otpCode,
+    });
+    return json['verified'] == true;
+  }
+
+  Future<Map<String, dynamic>> _postOtpBackend(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    if (_otpApiBaseUrl.isEmpty) {
+      throw Exception('Chưa cấu hình AI_API_BASE_URL cho backend OTP.');
     }
 
-    try {
-      // Bước 2: Gọi Cloud Function resetPasswordByPhone — chỉ truyền
-      // newPassword, function tự lấy phone từ ctx.auth.token.phone_number.
-      final callable = FirebaseFunctions.instance.httpsCallable(
-        'resetPasswordByPhone',
+    final endpoint = Uri.parse(
+      '${_otpApiBaseUrl.replaceFirst(RegExp(r'/$'), '')}$path',
+    );
+    final response = await _httpClient
+        .post(
+          endpoint,
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 30));
+    final decodedBody = utf8.decode(response.bodyBytes);
+    final json = decodedBody.trim().isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(decodedBody) as Map<String, dynamic>;
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final message = json['message'] as String?;
+      throw Exception(
+        message?.trim().isNotEmpty == true
+            ? message
+            : 'Backend OTP trả về lỗi ${response.statusCode}.',
       );
-      await callable.call<dynamic>({'newPassword': newPassword});
-    } finally {
-      // Bước 3: Luôn xoá phiên tạm Phone Auth dù function thành công hay không
-      await _firebaseAuth.signOut();
     }
+
+    return json;
   }
 
   @override
