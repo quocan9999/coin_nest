@@ -30,7 +30,7 @@ public sealed class OtpController : ControllerBase
         try
         {
             _logger.LogInformation("Sending OTP for purpose {Purpose} to {Phone}", request.Purpose, MaskPhone(request.Phone));
-            var response = await _otpService.SendOtpAsync(request, cancellationToken);
+            var response = await _otpService.SendOtpAsync(request, GetClientIp(), cancellationToken);
             _logger.LogInformation("OTP sent with verification id {VerificationId}", MaskVerificationId(response.VerificationId));
             return Ok(response);
         }
@@ -96,6 +96,19 @@ public sealed class OtpController : ControllerBase
             message,
             detail = _environment.IsDevelopment() ? exception.Message : null
         };
+    }
+
+    private string GetClientIp()
+    {
+        // Nếu backend đứng sau proxy/ngrok/load balancer, RemoteIpAddress thường là proxy.
+        // X-Forwarded-For giúp rate limit bám theo IP thật của client hơn.
+        var forwardedFor = Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(forwardedFor))
+        {
+            return forwardedFor.Split(',', 2)[0].Trim();
+        }
+
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
 
     private static string MaskVerificationId(string? verificationId)
