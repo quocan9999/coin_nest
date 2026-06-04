@@ -40,10 +40,6 @@ class FirebaseAuthService implements AuthService {
         SecurityUtils.sanitise(phone),
       );
 
-      if (await _userDao.phoneExists(normalisedPhone)) {
-        return AuthResult.failure('Số điện thoại đã được đăng ký');
-      }
-
       if (otpVerificationId.trim().isEmpty || otpCode.trim().isEmpty) {
         return AuthResult.failure(
           'Vui lòng nhập mã OTP để xác thực số điện thoại',
@@ -69,10 +65,12 @@ class FirebaseAuthService implements AuthService {
       }
       await firebaseUser.updateDisplayName(cleanName);
 
+      final existingLocalUser = await _userDao.findByPhone(normalisedPhone);
       final salt = SecurityUtils.generateSalt();
       final hash = SecurityUtils.hashPassword(password, salt);
       final now = DateTime.now();
       final user = User(
+        id: existingLocalUser?.id,
         fullName: cleanName,
         phone: normalisedPhone,
         email: null,
@@ -80,17 +78,14 @@ class FirebaseAuthService implements AuthService {
         passwordSalt: salt,
         firebaseUid: firebaseUser.uid,
         authProvider: AppAuthProvider.phone.value,
-        createdAt: now,
+        avatarPath: existingLocalUser?.avatarPath,
+        createdAt: existingLocalUser?.createdAt ?? now,
         updatedAt: now,
       );
 
-      final userId = await _userDao.insert(user);
-      await _dbHelper.seedDefaultCategories(userId);
-      await _dbHelper.seedDefaultAccount(userId);
-
-      final inserted = user.copyWith(id: userId);
-      _userStreamController.add(inserted);
-      return AuthResult.success(inserted);
+      final syncedUser = await _upsertRegisteredLocalUser(user);
+      _userStreamController.add(syncedUser);
+      return AuthResult.success(syncedUser);
     } on firebase_auth.FirebaseAuthException catch (e) {
       return AuthResult.failure(_mapFirebaseAuthError(e));
     } on FormatException {
@@ -111,9 +106,6 @@ class FirebaseAuthService implements AuthService {
     try {
       final cleanName = SecurityUtils.sanitise(fullName);
       final cleanEmail = SecurityUtils.sanitise(email).trim().toLowerCase();
-      if (await _userDao.emailExists(cleanEmail)) {
-        return AuthResult.failure('Email đã được đăng ký');
-      }
 
       // Tạo Firebase user bằng Email/Password provider với email thực
       final firebaseCredential = await _firebaseAuth
@@ -130,28 +122,27 @@ class FirebaseAuthService implements AuthService {
       await firebaseUser.updateDisplayName(cleanName);
 
       // Lưu hash password cục bộ để hỗ trợ backward-compat khi cần
+      final existingLocalUser = await _userDao.findByEmail(cleanEmail);
       final salt = SecurityUtils.generateSalt();
       final hash = SecurityUtils.hashPassword(password, salt);
       final now = DateTime.now();
       final user = User(
+        id: existingLocalUser?.id,
         fullName: cleanName,
-        phone: null,
+        phone: existingLocalUser?.phone,
         email: cleanEmail,
         passwordHash: hash,
         passwordSalt: salt,
         firebaseUid: firebaseUser.uid,
         authProvider: AppAuthProvider.email.value,
-        createdAt: now,
+        avatarPath: existingLocalUser?.avatarPath,
+        createdAt: existingLocalUser?.createdAt ?? now,
         updatedAt: now,
       );
 
-      final userId = await _userDao.insert(user);
-      await _dbHelper.seedDefaultCategories(userId);
-      await _dbHelper.seedDefaultAccount(userId);
-
-      final inserted = user.copyWith(id: userId);
-      _userStreamController.add(inserted);
-      return AuthResult.success(inserted);
+      final syncedUser = await _upsertRegisteredLocalUser(user);
+      _userStreamController.add(syncedUser);
+      return AuthResult.success(syncedUser);
     } on firebase_auth.FirebaseAuthException catch (e) {
       return AuthResult.failure(_mapFirebaseAuthError(e));
     } catch (e) {
@@ -267,8 +258,13 @@ class FirebaseAuthService implements AuthService {
     final normalisedPhone = PhoneUtils.normaliseVnPhone(
       SecurityUtils.sanitise(phone),
     );
-    if (await _userDao.phoneExists(normalisedPhone)) {
-      throw Exception('Số điện thoại đã được đăng ký');
+    final existingLocalUser = await _userDao.findByPhone(normalisedPhone);
+    if (existingLocalUser != null) {
+      final syntheticEmail = PhoneUtils.phoneToSyntheticEmail(normalisedPhone);
+      final provider = await checkAccountProvider(syntheticEmail);
+      if (provider != null) {
+        throw Exception('Số điện thoại đã được đăng ký');
+      }
     }
 
     final completer = Completer<String>();
@@ -477,6 +473,18 @@ class FirebaseAuthService implements AuthService {
 
   @override
   Stream<User?> userChanges() => _userStreamController.stream;
+
+  Future<User> _upsertRegisteredLocalUser(User user) async {
+    if (user.id != null) {
+      await _userDao.update(user);
+      return user;
+    }
+
+    final userId = await _userDao.insert(user);
+    await _dbHelper.seedDefaultCategories(userId);
+    await _dbHelper.seedDefaultAccount(userId);
+    return user.copyWith(id: userId);
+  }
 
   Future<User> _syncLocalUserAfterFirebaseLogin({
     required firebase_auth.User firebaseUser,
