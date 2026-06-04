@@ -13,7 +13,10 @@ namespace featureAI_API.Services;
 
 public interface IOtpService
 {
-    Task<SendOtpResponse> SendOtpAsync(SendOtpRequest request, CancellationToken cancellationToken);
+    Task<SendOtpResponse> SendOtpAsync(
+        SendOtpRequest request,
+        string clientIp,
+        CancellationToken cancellationToken);
 
     Task<VerifyOtpResponse> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken cancellationToken);
 
@@ -27,6 +30,13 @@ public sealed class OtpService : IOtpService
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly Regex OtpRegex = new(@"^\d{6}$", RegexOptions.Compiled);
     private static readonly TimeSpan OtpTtl = TimeSpan.FromMinutes(5);
+
+    // Các ngưỡng này bảo vệ chi phí SMS trước các hành vi bấm gửi liên tục.
+    // Khi chạy production nhiều instance, chuyển counter sang Redis hoặc DB.
+    private static readonly TimeSpan SendCooldown = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan PhoneDailyWindow = TimeSpan.FromDays(1);
+    private static readonly TimeSpan IpHourlyWindow = TimeSpan.FromHours(1);
+    private static readonly TimeSpan IpPhoneBurstWindow = TimeSpan.FromMinutes(10);
 
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
@@ -47,10 +57,13 @@ public sealed class OtpService : IOtpService
 
     public async Task<SendOtpResponse> SendOtpAsync(
         SendOtpRequest request,
+        string clientIp,
         CancellationToken cancellationToken)
     {
         var purpose = NormalizePurpose(request.Purpose);
         var phone = NormalizeVnPhone(request.Phone);
+        EnforceSendRateLimits(purpose, phone, clientIp);
+
         var otp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         var contentTemplate =
             _configuration["SpeedSms:OtpContent"] ??
@@ -67,6 +80,52 @@ public sealed class OtpService : IOtpService
             OtpTtl);
 
         return new SendOtpResponse($"speedsms:{purpose.Value}:{phone.E164}");
+    }
+
+    private void EnforceSendRateLimits(OtpPurpose purpose, VnPhone phone, string clientIp)
+    {
+        var normalizedIp = string.IsNullOrWhiteSpace(clientIp) ? "unknown" : clientIp.Trim();
+        var phoneKey = $"{purpose.Value}:{phone.Digits}";
+        var ipKey = $"{purpose.Value}:{normalizedIp}";
+        var ipPhoneKey = $"{purpose.Value}:{normalizedIp}:{phone.Digits}";
+
+        // Cooldown theo số điện thoại giúp chặn gửi lại ngay lập tức,
+        // kể cả khi người dùng spam nút trong app hoặc gọi thẳng API.
+        if (_cache.TryGetValue(BuildCooldownCacheKey(phoneKey), out _))
+        {
+            throw new InvalidOperationException("Vui lòng chờ 60 giây trước khi gửi lại mã OTP.");
+        }
+
+        // Giới hạn theo số điện thoại kiểm soát chi phí trực tiếp cho từng người nhận.
+        if (IncrementCounter(BuildPhoneDailyCacheKey(phoneKey), PhoneDailyWindow) > 5)
+        {
+            throw new InvalidOperationException("Số điện thoại này đã yêu cầu quá nhiều mã OTP trong hôm nay.");
+        }
+
+        // Giới hạn theo IP chặn một nguồn gửi thử nhiều số điện thoại khác nhau.
+        if (IncrementCounter(BuildIpHourlyCacheKey(ipKey), IpHourlyWindow) > 20)
+        {
+            throw new InvalidOperationException("Thiết bị hoặc mạng này đang gửi quá nhiều yêu cầu OTP. Vui lòng thử lại sau.");
+        }
+
+        // Giới hạn theo cặp IP + số điện thoại chặn spam ngắn hạn trước khi
+        // chạm tới ngưỡng ngày của số điện thoại.
+        if (IncrementCounter(BuildIpPhoneBurstCacheKey(ipPhoneKey), IpPhoneBurstWindow) > 3)
+        {
+            throw new InvalidOperationException("Bạn đã yêu cầu OTP quá nhiều lần trong thời gian ngắn. Vui lòng thử lại sau 10 phút.");
+        }
+
+        _cache.Set(BuildCooldownCacheKey(phoneKey), true, SendCooldown);
+    }
+
+    private int IncrementCounter(string key, TimeSpan ttl)
+    {
+        // IMemoryCache không bền qua restart backend
+        var next = _cache.TryGetValue<RateLimitCounter>(key, out var counter) && counter is not null
+            ? counter.Count + 1
+            : 1;
+        _cache.Set(key, new RateLimitCounter(next), ttl);
+        return next;
     }
 
     public Task<VerifyOtpResponse> VerifyOtpAsync(
@@ -320,6 +379,14 @@ public sealed class OtpService : IOtpService
     private static string BuildVerifiedCacheKey(OtpPurpose purpose, string phoneDigits) =>
         $"otp-verified:{purpose.Value}:{phoneDigits}";
 
+    private static string BuildCooldownCacheKey(string key) => $"otp-send-cooldown:{key}";
+
+    private static string BuildPhoneDailyCacheKey(string key) => $"otp-send-phone-day:{key}";
+
+    private static string BuildIpHourlyCacheKey(string key) => $"otp-send-ip-hour:{key}";
+
+    private static string BuildIpPhoneBurstCacheKey(string key) => $"otp-send-ip-phone-burst:{key}";
+
     private static string TrimForLog(string value) =>
         value.Length <= 600 ? value : value[..600];
 
@@ -332,4 +399,6 @@ public sealed class OtpService : IOtpService
     }
 
     private sealed record OtpEntry(string OtpHash, int AttemptsLeft);
+
+    private sealed record RateLimitCounter(int Count);
 }
