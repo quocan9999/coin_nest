@@ -66,7 +66,7 @@ public sealed class OtpService : IOtpService
             new OtpEntry(HashOtp(purpose, phone.E164, otp), 5),
             OtpTtl);
 
-        return new SendOtpResponse($"speedsms:{purpose}:{phone.E164}");
+        return new SendOtpResponse($"speedsms:{purpose.Value}:{phone.E164}");
     }
 
     public Task<VerifyOtpResponse> VerifyOtpAsync(
