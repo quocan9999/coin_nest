@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
@@ -16,8 +17,7 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  static const _googleLogoUrl =
-      'https://www.figma.com/api/mcp/asset/3ee347b0-a8b2-46d5-9ac3-0f8e4effb5f7';
+  static const _googleLogoAsset = 'assets/image/google-icon.svg';
   static const _phoneRowFieldHeight = 54.0;
 
   final _formKey = GlobalKey<FormState>();
@@ -344,11 +344,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.network(
-                              _googleLogoUrl,
+                            SvgPicture.asset(
+                              _googleLogoAsset,
                               width: 20,
                               height: 20,
-                              errorBuilder: (_, _, _) =>
+                              placeholderBuilder: (_) =>
                                   const Icon(Icons.g_mobiledata, size: 20),
                             ),
                             const SizedBox(width: 12),
