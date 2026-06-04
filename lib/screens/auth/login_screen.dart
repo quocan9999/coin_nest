@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
@@ -16,8 +17,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  static const _googleLogoUrl =
-      'https://www.figma.com/api/mcp/asset/a5a387b4-0de9-4b38-b49a-5d0d6c8ab868';
+  static const _googleLogoAsset = 'assets/image/google-icon.svg';
 
   final _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
@@ -238,11 +238,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Image.network(
-                                    _googleLogoUrl,
+                                  SvgPicture.asset(
+                                    _googleLogoAsset,
                                     width: 20,
                                     height: 20,
-                                    errorBuilder: (_, _, _) => const Icon(
+                                    placeholderBuilder: (_) => const Icon(
                                       Icons.g_mobiledata,
                                       size: 22,
                                     ),
