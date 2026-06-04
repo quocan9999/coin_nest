@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,6 +14,7 @@ import '../../models/transaction_model.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
 import '../../utils/category_icons.dart';
+import '../../services/notification/notification_record_service.dart';
 import '../loans/loan_detail_screen.dart';
 import '../notifications/notification_center_screen.dart';
 import '../transactions/transaction_list_screen.dart';
@@ -26,6 +29,8 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  StreamSubscription<int>? _autoRecordSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +40,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       _loadRecent();
     });
+
+    _autoRecordSubscription = NotificationRecordService.recordedTransactions
+        .listen(_handleAutoRecordedTransaction);
+  }
+
+  @override
+  void dispose() {
+    _autoRecordSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _handleAutoRecordedTransaction(int userId) async {
+    if (!mounted) return;
+    if (context.read<AuthProvider>().currentUserId != userId) return;
+
+    await _loadRecent();
   }
 
   Future<void> _loadRecent() async {
