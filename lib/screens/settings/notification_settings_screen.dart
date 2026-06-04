@@ -40,20 +40,36 @@ class _NotificationSettingsScreenState
   }
 
   Future<void> _handleToggle(bool value) async {
-    if (value && !await _confirmPermissionRequestIfNeeded()) {
+    final settingsProvider = context.read<SettingsProvider>();
+
+    if (!value) {
+      await settingsProvider.setAutoNotificationRecord(false);
+      NotificationRecordService.stopListener();
       return;
     }
+
+    if (!await _confirmPermissionRequestIfNeeded()) return;
     if (!mounted) return;
 
-    final settingsProvider = context.read<SettingsProvider>();
-    await settingsProvider.setAutoNotificationRecord(value);
+    await settingsProvider.setAutoNotificationRecord(true);
 
     final started = await NotificationRecordService.syncFromPreferences(
-      requestPermission: value,
+      requestPermission: true,
     );
+    final hasPermission =
+        await NotificationRecordService.hasNotificationPermission();
 
-    if (!mounted || !value || started) return;
+    if (hasPermission) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_prefNotificationPermissionDialogShown, true);
+    }
 
+    if (!mounted || started) return;
+
+    await settingsProvider.setAutoNotificationRecord(false);
+    NotificationRecordService.stopListener();
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
@@ -73,7 +89,7 @@ class _NotificationSettingsScreenState
     final prefs = await SharedPreferences.getInstance();
     final hasShownDialog =
         prefs.getBool(_prefNotificationPermissionDialogShown) ?? false;
-    if (hasShownDialog) return true;
+    if (hasShownDialog && hasPermission) return true;
 
     if (!mounted) return false;
 
@@ -97,12 +113,7 @@ class _NotificationSettingsScreenState
       ),
     );
 
-    if (confirmed == true) {
-      await prefs.setBool(_prefNotificationPermissionDialogShown, true);
-      return true;
-    }
-
-    return false;
+    return confirmed == true;
   }
 
   @override
