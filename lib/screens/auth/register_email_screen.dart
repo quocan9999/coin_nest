@@ -201,17 +201,6 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                     ),
 
                     // Hiển thị lỗi nếu có
-                    if (auth.errorMessage != null &&
-                        auth.errorMessage!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(
-                          auth.errorMessage!,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppTheme.error),
-                        ),
-                      ),
-
                     // Divider "Hoặc đăng ký bằng"
                     const SizedBox(height: 24),
                     Row(
