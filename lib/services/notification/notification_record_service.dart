@@ -36,8 +36,13 @@ class NotificationRecordService {
 
   static const int _signatureHistoryLimit = 50;
 
+  static final StreamController<int> _recordedTransactionController =
+      StreamController<int>.broadcast();
   static ReceivePort? _receivePort;
   static StreamSubscription<dynamic>? _receiveSubscription;
+
+  static Stream<int> get recordedTransactions =>
+      _recordedTransactionController.stream;
 
   static bool get isSupported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
@@ -179,6 +184,7 @@ class NotificationRecordService {
 
     await transactionDao.insertWithBalance(draftTransaction);
     await BackupAlertProvider.markUserChanged(userId, source: 'transaction');
+    _recordedTransactionController.add(userId);
     await _rememberSignature(prefs, signature);
   }
 
