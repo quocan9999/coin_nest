@@ -29,10 +29,14 @@ public sealed class OtpController : ControllerBase
     {
         try
         {
-            return Ok(await _otpService.SendOtpAsync(request, cancellationToken));
+            _logger.LogInformation("Sending OTP for purpose {Purpose} to {Phone}", request.Purpose, MaskPhone(request.Phone));
+            var response = await _otpService.SendOtpAsync(request, cancellationToken);
+            _logger.LogInformation("OTP sent with verification id {VerificationId}", MaskVerificationId(response.VerificationId));
+            return Ok(response);
         }
         catch (ArgumentException ex)
         {
+            _logger.LogWarning(ex, "Send OTP request is invalid for {Phone}", MaskPhone(request.Phone));
             return BadRequest(new { message = ex.Message });
         }
         catch (InvalidOperationException ex)
@@ -49,10 +53,17 @@ public sealed class OtpController : ControllerBase
     {
         try
         {
-            return Ok(await _otpService.VerifyOtpAsync(request, cancellationToken));
+            _logger.LogInformation("Verifying OTP for {VerificationId}", MaskVerificationId(request.VerificationId));
+            var response = await _otpService.VerifyOtpAsync(request, cancellationToken);
+            _logger.LogInformation(
+                "OTP verification result for {VerificationId}: {Verified}",
+                MaskVerificationId(request.VerificationId),
+                response.Verified);
+            return Ok(response);
         }
         catch (ArgumentException ex)
         {
+            _logger.LogWarning(ex, "Verify OTP request is invalid for {VerificationId}", MaskVerificationId(request.VerificationId));
             return BadRequest(new { message = ex.Message });
         }
     }
@@ -64,6 +75,7 @@ public sealed class OtpController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("Reset password by phone requested for {VerificationId}", MaskVerificationId(request.VerificationId));
             return Ok(await _otpService.ResetPasswordByPhoneAsync(request, cancellationToken));
         }
         catch (ArgumentException ex)
@@ -84,5 +96,21 @@ public sealed class OtpController : ControllerBase
             message,
             detail = _environment.IsDevelopment() ? exception.Message : null
         };
+    }
+
+    private static string MaskVerificationId(string? verificationId)
+    {
+        if (string.IsNullOrWhiteSpace(verificationId)) return "(empty)";
+        var parts = verificationId.Split(':', 3);
+        if (parts.Length != 3) return "(invalid)";
+        return $"{parts[0]}:{parts[1]}:{MaskPhone(parts[2])}";
+    }
+
+    private static string MaskPhone(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return "(empty)";
+        var digits = new string(phone.Where(char.IsDigit).ToArray());
+        if (digits.Length <= 4) return "***";
+        return $"***{digits[^4..]}";
     }
 }

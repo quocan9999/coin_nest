@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
@@ -61,6 +62,9 @@ class FirebaseAuthService implements AuthService {
       }
 
       final syntheticEmail = PhoneUtils.phoneToSyntheticEmail(normalisedPhone);
+      debugPrint(
+        'Phone registration OTP verified. Creating Firebase user: $syntheticEmail',
+      );
       final firebaseCredential = await _firebaseAuth
           .createUserWithEmailAndPassword(
             email: syntheticEmail,
@@ -73,6 +77,7 @@ class FirebaseAuthService implements AuthService {
         );
       }
       await firebaseUser.updateDisplayName(cleanName);
+      debugPrint('Firebase phone user created: ${firebaseUser.uid}');
 
       final existingLocalUser = await _userDao.findByPhone(normalisedPhone);
       final salt = SecurityUtils.generateSalt();
@@ -94,12 +99,18 @@ class FirebaseAuthService implements AuthService {
 
       final syncedUser = await _upsertRegisteredLocalUser(user);
       _userStreamController.add(syncedUser);
+      debugPrint('Local phone user synced: ${syncedUser.id}');
       return AuthResult.success(syncedUser);
     } on firebase_auth.FirebaseAuthException catch (e) {
+      debugPrint(
+        'Phone registration FirebaseAuthException: ${e.code} - ${e.message}',
+      );
       return AuthResult.failure(_mapFirebaseAuthError(e));
     } on FormatException {
       return AuthResult.failure('Số điện thoại không hợp lệ');
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Phone registration failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
       return AuthResult.failure(
         _mapAuthError(e, fallback: 'Đăng ký thất bại. Vui lòng thử lại.'),
       );
@@ -151,10 +162,16 @@ class FirebaseAuthService implements AuthService {
 
       final syncedUser = await _upsertRegisteredLocalUser(user);
       _userStreamController.add(syncedUser);
+      debugPrint('Local phone user synced: ${syncedUser.id}');
       return AuthResult.success(syncedUser);
     } on firebase_auth.FirebaseAuthException catch (e) {
+      debugPrint(
+        'Phone registration FirebaseAuthException: ${e.code} - ${e.message}',
+      );
       return AuthResult.failure(_mapFirebaseAuthError(e));
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Phone registration failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
       return AuthResult.failure(
         _mapAuthError(e, fallback: 'Đăng ký thất bại. Vui lòng thử lại.'),
       );
@@ -205,7 +222,9 @@ class FirebaseAuthService implements AuthService {
       return AuthResult.failure(_mapFirebaseAuthError(e));
     } on FormatException {
       return AuthResult.failure('Số điện thoại không hợp lệ');
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Phone registration failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
       return AuthResult.failure(
         _mapAuthError(e, fallback: 'Đăng nhập thất bại. Vui lòng thử lại.'),
       );
@@ -347,10 +366,12 @@ class FirebaseAuthService implements AuthService {
   @override
   Future<bool> confirmPhoneOtp(String verificationId, String code) async {
     try {
-      return _verifyOtpViaBackend(
+      final verified = await _verifyOtpViaBackend(
         verificationId: verificationId,
         otpCode: code,
       );
+      debugPrint('Phone OTP backend verification result: $verified');
+      return verified;
 
       // Firebase PhoneAuth legacy flow:
       // final credential = firebase_auth.PhoneAuthProvider.credential(
@@ -371,7 +392,9 @@ class FirebaseAuthService implements AuthService {
       //
       // await _firebaseAuth.signOut();
       // return true;
-    } catch (_) {
+    } catch (e, stackTrace) {
+      debugPrint('Phone OTP backend verification failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
       return false;
     }
   }
@@ -534,6 +557,9 @@ class FirebaseAuthService implements AuthService {
         )
         .timeout(const Duration(seconds: 30));
     final decodedBody = utf8.decode(response.bodyBytes);
+    debugPrint(
+      'OTP backend POST $path -> ${response.statusCode}: $decodedBody',
+    );
     final json = decodedBody.trim().isEmpty
         ? <String, dynamic>{}
         : jsonDecode(decodedBody) as Map<String, dynamic>;
@@ -689,6 +715,13 @@ class FirebaseAuthService implements AuthService {
     }
     if (message.contains('database is locked')) {
       return 'Thao tác chưa thể hoàn tất lúc này. Vui lòng thử lại sau ít phút.';
+    }
+
+    final rawMessage = error.toString().replaceFirst('Exception: ', '').trim();
+    if (rawMessage.isNotEmpty &&
+        !rawMessage.startsWith('Instance of') &&
+        rawMessage != fallback) {
+      return rawMessage;
     }
 
     return fallback;
