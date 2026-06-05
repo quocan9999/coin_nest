@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/validators.dart';
+import '../../widgets/register_success_dialog.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
 
@@ -47,10 +48,11 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-        (route) => false,
-      );
+      await auth.logout();
+      if (!mounted) return;
+      final shouldGoToLogin = await showRegisterSuccessDialog(context);
+      if (!mounted || !shouldGoToLogin) return;
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -199,17 +201,6 @@ class _RegisterEmailScreenState extends State<RegisterEmailScreen> {
                     ),
 
                     // Hiển thị lỗi nếu có
-                    if (auth.errorMessage != null &&
-                        auth.errorMessage!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(
-                          auth.errorMessage!,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppTheme.error),
-                        ),
-                      ),
-
                     // Divider "Hoặc đăng ký bằng"
                     const SizedBox(height: 24),
                     Row(

@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/phone_utils.dart';
 import '../../utils/validators.dart';
+import '../../widgets/register_success_dialog.dart';
 import '../home/home_screen.dart';
 import 'otp_verification_screen.dart';
 import 'register_email_screen.dart';
@@ -78,7 +79,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       phoneDisplay = PhoneUtils.normaliseVnPhone(phone);
     } catch (_) {}
 
-    await Navigator.push(
+    final registered = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => OtpVerificationScreen(
@@ -94,10 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             if (!mounted) return;
             if (success) {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-                (route) => false,
-              );
+              Navigator.of(context).pop(true);
               return;
             }
 
@@ -133,6 +131,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
     );
+
+    if (registered != true || !mounted) return;
+
+    await auth.logout();
+    if (!mounted) return;
+    final shouldGoToLogin = await showRegisterSuccessDialog(context);
+    if (!mounted || !shouldGoToLogin) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override
@@ -254,16 +260,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                       ),
                     ),
-                    if (auth.errorMessage != null &&
-                        auth.errorMessage!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(
-                          auth.errorMessage!,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppTheme.error),
-                        ),
-                      ),
                     const SizedBox(height: 24),
                     Row(
                       children: [
