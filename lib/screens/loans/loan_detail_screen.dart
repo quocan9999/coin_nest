@@ -120,21 +120,26 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                   ),
                   const SizedBox(height: AppTheme.spacing8),
                   Text(
-                    'Tổng ${Formatters.currency(_loan.amount)}',
+                    _loan.type == 'borrow'
+                        ? 'Tổng còn phải trả'
+                        : 'Tổng còn phải thu',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: AppTheme.spacing2),
                   Text(
-                    Formatters.currency(_loan.remainingAmount),
+                    Formatters.currency(_loan.totalOutstanding),
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: color,
                     ),
                   ),
                   const SizedBox(height: AppTheme.spacing4),
-                  Text('còn lại', style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    'gồm gốc và lãi chưa thanh toán',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   const SizedBox(height: AppTheme.spacing8),
                   LinearProgressIndicator(
                     value: (_loan.paidPercentage / 100).clamp(0, 1),
@@ -172,8 +177,44 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
             if (_loan.dueDate != null)
               _detailRow(context, 'Hạn trả', Formatters.date(_loan.dueDate!)),
 
-            if (_loan.interestRate > 0)
-              _detailRow(context, 'Lãi suất', '${_loan.interestRate}%/năm'),
+            _detailRow(
+              context,
+              'Gốc ban đầu',
+              Formatters.currency(_loan.principalAmount),
+            ),
+            _detailRow(
+              context,
+              'Gốc còn lại',
+              Formatters.currency(_loan.principalRemaining),
+            ),
+            _detailRow(
+              context,
+              'Lãi đã phát sinh',
+              Formatters.currency(_loan.interestAccrued),
+            ),
+            _detailRow(
+              context,
+              _loan.type == 'borrow' ? 'Lãi đã trả' : 'Lãi đã thu',
+              Formatters.currency(_loan.interestPaid),
+            ),
+            _detailRow(
+              context,
+              _loan.type == 'borrow' ? 'Lãi chưa trả' : 'Lãi chưa thu',
+              Formatters.currency(_loan.interestOutstanding),
+            ),
+            _detailRow(
+              context,
+              _loan.type == 'borrow' ? 'Tổng đã trả' : 'Tổng đã thu',
+              Formatters.currency(_loan.totalPaid),
+            ),
+            _detailRow(
+              context,
+              _loan.type == 'borrow'
+                  ? 'Tổng còn phải trả'
+                  : 'Tổng còn phải thu',
+              Formatters.currency(_loan.totalOutstanding),
+            ),
+            _detailRow(context, 'Lãi suất', '${_loan.interestRate}%/năm'),
 
             if (_loan.accountName != null)
               _detailRow(context, 'Tài khoản', _loan.accountName!),
@@ -319,6 +360,19 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(color: AppTheme.onSurfaceVariant),
                             ),
+                            if (payment.interestAmount > 0 ||
+                                payment.principalAmount > 0) ...[
+                              const SizedBox(height: AppTheme.spacing2 / 2),
+                              Text(
+                                payment.interestAmount > 0
+                                    ? 'Lãi: ${Formatters.currency(payment.interestAmount)} · Gốc: ${Formatters.currency(payment.principalAmount)}'
+                                    : 'Gốc: ${Formatters.currency(payment.principalAmount)}',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: AppTheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
                             if (payment.note != null &&
                                 payment.note!.isNotEmpty) ...[
                               const SizedBox(height: AppTheme.spacing2 / 2),

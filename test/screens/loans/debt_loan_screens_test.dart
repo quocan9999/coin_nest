@@ -182,6 +182,40 @@ void main() {
   });
 
   // Sửa khoản vay từ UI phải cập nhật provider và hiệu chỉnh số dư theo số tiền mới.
+  testWidgets('Màn thanh toán hiển thị phân bổ trừ lãi và trừ gốc', (
+    tester,
+  ) async {
+    final now = DateTime(2026, 5, 24, 8);
+    final loan = Loan(
+      id: 1,
+      userId: 1,
+      type: 'borrow',
+      personName: 'Alice',
+      amount: 365000,
+      remainingAmount: 365000,
+      interestRate: 10,
+      interestAccrued: 1000,
+      interestOutstanding: 1000,
+      startDate: DateTime(2026, 5, 14),
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    await pumpDebtWidget(
+      tester,
+      child: PaymentScreen(loan: loan),
+      initialBalance: 1000,
+    );
+
+    await tester.enterText(find.byType(TextFormField).first, '1200');
+    await pumpDebtFrames(tester);
+
+    expect(find.text('Trừ lãi'), findsOneWidget);
+    expect(find.text('Trừ gốc'), findsOneWidget);
+    expect(find.text(Formatters.currency(1000)), findsOneWidget);
+    expect(find.text(Formatters.currency(200)), findsOneWidget);
+  });
+
   testWidgets('Màn sửa khoản vay lưu lại thông tin và số tiền mới', (
     tester,
   ) async {

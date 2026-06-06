@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
+import '../../utils/loan_interest_calculator.dart';
 import '../../utils/validators.dart';
 import '../../widgets/money_amount_input.dart';
 
@@ -36,6 +37,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     _amountFocusNode.addListener(() {
       if (mounted) setState(() {});
     });
+    _amountController.addListener(_refreshAllocationPreview);
 
     _paymentDate = DateTime.now();
 
@@ -52,6 +54,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   void dispose() {
+    _amountController.removeListener(_refreshAllocationPreview);
     _amountController.dispose();
     _amountFocusNode.dispose();
     _noteController.dispose();
@@ -182,7 +185,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       const SizedBox(height: 6),
 
                       Text(
-                        'C\u00f2n l\u1ea1i: ${Formatters.currency(widget.loan.remainingAmount)}',
+                        widget.loan.type == 'borrow'
+                            ? 'Còn phải trả: ${Formatters.currency(widget.loan.totalOutstanding)}'
+                            : 'Còn phải thu: ${Formatters.currency(widget.loan.totalOutstanding)}',
                         style: theme.textTheme.bodyMedium,
                       ),
                     ],
@@ -208,13 +213,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                     final amount = Validators.parseAmount(value ?? '');
 
-                    if (amount > widget.loan.remainingAmount) {
+                    if (amount > widget.loan.totalOutstanding) {
                       return 'Số tiền không được vượt quá dư nợ còn lại';
                     }
 
                     return null;
                   },
                 ),
+
+                if (_allocationPreview(context) case final preview?) ...[
+                  const SizedBox(height: 12),
+                  preview,
+                ],
 
                 const SizedBox(height: 20),
 
@@ -310,6 +320,76 @@ class _PaymentScreenState extends State<PaymentScreen> {
       key: key,
       refresh: () => setState(() {}),
     );
+  }
+
+  Widget? _allocationPreview(BuildContext context) {
+    final amount = Validators.parseAmount(_amountController.text);
+    if (amount <= 0) return null;
+
+    final breakdown = LoanInterestBreakdown(
+      principalAmount: widget.loan.principalAmount,
+      principalRemaining: widget.loan.principalRemaining,
+      interestAccrued: widget.loan.interestAccrued,
+      interestPaid: widget.loan.interestPaid,
+      interestOutstanding: widget.loan.interestOutstanding,
+    );
+    final allocation = LoanInterestCalculator.allocatePayment(
+      amount: amount,
+      breakdown: breakdown,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacing8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (allocation.interestAmount > 0) ...[
+            _allocationRow(
+              context,
+              'Trừ lãi',
+              Formatters.currency(allocation.interestAmount),
+            ),
+            const SizedBox(height: AppTheme.spacing4),
+          ],
+          _allocationRow(
+            context,
+            'Trừ gốc',
+            Formatters.currency(allocation.principalAmount),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _allocationRow(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _refreshAllocationPreview() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   bool _finalizeAmountExpression({required bool showError}) {
