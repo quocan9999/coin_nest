@@ -1,5 +1,7 @@
 import 'package:coin_nest/models/loan.dart';
+import 'package:coin_nest/models/loan_payment.dart';
 import 'package:coin_nest/models/transaction_model.dart';
+import 'package:coin_nest/utils/loan_interest_calculator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -62,6 +64,68 @@ void main() {
   });
 
   // Kiểm tra semantic của giao dịch debt để sign và liên kết loan nhất quán.
+  group('Tính lãi đơn khoản vay', () {
+    Loan loan() {
+      final now = DateTime(2026, 1, 1);
+      return Loan(
+        userId: 1,
+        type: 'borrow',
+        personName: 'Alice',
+        amount: 365000,
+        remainingAmount: 365000,
+        interestRate: 10,
+        startDate: now,
+        createdAt: now,
+        updatedAt: now,
+      );
+    }
+
+    test('lãi phát sinh theo ngày trên gốc còn lại', () {
+      final breakdown = LoanInterestCalculator.calculate(
+        loan: loan(),
+        payments: const [],
+        asOf: DateTime(2026, 1, 11),
+      );
+
+      expect(breakdown.interestAccrued, closeTo(1000, 0.01));
+      expect(breakdown.interestOutstanding, closeTo(1000, 0.01));
+      expect(breakdown.totalOutstanding, closeTo(366000, 0.01));
+    });
+
+    test('thanh toán ưu tiên trừ lãi trước rồi mới trừ gốc', () {
+      final beforePayment = LoanInterestCalculator.calculate(
+        loan: loan(),
+        payments: const [],
+        asOf: DateTime(2026, 1, 11),
+      );
+      final allocation = LoanInterestCalculator.allocatePayment(
+        amount: 1200,
+        breakdown: beforePayment,
+      );
+      final afterPayment = LoanInterestCalculator.calculate(
+        loan: loan(),
+        payments: [
+          LoanPayment(
+            loanId: 1,
+            userId: 1,
+            amount: 1200,
+            principalAmount: allocation.principalAmount,
+            interestAmount: allocation.interestAmount,
+            paymentDate: DateTime(2026, 1, 11),
+            createdAt: DateTime(2026, 1, 11, 8),
+          ),
+        ],
+        asOf: DateTime(2026, 1, 21),
+      );
+
+      expect(allocation.interestAmount, closeTo(1000, 0.01));
+      expect(allocation.principalAmount, closeTo(200, 0.01));
+      expect(afterPayment.principalRemaining, closeTo(364800, 0.01));
+      expect(afterPayment.interestPaid, closeTo(1000, 0.01));
+      expect(afterPayment.interestOutstanding, closeTo(999.45, 0.01));
+    });
+  });
+
   group('Tiện ích giao dịch vay và cho vay', () {
     // Dựng giao dịch tối thiểu để cô lập logic phân loại khỏi dữ liệu DB.
     TransactionModel transaction({String type = 'income', int? loanId}) {

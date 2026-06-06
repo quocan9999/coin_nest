@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import '../models/loan.dart';
 import '../models/loan_payment.dart';
 import '../models/transaction_model.dart';
+import '../utils/loan_interest_calculator.dart';
 import 'database_helper.dart';
 
 /// Data access object for the [Loan] table.
@@ -57,7 +58,7 @@ class LoanDao {
       ORDER BY l.created_at DESC
     ''', args);
 
-    return result.map((m) => Loan.fromMap(m)).toList();
+    return _hydrateLoans(db, result);
   }
 
   Future<Loan?> findByIdForUser(int id, int userId) async {
@@ -73,7 +74,7 @@ class LoanDao {
       [id, userId],
     );
     if (result.isEmpty) return null;
-    return Loan.fromMap(result.first);
+    return _hydrateLoan(db, Loan.fromMap(result.first));
   }
 
   Future<Loan?> findByTransactionForUser(int transactionId, int userId) async {
@@ -90,7 +91,7 @@ class LoanDao {
       [userId, transactionId, transactionId],
     );
     if (result.isEmpty) return null;
-    return Loan.fromMap(result.first);
+    return _hydrateLoan(db, Loan.fromMap(result.first));
   }
 
   Future<int> update(Loan loan) async {
@@ -168,13 +169,19 @@ class LoanDao {
         where: 'loan_id = ? AND user_id = ?',
         whereArgs: [loan.id, userId],
       );
-      final payments = paymentRows.map((row) => LoanPayment.fromMap(row));
-      final totalPaid = payments.fold<double>(
+      final originalPayments = paymentRows
+          .map((row) => LoanPayment.fromMap(row))
+          .toList();
+      final payments = _recalculatePaymentAllocations(
+        loan: loan,
+        payments: originalPayments,
+      );
+      final totalPrincipalPaid = payments.fold<double>(
         0,
-        (sum, payment) => sum + payment.amount,
+        (sum, payment) => sum + payment.principalAmount,
       );
 
-      if (loan.amount < totalPaid) {
+      if (loan.amount < totalPrincipalPaid) {
         throw ArgumentError(
           'Số tiền vay không được thấp hơn tổng số tiền đã thanh toán',
         );
@@ -193,7 +200,11 @@ class LoanDao {
       }
 
       final now = _now();
-      final remainingAmount = loan.amount - totalPaid;
+      final remainingAmount = loan.amount - totalPrincipalPaid;
+      final interestPaid = payments.fold<double>(
+        0,
+        (sum, payment) => sum + payment.interestAmount,
+      );
       final initialTransactionId = await _resolveInitialTransactionId(
         txn,
         existingLoan,
@@ -238,6 +249,18 @@ class LoanDao {
       }
 
       for (final payment in payments) {
+        if (payment.id != null) {
+          await txn.update(
+            'loan_payments',
+            {
+              'principal_amount': payment.principalAmount,
+              'interest_amount': payment.interestAmount,
+            },
+            where: 'id = ? AND user_id = ?',
+            whereArgs: [payment.id, userId],
+          );
+        }
+
         final paymentTransactionId = payment.transactionId;
         if (paymentTransactionId == null) continue;
 
@@ -277,6 +300,7 @@ class LoanDao {
         accountId: loan.accountId,
         transactionId: transactionIdForLoan,
         interestCalculated: existingLoan.interestCalculated,
+        interestPaid: interestPaid,
         createdAt: existingLoan.createdAt,
         updatedAt: now,
       );
@@ -324,12 +348,27 @@ class LoanDao {
       if (loan.isPaid) {
         throw StateError('Loan has already been paid');
       }
-      if (amount > loan.remainingAmount) {
-        throw ArgumentError('Payment amount exceeds remaining amount');
-      }
       if (paymentDate.isBefore(loan.startDate)) {
         throw ArgumentError('Payment date cannot be before loan start date');
       }
+
+      final existingPayments = await _paymentHistoryInTransaction(
+        txn,
+        loanId,
+        userId,
+      );
+      final breakdown = LoanInterestCalculator.calculate(
+        loan: loan,
+        payments: existingPayments,
+        asOf: paymentDate,
+      );
+      if (amount > breakdown.totalOutstanding) {
+        throw ArgumentError('Payment amount exceeds remaining amount');
+      }
+      final allocation = LoanInterestCalculator.allocatePayment(
+        amount: amount,
+        breakdown: breakdown,
+      );
 
       final paymentTransaction = TransactionModel(
         userId: userId,
@@ -356,17 +395,21 @@ class LoanDao {
         'user_id': userId,
         'transaction_id': transactionId,
         'amount': amount,
+        'principal_amount': allocation.principalAmount,
+        'interest_amount': allocation.interestAmount,
         'payment_date': paymentDate.toIso8601String().split('T').first,
         'note': note,
         'created_at': now.toIso8601String(),
       });
 
-      final remaining = loan.remainingAmount - amount;
+      final remaining = loan.remainingAmount - allocation.principalAmount;
+      final interestPaid = loan.interestPaid + allocation.interestAmount;
       await txn.update(
         'loans',
         {
           'remaining_amount': remaining < 0 ? 0 : remaining,
           'status': remaining <= 0 ? 'paid' : 'active',
+          'interest_paid': interestPaid,
           'updated_at': now.toIso8601String(),
         },
         where: 'id = ? AND user_id = ?',
@@ -458,6 +501,91 @@ class LoanDao {
     );
     if (rows.isEmpty) return null;
     return rows.first;
+  }
+
+  Future<List<Loan>> _hydrateLoans(
+    DatabaseExecutor db,
+    List<Map<String, Object?>> rows,
+  ) async {
+    final loans = <Loan>[];
+    for (final row in rows) {
+      loans.add(await _hydrateLoan(db, Loan.fromMap(row)));
+    }
+    return loans;
+  }
+
+  Future<Loan> _hydrateLoan(DatabaseExecutor db, Loan loan) async {
+    final payments = await _paymentHistoryInTransaction(
+      db,
+      loan.id!,
+      loan.userId,
+      ascending: true,
+    );
+    final breakdown = LoanInterestCalculator.calculate(
+      loan: loan,
+      payments: payments,
+      asOf: _now(),
+    );
+
+    return loan.copyWith(
+      remainingAmount: breakdown.principalRemaining,
+      interestPaid: breakdown.interestPaid,
+      interestAccrued: breakdown.interestAccrued,
+      interestOutstanding: breakdown.interestOutstanding,
+    );
+  }
+
+  List<LoanPayment> _recalculatePaymentAllocations({
+    required Loan loan,
+    required List<LoanPayment> payments,
+  }) {
+    final sortedPayments = payments.toList()
+      ..sort((a, b) {
+        final byDate = a.paymentDate.compareTo(b.paymentDate);
+        if (byDate != 0) return byDate;
+        return a.createdAt.compareTo(b.createdAt);
+      });
+    final recalculated = <LoanPayment>[];
+
+    for (final payment in sortedPayments) {
+      final breakdown = LoanInterestCalculator.calculate(
+        loan: loan,
+        payments: recalculated,
+        asOf: payment.paymentDate,
+      );
+      if (payment.amount > breakdown.totalOutstanding) {
+        throw ArgumentError('Payment amount exceeds remaining amount');
+      }
+      final allocation = LoanInterestCalculator.allocatePayment(
+        amount: payment.amount,
+        breakdown: breakdown,
+      );
+      recalculated.add(
+        payment.copyWith(
+          principalAmount: allocation.principalAmount,
+          interestAmount: allocation.interestAmount,
+        ),
+      );
+    }
+
+    return recalculated;
+  }
+
+  Future<List<LoanPayment>> _paymentHistoryInTransaction(
+    DatabaseExecutor db,
+    int loanId,
+    int userId, {
+    bool ascending = true,
+  }) async {
+    final result = await db.query(
+      'loan_payments',
+      where: 'loan_id = ? AND user_id = ?',
+      whereArgs: [loanId, userId],
+      orderBy: ascending
+          ? 'payment_date ASC, created_at ASC'
+          : 'payment_date DESC, created_at DESC',
+    );
+    return result.map((m) => LoanPayment.fromMap(m)).toList();
   }
 
   Future<void> _updateTransactionWithBalance(
@@ -604,12 +732,27 @@ class LoanDao {
       if (loan.isPaid) {
         throw StateError('Loan has already been paid');
       }
-      if (amount > loan.remainingAmount) {
-        throw ArgumentError('Payment amount exceeds remaining amount');
-      }
       if (paymentDate.isBefore(loan.startDate)) {
         throw ArgumentError('Payment date cannot be before loan start date');
       }
+
+      final existingPayments = await _paymentHistoryInTransaction(
+        txn,
+        loanId,
+        userId,
+      );
+      final breakdown = LoanInterestCalculator.calculate(
+        loan: loan,
+        payments: existingPayments,
+        asOf: paymentDate,
+      );
+      if (amount > breakdown.totalOutstanding) {
+        throw ArgumentError('Payment amount exceeds remaining amount');
+      }
+      final allocation = LoanInterestCalculator.allocatePayment(
+        amount: amount,
+        breakdown: breakdown,
+      );
 
       final nowIso = now.toIso8601String();
       await txn.insert('loan_payments', {
@@ -617,15 +760,24 @@ class LoanDao {
         'user_id': userId,
         'transaction_id': transactionId,
         'amount': amount,
+        'principal_amount': allocation.principalAmount,
+        'interest_amount': allocation.interestAmount,
         'payment_date': paymentDate.toIso8601String().split('T').first,
         'note': note,
         'created_at': nowIso,
       });
 
-      await txn.rawUpdate(
-        'UPDATE loans SET remaining_amount = MAX(remaining_amount - ?, 0), '
-        'updated_at = ? WHERE id = ? AND user_id = ?',
-        [amount, nowIso, loanId, userId],
+      final remaining = loan.remainingAmount - allocation.principalAmount;
+      final interestPaid = loan.interestPaid + allocation.interestAmount;
+      await txn.update(
+        'loans',
+        {
+          'remaining_amount': remaining < 0 ? 0 : remaining,
+          'interest_paid': interestPaid,
+          'updated_at': nowIso,
+        },
+        where: 'id = ? AND user_id = ?',
+        whereArgs: [loanId, userId],
       );
 
       final updatedRows = await txn.query(
@@ -683,7 +835,7 @@ class LoanDao {
       [id],
     );
     if (result.isEmpty) return null;
-    return Loan.fromMap(result.first);
+    return _hydrateLoan(db, Loan.fromMap(result.first));
   }
 
   /// Backward-compatible helper for existing callers.
@@ -694,20 +846,14 @@ class LoanDao {
 
   /// Get summary: total borrowed, total lent, for a user.
   Future<Map<String, double>> getSummary(int userId) async {
-    final db = await _dbHelper.database;
-    final borrowed = await db.rawQuery(
-      'SELECT COALESCE(SUM(remaining_amount), 0) as total '
-      'FROM loans WHERE user_id = ? AND type = ? AND status = ?',
-      [userId, 'borrow', 'active'],
-    );
-    final lent = await db.rawQuery(
-      'SELECT COALESCE(SUM(remaining_amount), 0) as total '
-      'FROM loans WHERE user_id = ? AND type = ? AND status = ?',
-      [userId, 'lend', 'active'],
-    );
+    final loans = await getAllByUser(userId, status: 'active');
     return {
-      'borrowed': (borrowed.first['total'] as num).toDouble(),
-      'lent': (lent.first['total'] as num).toDouble(),
+      'borrowed': loans
+          .where((loan) => loan.type == 'borrow')
+          .fold<double>(0, (sum, loan) => sum + loan.totalOutstanding),
+      'lent': loans
+          .where((loan) => loan.type == 'lend')
+          .fold<double>(0, (sum, loan) => sum + loan.totalOutstanding),
     };
   }
 
