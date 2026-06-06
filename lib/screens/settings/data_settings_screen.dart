@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +14,7 @@ import '../../providers/loan_provider.dart';
 import '../../providers/report_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/internet_connection_probe.dart';
 
 class DataSettingsScreen extends StatefulWidget {
   const DataSettingsScreen({super.key});
@@ -21,18 +24,70 @@ class DataSettingsScreen extends StatefulWidget {
 }
 
 class _DataSettingsScreenState extends State<DataSettingsScreen> {
+  static const _networkCheckInterval = Duration(seconds: 5);
+
   bool _didRestore = false;
+  bool _isOnline = true;
+  bool _isCheckingNetwork = false;
+  Timer? _networkTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = context.read<AuthProvider>();
-      context.read<BackupAlertProvider>().loadForUser(
-        authProvider.currentUserId,
+      _initialiseNetworkAwareBackupState();
+      _networkTimer = Timer.periodic(
+        _networkCheckInterval,
+        (_) => _refreshNetworkStatus(reloadWhenOnline: true),
       );
-      context.read<BackupProvider>().loadMetadata(authProvider.currentUser);
     });
+  }
+
+  @override
+  void dispose() {
+    _networkTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initialiseNetworkAwareBackupState() async {
+    await _refreshNetworkStatus(reloadWhenOnline: false);
+    if (!mounted) return;
+    await _loadInitialBackupState();
+  }
+
+  Future<void> _loadInitialBackupState() async {
+    final authProvider = context.read<AuthProvider>();
+    await context.read<BackupAlertProvider>().loadForUser(
+      authProvider.currentUserId,
+    );
+    if (!mounted || !_isOnline) return;
+    await context.read<BackupProvider>().loadMetadata(authProvider.currentUser);
+  }
+
+  Future<void> _refreshNetworkStatus({required bool reloadWhenOnline}) async {
+    if (_isCheckingNetwork) return;
+    _isCheckingNetwork = true;
+
+    final wasOnline = _isOnline;
+    final isOnline = await hasInternetConnection();
+
+    if (!mounted) {
+      _isCheckingNetwork = false;
+      return;
+    }
+
+    if (isOnline != _isOnline) {
+      setState(() => _isOnline = isOnline);
+    }
+
+    _isCheckingNetwork = false;
+
+    if (reloadWhenOnline && isOnline && !wasOnline && mounted) {
+      final authProvider = context.read<AuthProvider>();
+      await context.read<BackupProvider>().loadMetadata(
+        authProvider.currentUser,
+      );
+    }
   }
 
   @override
@@ -63,6 +118,10 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
               padding: const EdgeInsets.all(AppTheme.spacing10),
               children: [
                 _StatusPanel(provider: backupProvider),
+                if (!_isOnline) ...[
+                  const SizedBox(height: AppTheme.spacing8),
+                  const _OfflineBanner(),
+                ],
                 if (backupAlert.hasPendingTransactions) ...[
                   const SizedBox(height: AppTheme.spacing8),
                   _PendingTransactionsPanel(
@@ -78,6 +137,7 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
                       'Lưu snapshot dữ liệu tài chính của tài khoản hiện tại lên Cloud Firestore.',
                   buttonLabel: 'Sao lưu ngay',
                   isLoading: backupProvider.isLoading,
+                  isEnabled: _isOnline,
                   onPressed: () => _confirmBackup(context),
                 ),
                 const SizedBox(height: AppTheme.spacing8),
@@ -89,6 +149,7 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
                       'Tải bản sao lưu cloud và ghi đè accounts, categories, transactions, loans, loan payments và budgets cục bộ.',
                   buttonLabel: 'Khôi phục',
                   isLoading: backupProvider.isLoading,
+                  isEnabled: _isOnline,
                   style: _ActionPanelStyle.secondary,
                   onPressed: () => _confirmRestore(context),
                 ),
@@ -101,6 +162,7 @@ class _DataSettingsScreenState extends State<DataSettingsScreen> {
                       'Xóa bản sao lưu hiện tại trên Firestore. Dữ liệu tài chính trên thiết bị vẫn được giữ nguyên.',
                   buttonLabel: 'Xóa bản sao lưu cloud',
                   isLoading: backupProvider.isLoading,
+                  isEnabled: _isOnline,
                   style: _ActionPanelStyle.danger,
                   onPressed: () => _confirmDeleteBackup(context),
                 ),
@@ -385,6 +447,41 @@ class _RecordCountChip extends StatelessWidget {
   }
 }
 
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = AppTheme.colors(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppTheme.spacing8),
+      decoration: BoxDecoration(
+        color: colors.input,
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.wifi_off_rounded, color: colors.textSecondary, size: 22),
+          const SizedBox(width: AppTheme.spacing6),
+          Expanded(
+            child: Text(
+              'Bạn đang ngoại tuyến. Các thao tác cloud sẽ khả dụng khi có mạng.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PendingTransactionsPanel extends StatelessWidget {
   const _PendingTransactionsPanel({required this.pendingCount});
 
@@ -432,6 +529,7 @@ class _ActionPanel extends StatelessWidget {
     required this.buttonLabel,
     required this.isLoading,
     required this.onPressed,
+    this.isEnabled = true,
     this.style = _ActionPanelStyle.primary,
   });
 
@@ -441,6 +539,7 @@ class _ActionPanel extends StatelessWidget {
   final String description;
   final String buttonLabel;
   final bool isLoading;
+  final bool isEnabled;
   final _ActionPanelStyle style;
   final VoidCallback onPressed;
 
@@ -481,14 +580,14 @@ class _ActionPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppTheme.spacing8),
-          SizedBox(width: double.infinity, height: 44, child: _buildButton()),
+          SizedBox(width: double.infinity, height: 52, child: _buildButton()),
         ],
       ),
     );
   }
 
   Widget _buildButton() {
-    final onPressedValue = isLoading ? null : onPressed;
+    final onPressedValue = isLoading || !isEnabled ? null : onPressed;
     final child = _ButtonContent(isLoading: isLoading, label: buttonLabel);
 
     switch (style) {
@@ -517,7 +616,15 @@ class _ButtonContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!isLoading) return Text(label);
+    if (!isLoading) {
+      return Center(
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(height: 1.25),
+        ),
+      );
+    }
 
     return const SizedBox.square(
       dimension: 18,
