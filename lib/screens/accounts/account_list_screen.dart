@@ -15,6 +15,13 @@ import 'account_detail_screen.dart';
 class AccountListScreen extends StatelessWidget {
   const AccountListScreen({super.key});
 
+  void _openAddAccount(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddEditAccountScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final accounts = context.watch<AccountProvider>();
@@ -23,6 +30,10 @@ class AccountListScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _openAddAccount(context),
+        child: const Icon(Icons.add_rounded),
+      ),
 
       body: SafeArea(
         child: Column(
@@ -46,22 +57,6 @@ class AccountListScreen extends StatelessWidget {
                   ),
 
                   const Spacer(),
-
-                  IconButton(
-                    icon: const Icon(
-                      Icons.add_circle_outline_rounded,
-
-                      color: AppTheme.primary,
-                    ),
-
-                    onPressed: () => Navigator.push(
-                      context,
-
-                      MaterialPageRoute(
-                        builder: (_) => const AddEditAccountScreen(),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -143,13 +138,7 @@ class AccountListScreen extends StatelessWidget {
                           const SizedBox(height: 12),
 
                           ElevatedButton(
-                            onPressed: () => Navigator.push(
-                              context,
-
-                              MaterialPageRoute(
-                                builder: (_) => const AddEditAccountScreen(),
-                              ),
-                            ),
+                            onPressed: () => _openAddAccount(context),
 
                             child: const Text('Thêm tài khoản'),
                           ),
