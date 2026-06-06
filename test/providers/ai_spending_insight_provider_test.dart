@@ -29,10 +29,15 @@ void main() {
         ),
       ],
       loans: [
-        _loan(type: 'borrow', remainingAmount: 3000000),
+        _loan(
+          type: 'borrow',
+          remainingAmount: 3000000,
+          interestOutstanding: 100000,
+        ),
         _loan(
           type: 'lend',
           remainingAmount: 2000000,
+          interestOutstanding: 50000,
           dueDate: DateTime(2026, 5, 1),
         ),
       ],
@@ -47,8 +52,14 @@ void main() {
     expect(request.totalExpense, 2500000);
     expect(request.topExpenseCategories, hasLength(1));
     expect(request.topExpenseCategories.first['name'], 'Ăn uống');
-    expect(request.debtSummary?['borrowedRemaining'], 3000000);
-    expect(request.debtSummary?['lentRemaining'], 2000000);
+    expect(request.debtSummary?['borrowedRemaining'], 3100000);
+    expect(request.debtSummary?['borrowedPrincipalRemaining'], 3000000);
+    expect(request.debtSummary?['borrowedInterestOutstanding'], 100000);
+    expect(request.debtSummary?['borrowedTotalOutstanding'], 3100000);
+    expect(request.debtSummary?['lentRemaining'], 2050000);
+    expect(request.debtSummary?['lentPrincipalRemaining'], 2000000);
+    expect(request.debtSummary?['lentInterestOutstanding'], 50000);
+    expect(request.debtSummary?['lentTotalOutstanding'], 2050000);
     expect(request.debtSummary?['overdueCount'], 1);
     expect(request.budgetSummary?['exceededCount'], 1);
   });
@@ -75,6 +86,7 @@ TransactionModel _txn({
 Loan _loan({
   required String type,
   required double remainingAmount,
+  double interestOutstanding = 0,
   DateTime? dueDate,
 }) {
   final now = DateTime(2026, 6, 3);
@@ -85,6 +97,7 @@ Loan _loan({
     personName: 'Bạn A',
     amount: remainingAmount,
     remainingAmount: remainingAmount,
+    interestOutstanding: interestOutstanding,
     startDate: now,
     dueDate: dueDate,
     createdAt: now,

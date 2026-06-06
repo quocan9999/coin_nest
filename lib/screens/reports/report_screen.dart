@@ -116,11 +116,11 @@ class _ReportScreenState extends State<ReportScreen> {
 
     final totalBorrowedRemaining = loanProv.loans
         .where((l) => l.type == 'borrow' && l.status != 'paid')
-        .fold<double>(0, (s, l) => s + l.remainingAmount);
+        .fold<double>(0, (s, l) => s + l.totalOutstanding);
 
     final totalLentRemaining = loanProv.loans
         .where((l) => l.type == 'lend' && l.status != 'paid')
-        .fold<double>(0, (s, l) => s + l.remainingAmount);
+        .fold<double>(0, (s, l) => s + l.totalOutstanding);
 
     final netWorth =
         totalAccountBalance + totalLentRemaining - totalBorrowedRemaining;

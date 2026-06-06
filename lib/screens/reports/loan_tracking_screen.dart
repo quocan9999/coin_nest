@@ -139,14 +139,20 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
     required List<Loan> loans,
     required bool isLend,
   }) {
-    final totalAmount = loans.fold<double>(0, (sum, loan) => sum + loan.amount);
+    final totalAmount = loans.fold<double>(
+      0,
+      (sum, loan) => sum + loan.totalPaid + loan.totalOutstanding,
+    );
 
     final totalRemaining = loans.fold<double>(
       0,
-      (sum, loan) => sum + loan.remainingAmount,
+      (sum, loan) => sum + loan.totalOutstanding,
     );
 
-    final totalPaid = totalAmount - totalRemaining;
+    final totalPaid = loans.fold<double>(
+      0,
+      (sum, loan) => sum + loan.totalPaid,
+    );
 
     final progress = totalAmount > 0 ? totalPaid / totalAmount : 0.0;
 
@@ -320,9 +326,10 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
     required Loan loan,
     required Color color,
   }) {
-    final paid = loan.amount - loan.remainingAmount;
+    final paid = loan.totalPaid;
 
-    final progress = (loan.paidPercentage / 100).clamp(0.0, 1.0).toDouble();
+    final total = loan.totalPaid + loan.totalOutstanding;
+    final progress = total > 0 ? (loan.totalPaid / total).clamp(0.0, 1.0) : 0.0;
 
     final statusLabel = _statusLabel(loan);
 
@@ -383,7 +390,7 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
 
                   children: [
                     Text(
-                      Formatters.currency(loan.remainingAmount),
+                      Formatters.currency(loan.totalOutstanding),
 
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,

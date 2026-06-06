@@ -6,6 +6,7 @@ import '../models/budget.dart';
 import '../models/loan.dart';
 import '../models/transaction_model.dart';
 import '../services/ai_spending_insight_service.dart';
+import '../utils/loan_summary_builder.dart';
 
 class AiSpendingInsightProvider extends ChangeNotifier {
   AiSpendingInsightProvider({AiSpendingInsightService? service})
@@ -92,7 +93,6 @@ class AiSpendingInsightProvider extends ChangeNotifier {
     final income = _sumTypes(monthlyTransactions, {'income', 'loan'});
     final expense = _sumTypes(monthlyTransactions, {'expense', 'lend'});
     final topCategories = _topExpenseCategories(monthlyTransactions, expense);
-    final activeLoans = loans.where((loan) => !loan.isPaid).toList();
     final activeBudgets = budgets.where((budget) => budget.isActive).toList();
 
     return AiSpendingInsightRequest(
@@ -102,15 +102,7 @@ class AiSpendingInsightProvider extends ChangeNotifier {
       totalExpense: expense,
       balance: totalBalance,
       topExpenseCategories: topCategories,
-      debtSummary: {
-        'borrowedRemaining': activeLoans
-            .where((loan) => loan.type == 'borrow')
-            .fold<double>(0, (sum, loan) => sum + loan.remainingAmount),
-        'lentRemaining': activeLoans
-            .where((loan) => loan.type == 'lend')
-            .fold<double>(0, (sum, loan) => sum + loan.remainingAmount),
-        'overdueCount': activeLoans.where((loan) => loan.isOverdue).length,
-      },
+      debtSummary: LoanSummaryBuilder.build(loans),
       budgetSummary: {
         'activeCount': activeBudgets.length,
         'exceededCount': activeBudgets
