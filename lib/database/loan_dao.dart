@@ -554,7 +554,9 @@ class LoanDao {
         asOf: payment.paymentDate,
       );
       if (payment.amount > breakdown.totalOutstanding) {
-        throw ArgumentError('Payment amount exceeds remaining amount');
+        throw ArgumentError(
+          'Số tiền vay không được thấp hơn tổng số tiền đã thanh toán',
+        );
       }
       final allocation = LoanInterestCalculator.allocatePayment(
         amount: payment.amount,
