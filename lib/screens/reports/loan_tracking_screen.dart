@@ -144,11 +144,6 @@ class _LoanTrackingScreenState extends State<LoanTrackingScreen>
       (sum, loan) => sum + loan.totalPaid + loan.totalOutstanding,
     );
 
-    final totalRemaining = loans.fold<double>(
-      0,
-      (sum, loan) => sum + loan.totalOutstanding,
-    );
-
     final totalPaid = loans.fold<double>(
       0,
       (sum, loan) => sum + loan.totalPaid,
