@@ -4,6 +4,8 @@ class LoanPayment {
   final int userId;
   final int? transactionId;
   final double amount;
+  final double principalAmount;
+  final double interestAmount;
   final DateTime paymentDate;
   final String? note;
   final DateTime createdAt;
@@ -14,6 +16,8 @@ class LoanPayment {
     required this.userId,
     this.transactionId,
     required this.amount,
+    this.principalAmount = 0,
+    this.interestAmount = 0,
     required this.paymentDate,
     this.note,
     required this.createdAt,
@@ -26,6 +30,10 @@ class LoanPayment {
       userId: map['user_id'] as int,
       transactionId: map['transaction_id'] as int?,
       amount: (map['amount'] as num).toDouble(),
+      principalAmount:
+          (map['principal_amount'] as num?)?.toDouble() ??
+          (map['amount'] as num).toDouble(),
+      interestAmount: (map['interest_amount'] as num?)?.toDouble() ?? 0,
       paymentDate: DateTime.parse(map['payment_date'] as String),
       note: map['note'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
@@ -39,6 +47,10 @@ class LoanPayment {
       'user_id': userId,
       'transaction_id': transactionId,
       'amount': amount,
+      'principal_amount': principalAmount == 0 && interestAmount == 0
+          ? amount
+          : principalAmount,
+      'interest_amount': interestAmount,
       'payment_date': paymentDate.toIso8601String().split('T').first,
       'note': note,
       'created_at': createdAt.toIso8601String(),
@@ -51,6 +63,8 @@ class LoanPayment {
     int? userId,
     int? transactionId,
     double? amount,
+    double? principalAmount,
+    double? interestAmount,
     DateTime? paymentDate,
     String? note,
     DateTime? createdAt,
@@ -61,6 +75,8 @@ class LoanPayment {
       userId: userId ?? this.userId,
       transactionId: transactionId ?? this.transactionId,
       amount: amount ?? this.amount,
+      principalAmount: principalAmount ?? this.principalAmount,
+      interestAmount: interestAmount ?? this.interestAmount,
       paymentDate: paymentDate ?? this.paymentDate,
       note: note ?? this.note,
       createdAt: createdAt ?? this.createdAt,

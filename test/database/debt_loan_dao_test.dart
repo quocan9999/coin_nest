@@ -16,6 +16,7 @@ void main() {
     String personName = 'Alice',
     double amount = 500,
     double remainingAmount = 500,
+    double interestRate = 0,
     DateTime? startDate,
     int? accountId,
   }) {
@@ -27,6 +28,7 @@ void main() {
       personName: personName,
       amount: amount,
       remainingAmount: remainingAmount,
+      interestRate: interestRate,
       startDate: startDate ?? DateTime(2026, 5, 20),
       accountId: accountId ?? fixture.accountId,
       createdAt: now,
@@ -117,6 +119,40 @@ void main() {
     expect(txns.last['time'], '14:35');
     expect(txns.last['category_id'], fixture.borrowPaymentCategoryId);
     expect(await fixture.accountBalance(), 1300);
+  });
+
+  test('ghi nhận thanh toán có lãi tách lãi trước rồi mới trừ gốc', () async {
+    final loanId = await loanDao.insertWithInitialTransaction(
+      loan: newLoan(
+        amount: 365000,
+        remainingAmount: 365000,
+        interestRate: 10,
+        startDate: DateTime(2026, 5, 14),
+      ),
+      categoryId: fixture.borrowInitialCategoryId,
+    );
+
+    await loanDao.recordPaymentWithTransaction(
+      loanId: loanId,
+      userId: fixture.userId,
+      amount: 1200,
+      paymentDate: DateTime(2026, 5, 24),
+      note: 'interest first',
+      accountId: fixture.accountId!,
+      categoryId: fixture.borrowPaymentCategoryId,
+    );
+
+    final saved = await loanDao.findByIdForUser(loanId, fixture.userId);
+    final history = await loanDao.getPaymentHistory(loanId, fixture.userId);
+    final summary = await loanDao.getSummary(fixture.userId);
+
+    expect(saved!.remainingAmount, closeTo(364800, 0.01));
+    expect(saved.interestPaid, closeTo(1000, 0.01));
+    expect(saved.interestOutstanding, closeTo(0, 0.01));
+    expect(history.single.interestAmount, closeTo(1000, 0.01));
+    expect(history.single.principalAmount, closeTo(200, 0.01));
+    expect(summary['borrowed'], closeTo(364800, 0.01));
+    expect(await fixture.accountBalance(), closeTo(364800, 0.01));
   });
 
   // Sửa số tiền gốc sau khi đã trả phải giữ payment và tính lại remaining/balance.

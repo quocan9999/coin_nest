@@ -157,6 +157,31 @@ class DatabaseHelper {
     if (oldVersion < 5) {
       await _rebuildBudgetsForExtendedPeriods(db);
     }
+    if (oldVersion < 6) {
+      await _addColumnIfMissing(
+        db,
+        'loans',
+        'interest_paid',
+        'REAL NOT NULL DEFAULT 0',
+      );
+      await _addColumnIfMissing(
+        db,
+        'loan_payments',
+        'principal_amount',
+        'REAL NOT NULL DEFAULT 0',
+      );
+      await _addColumnIfMissing(
+        db,
+        'loan_payments',
+        'interest_amount',
+        'REAL NOT NULL DEFAULT 0',
+      );
+      await db.execute('''
+        UPDATE loan_payments
+        SET principal_amount = amount
+        WHERE principal_amount = 0 AND interest_amount = 0
+      ''');
+    }
   }
 
   Future<void> _rebuildBudgetsForExtendedPeriods(DatabaseExecutor db) async {
@@ -293,6 +318,7 @@ class DatabaseHelper {
         remaining_amount REAL NOT NULL CHECK(remaining_amount >= 0),
         interest_rate REAL DEFAULT 0,
         interest_calculated REAL NOT NULL DEFAULT 0,
+        interest_paid REAL NOT NULL DEFAULT 0,
         note TEXT,
         start_date TEXT NOT NULL,
         due_date TEXT,
@@ -337,6 +363,8 @@ class DatabaseHelper {
         user_id INTEGER NOT NULL,
         transaction_id INTEGER,
         amount REAL NOT NULL CHECK(amount > 0),
+        principal_amount REAL NOT NULL DEFAULT 0,
+        interest_amount REAL NOT NULL DEFAULT 0,
         payment_date TEXT NOT NULL,
         note TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
