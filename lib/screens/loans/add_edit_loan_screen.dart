@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/formatters.dart';
+import '../../utils/loan_interest_calculator.dart';
 import '../../utils/validators.dart';
 import '../../widgets/money_amount_input.dart';
 
@@ -47,6 +48,8 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
     _amountFocusNode.addListener(() {
       if (mounted) setState(() {});
     });
+    _amountController.addListener(_refreshPreview);
+    _interestController.addListener(_refreshPreview);
     final loan = widget.loan;
     if (loan != null) {
       _type = loan.type;
@@ -71,9 +74,11 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
   @override
   void dispose() {
     _personController.dispose();
+    _amountController.removeListener(_refreshPreview);
     _amountController.dispose();
     _amountFocusNode.dispose();
     _noteController.dispose();
+    _interestController.removeListener(_refreshPreview);
     _interestController.dispose();
 
     super.dispose();
@@ -238,6 +243,10 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                 ),
                 const SizedBox(height: AppTheme.spacing4),
                 _metadataNote(context),
+                if (_interestPreview(context) case final preview?) ...[
+                  const SizedBox(height: AppTheme.spacing6),
+                  preview,
+                ],
                 const SizedBox(height: AppTheme.spacing10),
                 _label('TÀI KHOẢN LIÊN KẾT'),
                 const SizedBox(height: AppTheme.spacing4),
@@ -340,16 +349,98 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing6),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceContainerLow,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Text(
-        'Lãi suất chỉ được lưu để ghi chú, app chưa tự tính hoặc cộng lãi vào dư nợ.',
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(color: AppTheme.onSurfaceVariant),
+        'Lãi được tính hằng ngày trên gốc còn lại. Khi thanh toán, hệ thống ưu tiên trừ lãi trước rồi mới trừ gốc.',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
       ),
     );
+  }
+
+  Widget? _interestPreview(BuildContext context) {
+    final amount = Validators.parseAmount(_amountController.text);
+    if (amount <= 0) return null;
+
+    final rate = double.tryParse(_interestController.text.trim()) ?? 0;
+    final now = DateTime.now();
+    final previewLoan = Loan(
+      userId: context.read<AuthProvider>().currentUserId,
+      type: _type,
+      personName: _personController.text.trim().isEmpty
+          ? 'preview'
+          : _personController.text.trim(),
+      amount: amount,
+      remainingAmount: amount,
+      interestRate: rate,
+      startDate: _startDate,
+      createdAt: now,
+      updatedAt: now,
+    );
+    final breakdown = LoanInterestCalculator.calculate(
+      loan: previewLoan,
+      payments: const [],
+      asOf: now,
+    );
+    final totalLabel = _type == 'borrow'
+        ? 'Tổng còn phải trả'
+        : 'Tổng còn phải thu';
+
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacing8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Column(
+        children: [
+          _previewRow(
+            context,
+            'Ước tính lãi đến hôm nay',
+            Formatters.currency(breakdown.interestOutstanding),
+          ),
+          const SizedBox(height: AppTheme.spacing4),
+          _previewRow(
+            context,
+            totalLabel,
+            Formatters.currency(breakdown.totalOutstanding),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _previewRow(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppTheme.spacing6),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _refreshPreview() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   Widget _typeChip(String label, String value) {
