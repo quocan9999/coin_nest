@@ -9,6 +9,7 @@ import '../models/transaction_model.dart';
 import '../providers/report_provider.dart';
 import '../providers/transaction_provider.dart';
 import '../services/financial_assistant_service.dart';
+import '../utils/loan_summary_builder.dart';
 
 class FinancialAssistantProvider extends ChangeNotifier {
   FinancialAssistantProvider({FinancialAssistantService? service})
@@ -160,7 +161,6 @@ class FinancialAssistantProvider extends ChangeNotifier {
     );
     final totalIncome = reportProvider.totalIncome;
     final totalExpense = reportProvider.totalExpense;
-    final activeLoans = loans.where((loan) => !loan.isPaid).toList();
     final activeBudgets = budgets.where((budget) => budget.isActive).toList();
 
     return FinancialAssistantRequest(
@@ -185,15 +185,7 @@ class FinancialAssistantProvider extends ChangeNotifier {
         fallbackTypes: {'income', 'loan'},
         total: totalIncome,
       ),
-      debtSummary: {
-        'borrowedRemaining': activeLoans
-            .where((loan) => loan.type == 'borrow')
-            .fold<double>(0, (sum, loan) => sum + loan.remainingAmount),
-        'lentRemaining': activeLoans
-            .where((loan) => loan.type == 'lend')
-            .fold<double>(0, (sum, loan) => sum + loan.remainingAmount),
-        'overdueCount': activeLoans.where((loan) => loan.isOverdue).length,
-      },
+      debtSummary: LoanSummaryBuilder.build(loans),
       budgetSummary: {
         'activeCount': activeBudgets.length,
         'exceededCount': activeBudgets

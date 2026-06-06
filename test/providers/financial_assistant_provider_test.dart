@@ -28,8 +28,16 @@ void main() {
         _account(balance: 3000000, isIncludedInTotal: false),
       ],
       loans: [
-        _loan(type: 'borrow', remainingAmount: 2500000),
-        _loan(type: 'lend', remainingAmount: 1000000),
+        _loan(
+          type: 'borrow',
+          remainingAmount: 2500000,
+          interestOutstanding: 100000,
+        ),
+        _loan(
+          type: 'lend',
+          remainingAmount: 1000000,
+          interestOutstanding: 50000,
+        ),
       ],
       budgets: [
         _budget(amount: 2000000, spentAmount: 2500000),
@@ -48,8 +56,14 @@ void main() {
     expect(request.userId, '7');
     expect(request.period, '2026-06');
     expect(request.reportSummary['accountBalance'], 12000000);
-    expect(request.debtSummary?['borrowedRemaining'], 2500000);
-    expect(request.debtSummary?['lentRemaining'], 1000000);
+    expect(request.debtSummary?['borrowedRemaining'], 2600000);
+    expect(request.debtSummary?['borrowedPrincipalRemaining'], 2500000);
+    expect(request.debtSummary?['borrowedInterestOutstanding'], 100000);
+    expect(request.debtSummary?['borrowedTotalOutstanding'], 2600000);
+    expect(request.debtSummary?['lentRemaining'], 1050000);
+    expect(request.debtSummary?['lentPrincipalRemaining'], 1000000);
+    expect(request.debtSummary?['lentInterestOutstanding'], 50000);
+    expect(request.debtSummary?['lentTotalOutstanding'], 1050000);
     expect(request.budgetSummary?['exceededCount'], 1);
     expect(request.recentMessages.single.content, 'Câu hỏi cũ');
     expect(request.toJson(), isNot(contains('transactions')));
@@ -128,7 +142,11 @@ Account _account({required double balance, bool isIncludedInTotal = true}) {
   );
 }
 
-Loan _loan({required String type, required double remainingAmount}) {
+Loan _loan({
+  required String type,
+  required double remainingAmount,
+  double interestOutstanding = 0,
+}) {
   final now = DateTime(2026, 6, 4);
   return Loan(
     userId: 1,
@@ -136,6 +154,7 @@ Loan _loan({required String type, required double remainingAmount}) {
     personName: 'Bạn A',
     amount: remainingAmount,
     remainingAmount: remainingAmount,
+    interestOutstanding: interestOutstanding,
     startDate: now,
     createdAt: now,
     updatedAt: now,
