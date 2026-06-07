@@ -367,10 +367,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         : (txn.type == 'transfer' || txn.type == 'balance_adjust' ? '' : '+ ');
     final iconKey = txn.categoryIconName ?? txn.type;
 
-    final noteStr = (txn.note != null && txn.note!.toString().trim().isNotEmpty)
-        ? '${txn.note} • '
-        : '';
-
     return GestureDetector(
       onTap: () {
         _openTransaction(context, txn);
@@ -382,63 +378,78 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           color: colors.card,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: CategoryIcons.getColor(iconKey).withAlpha(30),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                CategoryIcons.getIcon(iconKey),
-                color: CategoryIcons.getColor(iconKey),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    txn.categoryName ?? _getTypeLabel(txn.type),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    '$noteStr${txn.time ?? Formatters.time(txn.date)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            Row(
               children: [
-                Text(
-                  '$sign${Formatters.currency(txn.amount)}',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w700,
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: CategoryIcons.getColor(iconKey).withAlpha(30),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    CategoryIcons.getIcon(iconKey),
+                    color: CategoryIcons.getColor(iconKey),
+                    size: 20,
                   ),
                 ),
-                if (txn.accountName != null)
-                  Text(
-                    txn.accountName!,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        txn.categoryName ?? _getTypeLabel(txn.type),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        txn.time ?? Formatters.time(txn.date),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '$sign${Formatters.currency(txn.amount)}',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (txn.accountName != null)
+                      Text(
+                        txn.accountName!,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
+            if (txn.note != null && txn.note!.toString().trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.only(left: 54),
+                child: Text(
+                  txn.note!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

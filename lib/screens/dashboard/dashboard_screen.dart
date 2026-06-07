@@ -737,11 +737,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
 
+                  Text(
+                    txn.time ?? Formatters.time(txn.date),
+
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+
                   if (txn.note != null && txn.note!.isNotEmpty)
                     Text(
                       txn.note!,
 
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
 
                       maxLines: 1,
 
