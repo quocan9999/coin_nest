@@ -14,6 +14,9 @@ class Loan {
   final int? accountId;
   final int? transactionId;
   final double interestCalculated;
+  final double interestPaid;
+  final double interestAccrued;
+  final double interestOutstanding;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -35,6 +38,9 @@ class Loan {
     this.accountId,
     this.transactionId,
     this.interestCalculated = 0,
+    this.interestPaid = 0,
+    this.interestAccrued = 0,
+    this.interestOutstanding = 0,
     required this.createdAt,
     required this.updatedAt,
     this.accountName,
@@ -58,6 +64,10 @@ class Loan {
       accountId: map['account_id'] as int?,
       transactionId: map['transaction_id'] as int?,
       interestCalculated: (map['interest_calculated'] as num?)?.toDouble() ?? 0,
+      interestPaid: (map['interest_paid'] as num?)?.toDouble() ?? 0,
+      interestAccrued: (map['interest_accrued'] as num?)?.toDouble() ?? 0,
+      interestOutstanding:
+          (map['interest_outstanding'] as num?)?.toDouble() ?? 0,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
       accountName: map['account_name'] as String?,
@@ -80,6 +90,7 @@ class Loan {
       'account_id': accountId,
       'transaction_id': transactionId,
       'interest_calculated': interestCalculated,
+      'interest_paid': interestPaid,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -100,8 +111,12 @@ class Loan {
     int? accountId,
     int? transactionId,
     double? interestCalculated,
+    double? interestPaid,
+    double? interestAccrued,
+    double? interestOutstanding,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? accountName,
   }) {
     return Loan(
       id: id ?? this.id,
@@ -118,8 +133,12 @@ class Loan {
       accountId: accountId ?? this.accountId,
       transactionId: transactionId ?? this.transactionId,
       interestCalculated: interestCalculated ?? this.interestCalculated,
+      interestPaid: interestPaid ?? this.interestPaid,
+      interestAccrued: interestAccrued ?? this.interestAccrued,
+      interestOutstanding: interestOutstanding ?? this.interestOutstanding,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      accountName: accountName ?? this.accountName,
     );
   }
 
@@ -128,6 +147,12 @@ class Loan {
     if (amount == 0) return 0;
     return ((amount - remainingAmount) / amount * 100).clamp(0, 100);
   }
+
+  double get principalAmount => amount;
+  double get principalRemaining => remainingAmount;
+  double get principalPaid => amount - remainingAmount;
+  double get totalPaid => principalPaid + interestPaid;
+  double get totalOutstanding => remainingAmount + interestOutstanding;
 
   bool get isOverdue =>
       status == 'active' && dueDate != null && DateTime.now().isAfter(dueDate!);

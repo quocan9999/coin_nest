@@ -118,12 +118,12 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
     for (final loan in loanProv.loans.where(
       (l) => l.type == 'borrow' && l.status != 'paid',
     )) {
-      totalDebt += loan.remainingAmount;
+      totalDebt += loan.totalOutstanding;
     }
 
     final totalLent = loanProv.loans
         .where((l) => l.type == 'lend' && l.status != 'paid')
-        .fold<double>(0, (s, l) => s + l.remainingAmount);
+        .fold<double>(0, (s, l) => s + l.totalOutstanding);
 
     final netWorth = totalAssets + totalLent - totalDebt;
 
@@ -397,7 +397,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                             ? 'Hạn: ${Formatters.date(loan.dueDate!)}'
                             : null,
 
-                        amount: loan.remainingAmount,
+                        amount: loan.totalOutstanding,
 
                         amountColor: AppTheme.tertiary,
 
@@ -482,7 +482,7 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
                             ? 'Hạn: ${Formatters.date(loan.dueDate!)}'
                             : null,
 
-                        amount: loan.remainingAmount,
+                        amount: loan.totalOutstanding,
 
                         amountColor: AppTheme.secondary,
 

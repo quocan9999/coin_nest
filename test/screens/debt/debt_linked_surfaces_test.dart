@@ -122,9 +122,12 @@ void main() {
     );
     await runDebtStep(tester, 'giao dịch liên kết: mở chi tiết', () async {
       tile.onTap!();
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
     });
-    await pumpDebtFrames(tester);
+    await pumpDebtUntil(
+      tester,
+      () => find.byType(LoanDetailScreen).evaluate().isNotEmpty,
+    );
 
     expect(find.byType(LoanDetailScreen), findsOneWidget);
     expect(find.text('Alice liên kết'), findsOneWidget);
