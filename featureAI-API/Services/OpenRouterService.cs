@@ -411,7 +411,7 @@ public sealed class OpenRouterService : IOpenRouterService
                     {
                         new
                         {
-                            text = $"{AssistantSystemPrompt}\n\n{BuildAssistantUserPrompt(promptPayload)}"
+                            text = $"{AssistantSystemPromptVi}\n\n{BuildAssistantUserPromptVi(promptPayload)}"
                         }
                     }
                 }
@@ -532,6 +532,33 @@ public sealed class OpenRouterService : IOpenRouterService
     private static string BuildAssistantUserPrompt(string promptPayload) =>
         $"Answer the user's finance question using only this CoinNest context. Return Vietnamese JSON only. Example shape: {{\"answer\":\"...\",\"suggestedQuestions\":[\"...\",\"...\"]}}. Data: {promptPayload}";
 
+    private static string AssistantSystemPromptVi =>
+        """
+        Bạn là trợ lý tài chính cá nhân CoinNest cho người Việt.
+        Chỉ trả lời câu hỏi về báo cáo CoinNest, chi tiêu, thu nhập, ngân sách, tài khoản, vay nợ, tiết kiệm và dòng tiền của người dùng.
+        Luôn trả lời bằng tiếng Việt tự nhiên, rõ ràng, đúng ngữ pháp; không dịch máy móc khóa JSON hoặc thuật ngữ kỹ thuật như topExpenseCategories, period, balance, debtSummary.
+        Chỉ dựa trên dữ liệu CoinNest được cung cấp. Không bịa giao dịch, danh mục, số dư, khoản vay hoặc lời khuyên ngoài dữ liệu.
+        Nếu không có giao dịch chi tiêu, hãy nói đúng ý: "Tháng này chưa có giao dịch chi tiêu nào để phân tích."
+        Nếu dữ liệu vay nợ có gốc và lãi, hãy phân biệt rõ gốc còn lại, lãi chưa thanh toán và tổng còn phải trả/thu.
+        Các câu hỏi gợi ý phải ngắn, tự nhiên, đúng ngữ pháp tiếng Việt và liên quan trực tiếp đến tài chính cá nhân.
+        Từ chối các yêu cầu lập trình, website, HTML, script, SQL, pháp lý, y tế, đầu tư đầu cơ và nội dung không liên quan.
+        Trả về đúng một JSON object, không markdown, không code fence, không thêm văn bản ngoài JSON.
+        Required keys: answer, suggestedQuestions.
+        answer phải là tiếng Việt tự nhiên, ngắn gọn, dựa trên dữ liệu CoinNest.
+        suggestedQuestions phải gồm 2 đến 4 câu hỏi tài chính bằng tiếng Việt tự nhiên.
+        Không xuất code, HTML, CSS, JavaScript, SQL hoặc hướng dẫn lập trình từng bước.
+        Định dạng mọi số tiền theo VND với dấu chấm phân tách hàng nghìn và hậu tố đ.
+        """;
+
+    private static string BuildAssistantUserPromptVi(string promptPayload) =>
+        """
+        Hãy trả lời câu hỏi tài chính của người dùng chỉ dựa trên ngữ cảnh CoinNest bên dưới.
+        Không diễn giải hoặc dịch tên khóa kỹ thuật trong JSON; hãy chuyển dữ liệu thành câu tiếng Việt tự nhiên.
+        Nếu danh sách topExpenseCategories rỗng hoặc tổng chi tiêu bằng 0, hãy nói: "Tháng này chưa có giao dịch chi tiêu nào để phân tích."
+        Trả về JSON tiếng Việt theo đúng mẫu: {"answer":"...","suggestedQuestions":["...","..."]}.
+        Dữ liệu CoinNest:
+        """ + promptPayload;
+
     private static object[] BuildChatMessages(string promptPayload)
     {
         return new object[]
@@ -556,12 +583,12 @@ public sealed class OpenRouterService : IOpenRouterService
             new
             {
                 role = "system",
-                content = AssistantSystemPrompt
+                content = AssistantSystemPromptVi
             },
             new
             {
                 role = "user",
-                content = BuildAssistantUserPrompt(promptPayload)
+                content = BuildAssistantUserPromptVi(promptPayload)
             }
         };
     }
