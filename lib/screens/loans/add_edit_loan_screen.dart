@@ -241,8 +241,6 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
                     suffixText: '%',
                   ),
                 ),
-                const SizedBox(height: AppTheme.spacing4),
-                _metadataNote(context),
                 if (_interestPreview(context) case final preview?) ...[
                   const SizedBox(height: AppTheme.spacing6),
                   preview,
@@ -345,7 +343,7 @@ class _AddEditLoanScreenState extends State<AddEditLoanScreen> {
     );
   }
 
-  Widget _metadataNote(BuildContext context) {
+  Widget metadataNote(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing6),
       decoration: BoxDecoration(

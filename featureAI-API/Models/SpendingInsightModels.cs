@@ -20,6 +20,12 @@ public sealed record CategoryExpenseSummary(
 public sealed record DebtSummary(
     [property: JsonPropertyName("borrowedRemaining")] decimal BorrowedRemaining,
     [property: JsonPropertyName("lentRemaining")] decimal LentRemaining,
+    [property: JsonPropertyName("borrowedPrincipalRemaining")] decimal BorrowedPrincipalRemaining,
+    [property: JsonPropertyName("borrowedInterestOutstanding")] decimal BorrowedInterestOutstanding,
+    [property: JsonPropertyName("borrowedTotalOutstanding")] decimal BorrowedTotalOutstanding,
+    [property: JsonPropertyName("lentPrincipalRemaining")] decimal LentPrincipalRemaining,
+    [property: JsonPropertyName("lentInterestOutstanding")] decimal LentInterestOutstanding,
+    [property: JsonPropertyName("lentTotalOutstanding")] decimal LentTotalOutstanding,
     [property: JsonPropertyName("overdueCount")] int OverdueCount);
 
 public sealed record BudgetSummary(
