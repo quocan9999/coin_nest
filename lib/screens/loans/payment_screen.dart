@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/loan.dart';
+import '../../models/loan_payment.dart';
 import '../../providers/account_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/loan_provider.dart';
@@ -12,8 +13,9 @@ import '../../widgets/money_amount_input.dart';
 
 class PaymentScreen extends StatefulWidget {
   final Loan loan;
+  final LoanPayment? payment;
 
-  const PaymentScreen({super.key, required this.loan});
+  const PaymentScreen({super.key, required this.loan, this.payment});
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -31,6 +33,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   int? _accountId;
 
+  bool get _isEditMode => widget.payment != null;
+
   @override
   void initState() {
     super.initState();
@@ -39,7 +43,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
     _amountController.addListener(_refreshAllocationPreview);
 
-    _paymentDate = DateTime.now();
+    final payment = widget.payment;
+    if (payment != null) {
+      _amountController.text = MoneyAmountInput.formatAmount(payment.amount);
+      _noteController.text = payment.note ?? '';
+      _paymentDate = payment.paymentDate;
+    } else {
+      _paymentDate = DateTime.now();
+    }
 
     _accountId = widget.loan.accountId;
 
@@ -79,16 +90,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     final userId = context.read<AuthProvider>().currentUserId;
 
-    final success = await context.read<LoanProvider>().recordPayment(
-      widget.loan.id!,
-      Validators.parseAmount(_amountController.text),
-      userId,
-      paymentDate: _paymentDate,
-      note: _noteController.text.trim().isEmpty
-          ? null
-          : _noteController.text.trim(),
-      accountId: _accountId,
-    );
+    final amount = Validators.parseAmount(_amountController.text);
+    final note = _noteController.text.trim().isEmpty
+        ? null
+        : _noteController.text.trim();
+    final loanProvider = context.read<LoanProvider>();
+    final success = _isEditMode
+        ? await loanProvider.updatePayment(
+            widget.payment!,
+            amount,
+            userId,
+            paymentDate: _paymentDate,
+            note: note,
+            accountId: _accountId,
+          )
+        : await loanProvider.recordPayment(
+            widget.loan.id!,
+            amount,
+            userId,
+            paymentDate: _paymentDate,
+            note: note,
+            accountId: _accountId,
+          );
 
     if (!mounted) return;
 
@@ -138,7 +161,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
           centerTitle: true,
 
           title: Text(
-            widget.loan.type == 'borrow'
+            _isEditMode
+                ? 'Chi tiết thanh toán'
+                : widget.loan.type == 'borrow'
                 ? 'Thanh to\u00e1n kho\u1ea3n vay'
                 : 'Ghi nh\u1eadn thu n\u1ee3',
           ),
@@ -213,7 +238,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                     final amount = Validators.parseAmount(value ?? '');
 
-                    if (amount > widget.loan.totalOutstanding) {
+                    if (amount > _maximumEditableAmount) {
                       return 'Số tiền không được vượt quá dư nợ còn lại';
                     }
 
@@ -301,7 +326,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   child: ElevatedButton(
                     onPressed: _submit,
 
-                    child: const Text('L\u01b0u thanh to\u00e1n'),
+                    child: Text(
+                      _isEditMode ? 'Lưu thay đổi' : 'L\u01b0u thanh to\u00e1n',
+                    ),
                   ),
                 ),
               ],
@@ -322,16 +349,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+  double get _maximumEditableAmount {
+    final currentPaymentAmount = widget.payment?.amount ?? 0;
+    return widget.loan.totalOutstanding + currentPaymentAmount;
+  }
+
   Widget? _allocationPreview(BuildContext context) {
     final amount = Validators.parseAmount(_amountController.text);
     if (amount <= 0) return null;
 
+    final currentPayment = widget.payment;
     final breakdown = LoanInterestBreakdown(
       principalAmount: widget.loan.principalAmount,
-      principalRemaining: widget.loan.principalRemaining,
+      principalRemaining:
+          widget.loan.principalRemaining +
+          (currentPayment?.principalAmount ?? 0),
       interestAccrued: widget.loan.interestAccrued,
-      interestPaid: widget.loan.interestPaid,
-      interestOutstanding: widget.loan.interestOutstanding,
+      interestPaid:
+          widget.loan.interestPaid - (currentPayment?.interestAmount ?? 0),
+      interestOutstanding:
+          widget.loan.interestOutstanding +
+          (currentPayment?.interestAmount ?? 0),
     );
     final allocation = LoanInterestCalculator.allocatePayment(
       amount: amount,

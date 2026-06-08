@@ -155,6 +155,52 @@ void main() {
     expect(await fixture.accountBalance(), closeTo(364800, 0.01));
   });
 
+  test('cập nhật lịch sử thanh toán đồng bộ dư nợ và số dư', () async {
+    final loanId = await loanDao.insertWithInitialTransaction(
+      loan: newLoan(amount: 500, remainingAmount: 500),
+      categoryId: fixture.borrowInitialCategoryId,
+    );
+    await loanDao.recordPaymentWithTransaction(
+      loanId: loanId,
+      userId: fixture.userId,
+      amount: 200,
+      paymentDate: DateTime(2026, 5, 21),
+      note: 'old amount',
+      accountId: fixture.accountId!,
+      categoryId: fixture.borrowPaymentCategoryId,
+    );
+    final payment = (await loanDao.getPaymentHistory(
+      loanId,
+      fixture.userId,
+    )).single;
+
+    await loanDao.updatePaymentWithTransaction(
+      paymentId: payment.id!,
+      loanId: loanId,
+      userId: fixture.userId,
+      amount: 150,
+      paymentDate: DateTime(2026, 5, 22),
+      note: 'corrected amount',
+      accountId: fixture.accountId!,
+      categoryId: fixture.borrowPaymentCategoryId,
+    );
+
+    final saved = await loanDao.findByIdForUser(loanId, fixture.userId);
+    final history = await loanDao.getPaymentHistory(loanId, fixture.userId);
+    final txns = await fixture.transactionsForLoan(loanId);
+
+    expect(saved!.remainingAmount, 350);
+    expect(saved.status, 'active');
+    expect(history.single.amount, 150);
+    expect(history.single.principalAmount, 150);
+    expect(history.single.paymentDate, DateTime(2026, 5, 22));
+    expect(history.single.note, 'corrected amount');
+    expect(txns.last['amount'], 150);
+    expect(txns.last['date'], '2026-05-22');
+    expect(txns.last['note'], 'corrected amount');
+    expect(await fixture.accountBalance(), 1350);
+  });
+
   // Sửa số tiền gốc sau khi đã trả phải giữ payment và tính lại remaining/balance.
   test('cập nhật khoản vay đồng bộ giao dịch ban đầu và thanh toán', () async {
     final loanId = await loanDao.insertWithInitialTransaction(

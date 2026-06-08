@@ -320,71 +320,76 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
         return Column(
           children: payments
               .map(
-                (payment) => Container(
-                  margin: const EdgeInsets.only(bottom: AppTheme.spacing4),
-                  padding: const EdgeInsets.all(AppTheme.spacing8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: AppTheme.spacing20,
-                        height: AppTheme.spacing20,
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.radiusFull,
+                (payment) => GestureDetector(
+                  onTap: () => _openEditPayment(payment),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: AppTheme.spacing4),
+                    padding: const EdgeInsets.all(AppTheme.spacing8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: AppTheme.spacing20,
+                          height: AppTheme.spacing20,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusFull,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.receipt_long_outlined,
+                            size: AppTheme.spacing10,
+                            color: colorScheme.primary,
                           ),
                         ),
-                        child: const Icon(
-                          Icons.receipt_long_outlined,
-                          size: AppTheme.spacing10,
-                          color: AppTheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: AppTheme.spacing6),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              Formatters.currency(payment.amount),
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: AppTheme.spacing2 / 2),
-                            Text(
-                              Formatters.date(payment.paymentDate),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppTheme.onSurfaceVariant),
-                            ),
-                            if (payment.interestAmount > 0 ||
-                                payment.principalAmount > 0) ...[
+                        const SizedBox(width: AppTheme.spacing6),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                Formatters.currency(payment.amount),
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
                               const SizedBox(height: AppTheme.spacing2 / 2),
                               Text(
-                                payment.interestAmount > 0
-                                    ? 'Lãi: ${Formatters.currency(payment.interestAmount)} · Gốc: ${Formatters.currency(payment.principalAmount)}'
-                                    : 'Gốc: ${Formatters.currency(payment.principalAmount)}',
+                                Formatters.date(payment.paymentDate),
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
-                                      color: AppTheme.onSurfaceVariant,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                               ),
+                              if (payment.interestAmount > 0 ||
+                                  payment.principalAmount > 0) ...[
+                                const SizedBox(height: AppTheme.spacing2 / 2),
+                                Text(
+                                  payment.interestAmount > 0
+                                      ? 'Lãi: ${Formatters.currency(payment.interestAmount)} · Gốc: ${Formatters.currency(payment.principalAmount)}'
+                                      : 'Gốc: ${Formatters.currency(payment.principalAmount)}',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                              if (payment.note != null &&
+                                  payment.note!.isNotEmpty) ...[
+                                const SizedBox(height: AppTheme.spacing2 / 2),
+                                Text(
+                                  payment.note!,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
                             ],
-                            if (payment.note != null &&
-                                payment.note!.isNotEmpty) ...[
-                              const SizedBox(height: AppTheme.spacing2 / 2),
-                              Text(
-                                payment.note!,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               )
@@ -428,6 +433,16 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
     final changed = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => PaymentScreen(loan: _loan)),
+    );
+    if (changed == true) await _refreshLoan();
+  }
+
+  Future<void> _openEditPayment(LoanPayment payment) async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentScreen(loan: _loan, payment: payment),
+      ),
     );
     if (changed == true) await _refreshLoan();
   }

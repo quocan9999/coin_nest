@@ -418,6 +418,138 @@ class LoanDao {
     });
   }
 
+  Future<void> updatePaymentWithTransaction({
+    required int paymentId,
+    required int loanId,
+    required int userId,
+    required double amount,
+    required DateTime paymentDate,
+    String? note,
+    required int accountId,
+    int? categoryId,
+  }) async {
+    final db = await _dbHelper.database;
+
+    await db.transaction((txn) async {
+      if (amount <= 0) {
+        throw ArgumentError('Payment amount must be greater than 0');
+      }
+      final now = _now();
+      if (paymentDate.isAfter(now)) {
+        throw ArgumentError('Payment date cannot be in the future');
+      }
+
+      final loanRows = await txn.query(
+        'loans',
+        where: 'id = ? AND user_id = ?',
+        whereArgs: [loanId, userId],
+        limit: 1,
+      );
+      if (loanRows.isEmpty) {
+        throw StateError('Loan not found for current user');
+      }
+
+      final loan = Loan.fromMap(loanRows.first);
+      if (paymentDate.isBefore(loan.startDate)) {
+        throw ArgumentError('Payment date cannot be before loan start date');
+      }
+
+      final paymentRows = await txn.query(
+        'loan_payments',
+        where: 'id = ? AND loan_id = ? AND user_id = ?',
+        whereArgs: [paymentId, loanId, userId],
+        limit: 1,
+      );
+      if (paymentRows.isEmpty) {
+        throw StateError('Payment not found for current user');
+      }
+
+      final existingPayment = LoanPayment.fromMap(paymentRows.first);
+      final existingPayments = await _paymentHistoryInTransaction(
+        txn,
+        loanId,
+        userId,
+      );
+      final editedPayment = existingPayment.copyWith(
+        amount: amount,
+        paymentDate: paymentDate,
+        note: note,
+      );
+      final recalculatedPayments = _recalculatePaymentAllocations(
+        loan: loan,
+        payments: existingPayments
+            .map((payment) => payment.id == paymentId ? editedPayment : payment)
+            .toList(),
+      );
+
+      for (final payment in recalculatedPayments) {
+        await txn.update(
+          'loan_payments',
+          {
+            'amount': payment.amount,
+            'principal_amount': payment.principalAmount,
+            'interest_amount': payment.interestAmount,
+            'payment_date': payment.paymentDate
+                .toIso8601String()
+                .split('T')
+                .first,
+            'note': payment.note,
+          },
+          where: 'id = ? AND user_id = ?',
+          whereArgs: [payment.id, userId],
+        );
+      }
+
+      final editedRecalculated = recalculatedPayments.firstWhere(
+        (payment) => payment.id == paymentId,
+      );
+      final paymentTransactionId = existingPayment.transactionId;
+      if (paymentTransactionId != null) {
+        final row = await _findTransactionRow(txn, paymentTransactionId);
+        if (row != null) {
+          final existingPaymentTxn = TransactionModel.fromMap(row);
+          final newPaymentTxn = TransactionModel(
+            id: existingPaymentTxn.id,
+            userId: userId,
+            accountId: accountId,
+            categoryId: categoryId,
+            type: loan.type == 'borrow' ? 'expense' : 'income',
+            amount: editedRecalculated.amount,
+            note: editedRecalculated.note,
+            date: editedRecalculated.paymentDate,
+            time: existingPaymentTxn.time ?? _formatTime(now),
+            loanId: loanId,
+            createdAt: existingPaymentTxn.createdAt,
+            updatedAt: now,
+          );
+          await _updateTransactionWithBalance(txn, newPaymentTxn);
+        }
+      }
+
+      final totalPrincipalPaid = recalculatedPayments.fold<double>(
+        0,
+        (sum, payment) => sum + payment.principalAmount,
+      );
+      final interestPaid = recalculatedPayments.fold<double>(
+        0,
+        (sum, payment) => sum + payment.interestAmount,
+      );
+      final remaining = loan.amount - totalPrincipalPaid;
+
+      await txn.update(
+        'loans',
+        {
+          'remaining_amount': remaining < 0 ? 0 : remaining,
+          'status': remaining <= 0 ? 'paid' : 'active',
+          'interest_paid': interestPaid,
+          'updated_at': now.toIso8601String(),
+        },
+        where: 'id = ? AND user_id = ?',
+        whereArgs: [loanId, userId],
+      );
+    });
+  }
+
   Future<int> deleteForUserWithRollback(int id, int userId) async {
     final db = await _dbHelper.database;
     var deleted = 0;

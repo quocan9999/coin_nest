@@ -223,6 +223,50 @@ class LoanProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updatePayment(
+    LoanPayment payment,
+    double amount,
+    int userId, {
+    required DateTime paymentDate,
+    String? note,
+    int? accountId,
+  }) async {
+    try {
+      final loan = await _loanDao.findByIdForUser(payment.loanId, userId);
+      if (loan == null) {
+        throw StateError('Loan not found');
+      }
+
+      final resolvedAccountId = accountId ?? loan.accountId;
+      if (resolvedAccountId == null || resolvedAccountId <= 0) {
+        throw ArgumentError('Invalid account for payment');
+      }
+
+      await _loanDao.updatePaymentWithTransaction(
+        paymentId: payment.id!,
+        loanId: payment.loanId,
+        userId: userId,
+        amount: amount,
+        paymentDate: paymentDate,
+        note: note != null ? SecurityUtils.sanitise(note) : null,
+        accountId: resolvedAccountId,
+        categoryId: await _defaultCategoryIdForPaymentTransaction(
+          userId: userId,
+          loanType: loan.type,
+        ),
+      );
+
+      await _backupAlertProvider?.markChanged(userId, source: 'loan_payment');
+      await _reloadRelatedData(userId);
+      _errorMessage = null;
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<List<LoanPayment>> getPaymentHistory(int loanId, int userId) {
     return _loanDao.getPaymentHistory(loanId, userId);
   }
