@@ -26,11 +26,13 @@ class AiApiProviderOption {
     required this.id,
     required this.label,
     required this.defaultModel,
+    required this.models,
   });
 
   final String id;
   final String label;
   final String defaultModel;
+  final List<String> models;
 }
 
 class AiApiConfigService {
@@ -53,21 +55,57 @@ class AiApiConfigService {
       id: 'groq',
       label: 'Groq',
       defaultModel: 'llama-3.3-70b-versatile',
+      models: [
+        'llama-3.3-70b-versatile',
+        'llama-3.1-8b-instant',
+        'openai/gpt-oss-120b',
+        'openai/gpt-oss-20b',
+      ],
     ),
     AiApiProviderOption(
       id: 'gemini',
       label: 'Gemini',
-      defaultModel: 'gemini-1.5-flash',
+      defaultModel: 'gemini-2.5-flash',
+      models: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'],
     ),
     AiApiProviderOption(
       id: 'github_models',
       label: 'GitHub Models',
-      defaultModel: 'openai/gpt-4o-mini',
+      defaultModel: 'openai/gpt-4.1-mini',
+      models: [
+        'openai/gpt-4.1-mini',
+        'openai/gpt-4o-mini',
+        'meta/Meta-Llama-3.1-8B-Instruct',
+      ],
     ),
     AiApiProviderOption(
-      id: 'opencode',
-      label: 'OpenCode',
-      defaultModel: 'opencode-default',
+      id: 'openrouter',
+      label: 'OpenRouter',
+      defaultModel: 'poolside/laguna-m.1:free',
+      models: [
+        'poolside/laguna-m.1:free',
+        'poolside/laguna-xs.2:free',
+        'z-ai/glm-4.5-air:free',
+        'openai/gpt-oss-20b:free',
+        'nvidia/nemotron-3-nano-30b-a3b:free',
+        'google/gemma-4-31b-it:free',
+        'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+        'moonshotai/kimi-k2.6:free',
+        'nvidia/nemotron-nano-9b-v2:free',
+        'nvidia/nemotron-nano-12b-v2-vl:free',
+        'google/gemma-4-26b-a4b-it:free',
+        'liquid/lfm-2.5-1.2b-thinking:free',
+        'liquid/lfm-2.5-1.2b-instruct:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'cognitivecomputations/dolphin-mistral-24b-venice-edition:free',
+        'nousresearch/hermes-3-llama-3.1-405b:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-coder:free',
+        'openrouter/free',
+        'openai/gpt-oss-120b:free',
+        'nvidia/nemotron-3-super-120b-a12b:free',
+      ],
     ),
   ];
 
@@ -76,20 +114,21 @@ class AiApiConfigService {
 
   Future<AiApiConfig> load() async {
     final prefs = await _prefs();
-    final savedProvider =
-        prefs.getString(providerPreferenceKey) ?? defaultProviderId;
+    final savedProvider = _normaliseProviderId(
+      prefs.getString(providerPreferenceKey) ?? defaultProviderId,
+    );
     final provider = providerOptions.any((option) => option.id == savedProvider)
         ? savedProvider
         : defaultProviderId;
-    final model =
-        prefs.getString(modelPreferenceKey) ??
-        defaultModelForProvider(provider);
-    final baseUrl = prefs.getString(baseUrlPreferenceKey) ?? defaultBaseUrl;
+    final savedModel = prefs.getString(modelPreferenceKey);
+    final model = modelsForProvider(provider).contains(savedModel)
+        ? savedModel!
+        : defaultModelForProvider(provider);
     final apiKey = await _secureStorage.read(key: apiKeyStorageKey) ?? '';
 
     return AiApiConfig(
       provider: provider,
-      baseUrl: baseUrl,
+      baseUrl: defaultBaseUrl,
       model: model,
       apiKey: apiKey,
     );
@@ -97,14 +136,18 @@ class AiApiConfigService {
 
   Future<void> save({
     required String provider,
-    required String baseUrl,
     required String model,
     String? apiKey,
   }) async {
     final prefs = await _prefs();
-    await prefs.setString(providerPreferenceKey, provider);
-    await prefs.setString(baseUrlPreferenceKey, baseUrl.trim());
-    await prefs.setString(modelPreferenceKey, model.trim());
+    final normalisedProvider = _normaliseProviderId(provider);
+    await prefs.setString(providerPreferenceKey, normalisedProvider);
+    await prefs.setString(
+      modelPreferenceKey,
+      modelsForProvider(normalisedProvider).contains(model)
+          ? model
+          : defaultModelForProvider(normalisedProvider),
+    );
 
     final key = apiKey?.trim();
     if (key != null && key.isNotEmpty) {
@@ -123,6 +166,19 @@ class AiApiConfigService {
           orElse: () => providerOptions.first,
         )
         .defaultModel;
+  }
+
+  static List<String> modelsForProvider(String provider) {
+    return providerOptions
+        .firstWhere(
+          (option) => option.id == provider,
+          orElse: () => providerOptions.first,
+        )
+        .models;
+  }
+
+  static String _normaliseProviderId(String provider) {
+    return provider == 'opencode' ? 'openrouter' : provider;
   }
 
   Future<SharedPreferences> _prefs() async {

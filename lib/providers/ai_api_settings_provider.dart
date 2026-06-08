@@ -34,19 +34,13 @@ class AiApiSettingsProvider extends ChangeNotifier {
 
   Future<void> save({
     required String provider,
-    required String baseUrl,
     required String model,
     String? apiKey,
   }) async {
     _isSaving = true;
     notifyListeners();
 
-    await _service.save(
-      provider: provider,
-      baseUrl: baseUrl,
-      model: model,
-      apiKey: apiKey,
-    );
+    await _service.save(provider: provider, model: model, apiKey: apiKey);
     _config = await _service.load();
 
     _isSaving = false;

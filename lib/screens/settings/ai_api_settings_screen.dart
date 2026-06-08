@@ -14,11 +14,12 @@ class AiApiSettingsScreen extends StatefulWidget {
 
 class _AiApiSettingsScreenState extends State<AiApiSettingsScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _baseUrlController = TextEditingController();
-  final _modelController = TextEditingController();
   final _apiKeyController = TextEditingController();
 
   String _provider = AiApiConfigService.defaultProviderId;
+  String _model = AiApiConfigService.defaultModelForProvider(
+    AiApiConfigService.defaultProviderId,
+  );
   bool _obscureApiKey = true;
 
   @override
@@ -35,19 +36,17 @@ class _AiApiSettingsScreenState extends State<AiApiSettingsScreen> {
 
   @override
   void dispose() {
-    _baseUrlController.dispose();
-    _modelController.dispose();
     _apiKeyController.dispose();
     super.dispose();
   }
 
   void _applyConfig(AiApiConfig config) {
+    final models = AiApiConfigService.modelsForProvider(config.provider);
     setState(() {
       _provider = config.provider;
-      _baseUrlController.text = config.baseUrl;
-      _modelController.text = config.model.isEmpty
-          ? AiApiConfigService.defaultModelForProvider(config.provider)
-          : config.model;
+      _model = models.contains(config.model)
+          ? config.model
+          : AiApiConfigService.defaultModelForProvider(config.provider);
       _apiKeyController.clear();
     });
   }
@@ -57,8 +56,7 @@ class _AiApiSettingsScreenState extends State<AiApiSettingsScreen> {
 
     await context.read<AiApiSettingsProvider>().save(
       provider: _provider,
-      baseUrl: _baseUrlController.text,
-      model: _modelController.text,
+      model: _model,
       apiKey: _apiKeyController.text,
     );
 
@@ -117,7 +115,7 @@ class _AiApiSettingsScreenState extends State<AiApiSettingsScreen> {
                             if (value == null) return;
                             setState(() {
                               _provider = value;
-                              _modelController.text =
+                              _model =
                                   AiApiConfigService.defaultModelForProvider(
                                     value,
                                   );
@@ -125,27 +123,15 @@ class _AiApiSettingsScreenState extends State<AiApiSettingsScreen> {
                           },
                         ),
                         const SizedBox(height: AppTheme.spacing10),
-                        _label(context, 'BASE URL BACKEND'),
-                        const SizedBox(height: AppTheme.spacing4),
-                        TextFormField(
-                          controller: _baseUrlController,
-                          keyboardType: TextInputType.url,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            hintText: 'VD: https://api.example.com',
-                          ),
-                          validator: _validateBaseUrl,
-                        ),
-                        const SizedBox(height: AppTheme.spacing10),
                         _label(context, 'MODEL'),
                         const SizedBox(height: AppTheme.spacing4),
-                        TextFormField(
-                          controller: _modelController,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            hintText: 'VD: llama-3.3-70b-versatile',
-                          ),
-                          validator: _required,
+                        _ModelDropdown(
+                          provider: _provider,
+                          value: _model,
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _model = value);
+                          },
                         ),
                         const SizedBox(height: AppTheme.spacing10),
                         _label(context, 'API KEY'),
@@ -156,7 +142,7 @@ class _AiApiSettingsScreenState extends State<AiApiSettingsScreen> {
                           decoration: InputDecoration(
                             hintText: provider.hasApiKey
                                 ? 'Đang lưu an toàn trên thiết bị'
-                                : 'Nhập API key của provider',
+                                : 'Nhập API key của nhà cung cấp',
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscureApiKey
@@ -263,22 +249,6 @@ class _AiApiSettingsScreenState extends State<AiApiSettingsScreen> {
     }
     return null;
   }
-
-  String? _validateBaseUrl(String? value) {
-    final required = _required(value);
-    if (required != null) return required;
-
-    final uri = Uri.tryParse(value!.trim());
-    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-      return 'Base URL không hợp lệ';
-    }
-    if (uri.scheme != 'https' &&
-        uri.scheme != 'http' &&
-        !uri.host.contains('localhost')) {
-      return 'Chỉ dùng HTTPS cho API public';
-    }
-    return null;
-  }
 }
 
 class _StatusCard extends StatelessWidget {
@@ -291,8 +261,8 @@ class _StatusCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final colors = AppTheme.colors(context);
-    final isReady =
-        provider.config.baseUrl.trim().isNotEmpty && provider.hasApiKey;
+    final hasBackend = provider.config.baseUrl.trim().isNotEmpty;
+    final isReady = hasBackend && provider.hasApiKey;
 
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacing10),
@@ -312,7 +282,11 @@ class _StatusCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isReady ? 'AI đã sẵn sàng' : 'Chưa đủ cấu hình',
+                  isReady
+                      ? 'AI đã sẵn sàng'
+                      : hasBackend
+                      ? 'Chưa có API key'
+                      : 'Backend AI chưa được cấu hình',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -320,7 +294,9 @@ class _StatusCard extends StatelessWidget {
                 Text(
                   isReady
                       ? 'Gợi ý tiết kiệm và Trợ lý tài chính sẽ dùng cấu hình này.'
-                      : 'Cần Base URL backend và API key để bật các tính năng AI.',
+                      : hasBackend
+                      ? 'Chọn nhà cung cấp rồi nhập API key để bật các tính năng AI.'
+                      : 'Bản build cần cấu hình AI_API_BASE_URL để kết nối backend AI.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -342,19 +318,12 @@ class _ProviderDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing8),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      ),
+    return _DropdownContainer(
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          dropdownColor: colorScheme.surface,
+          dropdownColor: Theme.of(context).colorScheme.surface,
           items: AiApiConfigService.providerOptions
               .map(
                 (option) => DropdownMenuItem<String>(
@@ -366,6 +335,63 @@ class _ProviderDropdown extends StatelessWidget {
           onChanged: onChanged,
         ),
       ),
+    );
+  }
+}
+
+class _ModelDropdown extends StatelessWidget {
+  const _ModelDropdown({
+    required this.provider,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String provider;
+  final String value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final models = AiApiConfigService.modelsForProvider(provider);
+    final selected = models.contains(value) ? value : models.first;
+
+    return _DropdownContainer(
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: selected,
+          isExpanded: true,
+          dropdownColor: Theme.of(context).colorScheme.surface,
+          items: models
+              .map(
+                (model) => DropdownMenuItem<String>(
+                  value: model,
+                  child: Text(model, overflow: TextOverflow.ellipsis),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+class _DropdownContainer extends StatelessWidget {
+  const _DropdownContainer({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: child,
     );
   }
 }
