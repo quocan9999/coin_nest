@@ -7,7 +7,6 @@ import '../../providers/account_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/loan_provider.dart';
 
-import '../../screens/accounts/add_edit_account_screen.dart';
 import '../../screens/accounts/account_detail_screen.dart';
 
 import '../../screens/loans/loan_detail_screen.dart';
@@ -138,32 +137,6 @@ class _CurrentFinanceScreenState extends State<CurrentFinanceScreen> {
         centerTitle: true,
 
         title: const Text('Tài chính hiện tại'),
-      ),
-
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppTheme.primary,
-
-        foregroundColor: colorScheme.onPrimary,
-
-        onPressed: () {
-          Navigator.push(
-            context,
-
-            MaterialPageRoute(builder: (_) => const AddEditAccountScreen()),
-          ).then((_) {
-            if (!context.mounted) {
-              return;
-            }
-
-            if (context.read<AuthProvider>().currentUserId != 0) {
-              context.read<AccountProvider>().loadAccounts(
-                context.read<AuthProvider>().currentUserId,
-              );
-            }
-          });
-        },
-
-        child: const Icon(Icons.add_rounded),
       ),
 
       body: RefreshIndicator(
