@@ -11,7 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'debt_database_fixture.dart';
-import 'fake_auth_service.dart';
+import '../../shared/helpers/fake_auth_service.dart';
 
 const _debtHostKey = ValueKey<String>('debt-test-route-host');
 

@@ -2,8 +2,8 @@ import 'package:coin_nest/database/budget_dao.dart';
 import 'package:coin_nest/models/budget.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../helpers/debt_database_fixture.dart';
-import '../helpers/debt_ffi_database.dart';
+import '../../debt/helpers/debt_database_fixture.dart';
+import '../../debt/helpers/debt_ffi_database.dart';
 
 void main() {
   late DebtDatabaseFixture fixture;

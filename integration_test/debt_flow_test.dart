@@ -15,8 +15,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../test/helpers/debt_database_fixture.dart';
-import '../test/helpers/debt_widget_harness.dart';
+import '../test/debt/helpers/debt_database_fixture.dart';
+import '../test/debt/helpers/debt_widget_harness.dart';
 
 const _thoiGianQuanSat = Duration(seconds: 2);
 

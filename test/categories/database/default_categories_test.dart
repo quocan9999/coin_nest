@@ -1,7 +1,7 @@
 import 'package:coin_nest/utils/constants.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../helpers/debt_ffi_database.dart';
+import '../../debt/helpers/debt_ffi_database.dart';
 
 void main() {
   test('seed hạng mục tự động mặc định cho user', () async {

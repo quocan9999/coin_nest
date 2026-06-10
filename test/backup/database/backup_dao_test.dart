@@ -4,8 +4,8 @@ import 'package:coin_nest/database/backup_dao.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../helpers/debt_database_fixture.dart';
-import '../helpers/debt_ffi_database.dart';
+import '../../debt/helpers/debt_database_fixture.dart';
+import '../../debt/helpers/debt_ffi_database.dart';
 
 void main() {
   late DebtDatabaseFixture fixture;

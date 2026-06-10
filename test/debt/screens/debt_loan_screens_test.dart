@@ -7,10 +7,10 @@ import 'package:coin_nest/utils/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../helpers/debt_database_fixture.dart';
-import '../../helpers/debt_ffi_database.dart';
-import '../../helpers/debt_ffi_widget_harness.dart';
-import '../../helpers/debt_widget_harness.dart';
+import '../helpers/debt_database_fixture.dart';
+import '../helpers/debt_ffi_database.dart';
+import '../helpers/debt_ffi_widget_harness.dart';
+import '../helpers/debt_widget_harness.dart';
 
 void main() {
   // Kiểm tra form thêm khoản vay thực sự gọi submit và ghi tác động tài chính.
