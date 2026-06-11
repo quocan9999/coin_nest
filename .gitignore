@@ -103,3 +103,4 @@ flutter_*.png
 /android/app/google-services.json
 /lib/firebase_options.dart
 /firebase.json
+/featureAI-API/secrets/coinnest-1fb38-firebase-adminsdk-fbsvc-190041333e.json
