@@ -85,7 +85,16 @@ public sealed class OtpController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Reset password by phone failed");
-            return StatusCode(StatusCodes.Status401Unauthorized, BuildError(ex.Message, ex));
+            return StatusCode(
+                StatusCodes.Status400BadRequest,
+                BuildError("Đặt lại mật khẩu thất bại. Vui lòng thử lại sau.", ex));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected reset password by phone failure");
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                BuildError("Đặt lại mật khẩu thất bại. Vui lòng thử lại sau.", ex));
         }
     }
 

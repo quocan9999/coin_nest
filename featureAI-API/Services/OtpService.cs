@@ -7,6 +7,7 @@ using featureAI_API.Models;
 using FirebaseAdmin;
 using FirebaseAdmin.Auth;
 using Google.Apis.Auth.OAuth2;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace featureAI_API.Services;
@@ -42,17 +43,20 @@ public sealed class OtpService : IOtpService
     private readonly IConfiguration _configuration;
     private readonly IMemoryCache _cache;
     private readonly ILogger<OtpService> _logger;
+    private readonly IWebHostEnvironment _environment;
 
     public OtpService(
         HttpClient httpClient,
         IConfiguration configuration,
         IMemoryCache cache,
-        ILogger<OtpService> logger)
+        ILogger<OtpService> logger,
+        IWebHostEnvironment environment)
     {
         _httpClient = httpClient;
         _configuration = configuration;
         _cache = cache;
         _logger = logger;
+        _environment = environment;
     }
 
     public async Task<SendOtpResponse> SendOtpAsync(
@@ -299,7 +303,7 @@ public sealed class OtpService : IOtpService
         }
         else if (!string.IsNullOrWhiteSpace(credentialPath))
         {
-            credential = GoogleCredential.FromFile(credentialPath);
+            credential = GoogleCredential.FromFile(ResolveCredentialPath(credentialPath));
         }
         else
         {
@@ -308,6 +312,40 @@ public sealed class OtpService : IOtpService
         }
 
         return FirebaseApp.Create(new AppOptions { Credential = credential });
+    }
+
+    private string ResolveCredentialPath(string credentialPath)
+    {
+        if (Path.IsPathRooted(credentialPath) && File.Exists(credentialPath))
+        {
+            return credentialPath;
+        }
+
+        var candidates = new List<string>();
+        if (Path.IsPathRooted(credentialPath))
+        {
+            candidates.Add(credentialPath);
+        }
+        else
+        {
+            candidates.Add(Path.GetFullPath(Path.Combine(_environment.ContentRootPath, credentialPath)));
+            candidates.Add(Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), credentialPath)));
+
+            var contentRootParent = Directory.GetParent(_environment.ContentRootPath)?.FullName;
+            if (!string.IsNullOrWhiteSpace(contentRootParent))
+            {
+                candidates.Add(Path.GetFullPath(Path.Combine(contentRootParent, credentialPath)));
+            }
+        }
+
+        var existingPath = candidates.FirstOrDefault(File.Exists);
+        if (existingPath != null)
+        {
+            return existingPath;
+        }
+
+        throw new InvalidOperationException(
+            "Không tìm thấy file Firebase service account. Kiểm tra lại Firebase:ServiceAccountPath hoặc đặt file vào featureAI-API\\secrets.");
     }
 
     private string HashOtp(OtpPurpose purpose, string phoneE164, string otp)
